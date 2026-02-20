@@ -1,0 +1,100 @@
+// ── Colony: Agent Registry ───────────────────────────────
+// Manages all active agents, creates agents from configs.
+
+import { Logger } from '../utils/Logger.js';
+import { Agent } from './Agent.js';
+import { loadAllAgentConfigs, loadAgentConfig } from './AgentConfig.js';
+import { ModelRouter } from '../llm/ModelRouter.js';
+import { ContextAssembler } from '../memory/ContextAssembler.js';
+import { ShortTermMemory } from '../memory/ShortTermMemory.js';
+import type { AgentConfig, AgentStatus } from '../types.js';
+
+const log = new Logger('AgentRegistry');
+
+export class AgentRegistry {
+    private agents = new Map<string, Agent>();
+    private modelRouter: ModelRouter;
+    private contextAssembler: ContextAssembler;
+    private shortTermMemory: ShortTermMemory;
+    private skillsDir: string;
+
+    constructor(
+        modelRouter: ModelRouter,
+        contextAssembler: ContextAssembler,
+        shortTermMemory: ShortTermMemory,
+        skillsDir: string
+    ) {
+        this.modelRouter = modelRouter;
+        this.contextAssembler = contextAssembler;
+        this.shortTermMemory = shortTermMemory;
+        this.skillsDir = skillsDir;
+    }
+
+    /**
+     * Create and register an agent from a config object.
+     */
+    createAgent(config: AgentConfig): Agent {
+        if (this.agents.has(config.id)) {
+            log.warn(`Agent "${config.id}" already exists — replacing`);
+        }
+        const agent = new Agent(
+            config,
+            this.modelRouter,
+            this.contextAssembler,
+            this.shortTermMemory,
+            this.skillsDir
+        );
+        this.agents.set(config.id, agent);
+        log.info(`Created agent: ${config.id} (${config.name})`);
+        return agent;
+    }
+
+    /**
+     * Load agents from a config directory.
+     */
+    loadFromDirectory(dirPath: string): Agent[] {
+        const configs = loadAllAgentConfigs(dirPath);
+        return configs.map(c => this.createAgent(c));
+    }
+
+    /**
+     * Load a single agent from a YAML file.
+     */
+    loadFromFile(filePath: string): Agent {
+        const config = loadAgentConfig(filePath);
+        return this.createAgent(config);
+    }
+
+    /**
+     * Get an agent by ID.
+     */
+    get(id: string): Agent | undefined {
+        return this.agents.get(id);
+    }
+
+    /**
+     * Get all registered agents.
+     */
+    getAll(): Agent[] {
+        return Array.from(this.agents.values());
+    }
+
+    /**
+     * Get a summary of all agents and their status.
+     */
+    getStatusSummary(): Array<{ id: string; name: string; status: AgentStatus; model: string }> {
+        return this.getAll().map(a => ({
+            id: a.id,
+            name: a.name,
+            status: a.getStatus(),
+            model: a.config.model.primary,
+        }));
+    }
+
+    /**
+     * Remove an agent.
+     */
+    remove(id: string): boolean {
+        return this.agents.delete(id);
+    }
+}

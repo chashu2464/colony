@@ -1,0 +1,40 @@
+# Discord Bot Configuration
+
+bot:
+  # Discord bot token (set via environment variable)
+  token: ${DISCORD_BOT_TOKEN}
+
+  # Command prefix
+  prefix: "/colony"
+
+# Channel configuration (optional)
+channels:
+  # Default notification channel ID
+  # notifications: "1234567890"
+
+  # Session-specific channels (optional)
+  # sessions:
+  #   default: "1234567891"
+
+# Notification settings
+notifications:
+  enabled: true
+  events:
+    - milestone_completed
+    - task_finished
+    - error_occurred
+    - agent_response
+
+# Permission settings (optional)
+permissions:
+  # Allowed Discord server IDs (empty = all servers)
+  # allowedServers:
+  #   - "1234567890"
+
+  # Allowed role IDs (empty = all roles)
+  # allowedRoles:
+  #   - "1234567890"
+
+  # Allowed user IDs (empty = all users)
+  # allowedUsers:
+  #   - "1234567890"

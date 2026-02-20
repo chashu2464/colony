@@ -1,0 +1,266 @@
+"use strict";
+// ── Colony: HTTP + WebSocket Server ──────────────────────
+// REST API for session/agent management + WebSocket for real-time events.
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.createColonyServer = createColonyServer;
+const express_1 = __importDefault(require("express"));
+const http_1 = require("http");
+const fs = __importStar(require("fs"));
+const ws_1 = require("ws");
+const cors_1 = __importDefault(require("cors"));
+const path_1 = __importDefault(require("path"));
+const Logger_js_1 = require("../utils/Logger.js");
+const log = new Logger_js_1.Logger('Server');
+function createColonyServer(options) {
+    const { colony, port = 3001 } = options;
+    const app = (0, express_1.default)();
+    const server = (0, http_1.createServer)(app);
+    const wss = new ws_1.WebSocketServer({ server });
+    app.use((0, cors_1.default)());
+    app.use(express_1.default.json());
+    // Set of connected WebSocket clients
+    const clients = new Set();
+    // ── WebSocket ─────────────────────────────────────
+    wss.on('connection', (ws) => {
+        clients.add(ws);
+        log.info(`WebSocket client connected (total: ${clients.size})`);
+        ws.on('close', () => {
+            clients.delete(ws);
+            log.debug(`WebSocket client disconnected (total: ${clients.size})`);
+        });
+    });
+    function broadcast(event) {
+        const data = JSON.stringify(event);
+        for (const ws of clients) {
+            if (ws.readyState === ws_1.WebSocket.OPEN) {
+                ws.send(data);
+            }
+        }
+    }
+    // Wire Colony events to WebSocket broadcast
+    colony.messageBus.events.on('message', (message) => {
+        broadcast({ type: 'message', data: message });
+    });
+    colony.messageBus.events.on('colony_event', (event) => {
+        if (event.type !== 'message') {
+            broadcast(event);
+        }
+    });
+    // ── REST: Sessions ────────────────────────────────
+    // List all active rooms
+    app.get('/api/sessions', (_req, res) => {
+        const rooms = colony.chatRoomManager.listRooms();
+        res.json({ sessions: rooms });
+    });
+    // List all saved sessions (persisted to disk)
+    app.get('/api/sessions/saved', async (_req, res) => {
+        try {
+            const sessionIds = await colony.sessionManager.listSessions();
+            const sessions = [];
+            for (const id of sessionIds) {
+                const data = await colony.sessionManager.loadSession(id);
+                if (data) {
+                    sessions.push(data);
+                }
+            }
+            res.json({ sessions });
+        }
+        catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+    // Create a new room
+    app.post('/api/sessions', (req, res) => {
+        const { name, agentIds } = req.body;
+        if (!name) {
+            res.status(400).json({ error: 'name is required' });
+            return;
+        }
+        const room = colony.chatRoomManager.createRoom(name, agentIds);
+        res.json({ session: room.getInfo() });
+    });
+    // Get a single room
+    app.get('/api/sessions/:id', (req, res) => {
+        const room = colony.chatRoomManager.getRoom(req.params.id);
+        if (!room) {
+            res.status(404).json({ error: 'Session not found' });
+            return;
+        }
+        res.json({ session: room.getInfo() });
+    });
+    // Get messages for a room
+    app.get('/api/sessions/:id/messages', (req, res) => {
+        const room = colony.chatRoomManager.getRoom(req.params.id);
+        if (!room) {
+            res.status(404).json({ error: 'Session not found' });
+            return;
+        }
+        const limit = req.query.limit ? parseInt(req.query.limit, 10) : undefined;
+        const messages = room.getMessages(limit);
+        res.json({ messages });
+    });
+    // Send a message to a room
+    app.post('/api/sessions/:id/messages', (req, res) => {
+        const room = colony.chatRoomManager.getRoom(req.params.id);
+        if (!room) {
+            res.status(404).json({ error: 'Session not found' });
+            return;
+        }
+        const { senderId, content, mentions } = req.body;
+        if (!senderId || !content) {
+            res.status(400).json({ error: 'senderId and content are required' });
+            return;
+        }
+        try {
+            const message = room.sendHumanMessage(senderId, content, mentions);
+            res.json({ message });
+        }
+        catch (err) {
+            res.status(400).json({ error: err.message });
+        }
+    });
+    // Send a message as an agent (used by CLI skill scripts)
+    app.post('/api/sessions/:id/agent-messages', (req, res) => {
+        const room = colony.chatRoomManager.getRoom(req.params.id);
+        if (!room) {
+            res.status(404).json({ error: 'Session not found' });
+            return;
+        }
+        const { agentId, content, mentions } = req.body;
+        if (!agentId || !content) {
+            res.status(400).json({ error: 'agentId and content are required' });
+            return;
+        }
+        try {
+            const message = room.sendAgentMessage(agentId, content, mentions);
+            res.json({ message });
+        }
+        catch (err) {
+            res.status(400).json({ error: err.message });
+        }
+    });
+    // Join a room as a human
+    app.post('/api/sessions/:id/join', (req, res) => {
+        const { participant } = req.body;
+        if (!participant?.id || !participant?.name) {
+            res.status(400).json({ error: 'participant with id and name is required' });
+            return;
+        }
+        try {
+            colony.chatRoomManager.joinRoom(req.params.id, {
+                ...participant,
+                type: 'human',
+            });
+            res.json({ ok: true });
+        }
+        catch (err) {
+            res.status(400).json({ error: err.message });
+        }
+    });
+    // Delete a room
+    app.delete('/api/sessions/:id', async (req, res) => {
+        try {
+            const deleted = await colony.chatRoomManager.deleteRoom(req.params.id);
+            res.json({ deleted });
+        }
+        catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+    // Restore a saved session
+    app.post('/api/sessions/:id/restore', async (req, res) => {
+        try {
+            const room = await colony.chatRoomManager.restoreRoom(req.params.id);
+            if (!room) {
+                res.status(404).json({ error: 'Session not found' });
+                return;
+            }
+            res.json({ session: room.getInfo() });
+        }
+        catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+    // Save a session manually
+    app.post('/api/sessions/:id/save', async (req, res) => {
+        try {
+            await colony.chatRoomManager.saveRoom(req.params.id);
+            res.json({ ok: true });
+        }
+        catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+    // ── REST: Agents ──────────────────────────────────
+    // List all agents
+    app.get('/api/agents', (_req, res) => {
+        const agents = colony.agentRegistry.getStatusSummary();
+        res.json({ agents });
+    });
+    // ── REST: Status ──────────────────────────────────
+    // Overall status
+    app.get('/api/status', (_req, res) => {
+        res.json(colony.getStatus());
+    });
+    // ── Static files (frontend) ───────────────────────
+    const webDistPath = path_1.default.join(process.cwd(), 'web', 'dist');
+    if (fs.existsSync(webDistPath)) {
+        app.use(express_1.default.static(webDistPath));
+        // SPA fallback — Express v5 uses {*path} instead of *
+        app.get('{*path}', (_req, res) => {
+            res.sendFile(path_1.default.join(webDistPath, 'index.html'));
+        });
+        log.info(`Serving frontend from ${webDistPath}`);
+    }
+    else {
+        log.warn('Frontend not built yet. Run: npm run build:web');
+    }
+    // ── Start ─────────────────────────────────────────
+    function start() {
+        return new Promise((resolve) => {
+            server.listen(port, () => {
+                log.info(`Colony server running at http://localhost:${port}`);
+                log.info(`WebSocket available at ws://localhost:${port}`);
+                resolve();
+            });
+        });
+    }
+    return { app, server, wss, start };
+}
+//# sourceMappingURL=index.js.map

@@ -1,0 +1,1 @@
+{"version":3,"file":"Skill.js","sourceRoot":"","sources":["../../../src/agent/skills/Skill.ts"],"names":[],"mappings":";AAAA,4DAA4D;AAC5D,+CAA+C;AAC/C,yEAAyE;;;AAKzE,MAAsB,KAAK;IACvB,uEAAuE;IACvE,QAAQ,CAAiB;IAEzB,kDAAkD;IAClD,IAAI,IAAI;QACJ,OAAO,IAAI,CAAC,QAAQ,CAAC,IAAI,CAAC;IAC9B,CAAC;IAOD;;;OAGG;IACH,mBAAmB;QACf,OAAO,IAAI,CAAC,QAAQ,CAAC,YAAY,CAAC;IACtC,CAAC;CACJ;AArBD,sBAqBC"}
