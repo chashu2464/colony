@@ -9,6 +9,7 @@ import { SkillManager } from './skills/SkillManager.js';
 import { ModelRouter } from '../llm/ModelRouter.js';
 import { ContextAssembler } from '../memory/ContextAssembler.js';
 import { ShortTermMemory } from '../memory/ShortTermMemory.js';
+import { ChatRoomManager } from '../conversation/ChatRoomManager.js'; // Added import
 import type {
     AgentConfig,
     AgentStatus,
@@ -51,6 +52,7 @@ export class Agent {
     // Memory system
     private contextAssembler: ContextAssembler;
     private shortTermMemory: ShortTermMemory;
+    private chatRoomManager: ChatRoomManager; // Added chatRoomManager
 
     // Callbacks set by ChatRoom
     private sendMessageToRoom?: (roomId: string, message: Message) => void;
@@ -61,6 +63,7 @@ export class Agent {
         modelRouter: ModelRouter,
         contextAssembler: ContextAssembler,
         shortTermMemory: ShortTermMemory,
+        chatRoomManager: ChatRoomManager, // Added chatRoomManager
         skillsDir?: string
     ) {
         this.id = config.id;
@@ -69,6 +72,7 @@ export class Agent {
         this.modelRouter = modelRouter;
         this.contextAssembler = contextAssembler;
         this.shortTermMemory = shortTermMemory;
+        this.chatRoomManager = chatRoomManager; // Added chatRoomManager assignment
 
         // Discover skills from filesystem, then load the ones configured for this agent
         if (skillsDir) {
@@ -154,6 +158,14 @@ export class Agent {
             const sessionName = `agent-${this.id}-room-${message.roomId}`;
             let round = 0;
 
+            // Retrieve the ChatRoom instance
+            const chatRoom = this.chatRoomManager.getRoom(message.roomId);
+            if (!chatRoom) {
+                log.error(`[${this.name}] ChatRoom ${message.roomId} not found for message processing.`);
+                this.setStatus('error');
+                return;
+            }
+
             // Use ContextAssembler to build the initial prompt
             let currentPrompt = await this.contextAssembler.assemble({
                 agentId: this.id,
@@ -162,6 +174,7 @@ export class Agent {
                 tokenBudget: 8000, // Adjust based on model context window
                 includeHistory: true,
                 includeLongTerm: true, // ✅ Enable long-term memory (Mem0)
+                chatRoom: chatRoom, // Pass the chatRoom instance
             });
 
             while (round < Agent.MAX_FOLLOW_UP_ROUNDS) {

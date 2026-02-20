@@ -2,10 +2,11 @@
 // Assembles complete context from multiple sources for LLM prompts.
 
 import { Logger } from '../utils/Logger.js';
-import type { AgentConfig, Message } from '../types.js';
+import type { AgentConfig, Message, Participant } from '../types.js';
 import type { ShortTermMemory } from './ShortTermMemory.js';
 import type { LongTermMemory } from './types.js';
 import type { SkillManager } from '../agent/skills/SkillManager.js';
+import type { ChatRoom } from '../conversation/ChatRoom.js';
 import type {
     ContextAssembler as IContextAssembler,
     AssembleOptions,
@@ -51,6 +52,7 @@ export class ContextAssembler implements IContextAssembler {
         }
 
         const skillManager = this.skillManagers.get(options.agentId);
+        const chatRoom = options.chatRoom; // Get chatRoom from options
 
         // Build all sections
         const sections: PromptSection[] = [];
@@ -85,6 +87,14 @@ export class ContextAssembler implements IContextAssembler {
                 });
             }
         }
+
+        // 3.5. Participants (high priority, for agent awareness)
+        sections.push({
+            name: 'participants',
+            content: this.buildParticipantsSection(chatRoom),
+            priority: 80, // High priority to ensure agent knows who is around
+            tokenCount: 0,
+        });
 
         // 4. Collaboration Guidelines (medium priority)
         sections.push({
@@ -158,6 +168,17 @@ export class ContextAssembler implements IContextAssembler {
         for (const rule of rules) {
             lines.push(`- ${rule}`);
         }
+        return lines.join('\n');
+    }
+
+    private buildParticipantsSection(chatRoom: ChatRoom): string {
+        const info = chatRoom.getInfo();
+        const lines = ['## 房间参与者'];
+        lines.push('当前房间内的参与者有：');
+        for (const p of info.participants) {
+            lines.push(`- @${p.name} (${p.type === 'agent' ? '代理' : '人类'})`);
+        }
+        lines.push('\n你可以通过 @name 的方式提及他们。');
         return lines.join('\n');
     }
 

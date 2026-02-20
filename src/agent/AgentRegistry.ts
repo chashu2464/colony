@@ -7,6 +7,7 @@ import { loadAllAgentConfigs, loadAgentConfig } from './AgentConfig.js';
 import { ModelRouter } from '../llm/ModelRouter.js';
 import { ContextAssembler } from '../memory/ContextAssembler.js';
 import { ShortTermMemory } from '../memory/ShortTermMemory.js';
+import { ChatRoomManager } from '../conversation/ChatRoomManager.js'; // Added import
 import type { AgentConfig, AgentStatus } from '../types.js';
 
 const log = new Logger('AgentRegistry');
@@ -16,17 +17,20 @@ export class AgentRegistry {
     private modelRouter: ModelRouter;
     private contextAssembler: ContextAssembler;
     private shortTermMemory: ShortTermMemory;
+    private chatRoomManager: ChatRoomManager; // Added chatRoomManager
     private skillsDir: string;
 
     constructor(
         modelRouter: ModelRouter,
         contextAssembler: ContextAssembler,
         shortTermMemory: ShortTermMemory,
+        chatRoomManager: ChatRoomManager, // Added chatRoomManager
         skillsDir: string
     ) {
         this.modelRouter = modelRouter;
         this.contextAssembler = contextAssembler;
         this.shortTermMemory = shortTermMemory;
+        this.chatRoomManager = chatRoomManager; // Added assignment
         this.skillsDir = skillsDir;
     }
 
@@ -42,6 +46,7 @@ export class AgentRegistry {
             this.modelRouter,
             this.contextAssembler,
             this.shortTermMemory,
+            this.chatRoomManager, // Passed chatRoomManager
             this.skillsDir
         );
         this.agents.set(config.id, agent);

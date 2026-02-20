@@ -86,6 +86,7 @@ export class Colony {
             this.modelRouter,
             this.contextAssembler,
             this.shortTermMemory,
+            this.chatRoomManager, // Add this line
             skillsDir
         );
         this.messageBus = new MessageBus();
