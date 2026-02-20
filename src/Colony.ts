@@ -82,20 +82,27 @@ export class Colony {
         // Initialize components
         this.rateLimitManager = new RateLimitManager();
         this.modelRouter = new ModelRouter(this.rateLimitManager);
+        this.messageBus = new MessageBus();
+        this.sessionManager = new SessionManager(dataDir);
+
+        // Initialize chatRoomManager first (needed by agentRegistry)
+        this.chatRoomManager = new ChatRoomManager(
+            this.messageBus,
+            null as any, // Will be set after agentRegistry is created
+            this.sessionManager
+        );
+
+        // Now initialize agentRegistry with chatRoomManager
         this.agentRegistry = new AgentRegistry(
             this.modelRouter,
             this.contextAssembler,
             this.shortTermMemory,
-            this.chatRoomManager, // Add this line
+            this.chatRoomManager,
             skillsDir
         );
-        this.messageBus = new MessageBus();
-        this.sessionManager = new SessionManager(dataDir);
-        this.chatRoomManager = new ChatRoomManager(
-            this.messageBus,
-            this.agentRegistry,
-            this.sessionManager
-        );
+
+        // Set agentRegistry in chatRoomManager
+        (this.chatRoomManager as any).agentRegistry = this.agentRegistry;
 
         // Load agent configs
         const agents = this.agentRegistry.loadFromDirectory(agentConfigDir);

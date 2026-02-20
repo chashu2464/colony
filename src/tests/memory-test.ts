@@ -29,6 +29,21 @@ function createTestAgentConfig(id: string, name: string): AgentConfig {
     };
 }
 
+function createMockChatRoom(roomId: string, participants: any[] = []) {
+    return {
+        getInfo: () => ({
+            id: roomId,
+            name: 'Test Room',
+            participants: participants.length > 0 ? participants : [
+                { id: 'agent1', type: 'agent', name: 'Test Agent' },
+                { id: 'user1', type: 'human', name: 'Test User' }
+            ],
+            createdAt: new Date(),
+            messageCount: 0
+        })
+    };
+}
+
 async function runTests() {
     // ── Test: Short-Term Memory ─────────────────────────────
 
@@ -102,6 +117,7 @@ async function runTests() {
         currentMessage: currentMsg,
         tokenBudget: 2000,
         includeHistory: true,
+        chatRoom: createMockChatRoom('room2') as any,
     });
 
     console.log('✓ Assembled prompt:');

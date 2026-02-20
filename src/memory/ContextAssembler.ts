@@ -152,7 +152,8 @@ export class ContextAssembler implements IContextAssembler {
         const prompt = finalSections.map(s => s.content).join('\n\n');
 
         const totalTokens = finalSections.reduce((sum, s) => sum + s.tokenCount, 0);
-        log.info(`Assembled prompt for ${config.name}: ${totalTokens} tokens (budget: ${options.tokenBudget})`);
+        const sectionNames = finalSections.map(s => s.name).join(', ');
+        log.info(`Assembled prompt for ${config.name}: ${totalTokens} tokens (budget: ${options.tokenBudget}), sections: [${sectionNames}]`);
 
         return prompt;
     }
@@ -179,7 +180,10 @@ export class ContextAssembler implements IContextAssembler {
             lines.push(`- @${p.name} (${p.type === 'agent' ? '代理' : '人类'})`);
         }
         lines.push('\n你可以通过 @name 的方式提及他们。');
-        return lines.join('\n');
+
+        const result = lines.join('\n');
+        log.debug(`Built participants section with ${info.participants.length} participants`);
+        return result;
     }
 
     private buildGuidelinesSection(): string {
@@ -319,8 +323,8 @@ export class ContextAssembler implements IContextAssembler {
             }
         }
 
-        // Sort result back to logical order (identity → rules → skills → guidelines → history → long-term → current)
-        const order = ['identity', 'rules', 'skills', 'guidelines', 'history', 'long-term', 'current'];
+        // Sort result back to logical order (identity → rules → skills → participants → guidelines → history → long-term → current)
+        const order = ['identity', 'rules', 'skills', 'participants', 'guidelines', 'history', 'long-term', 'current'];
         result.sort((a, b) => {
             const aIdx = order.indexOf(a.name);
             const bIdx = order.indexOf(b.name);
