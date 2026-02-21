@@ -17,21 +17,18 @@ export class AgentRegistry {
     private modelRouter: ModelRouter;
     private contextAssembler: ContextAssembler;
     private shortTermMemory: ShortTermMemory;
-    private chatRoomManager: ChatRoomManager; // Added chatRoomManager
-    private skillsDir: string;
+    private chatRoomManager: ChatRoomManager;
 
     constructor(
         modelRouter: ModelRouter,
         contextAssembler: ContextAssembler,
         shortTermMemory: ShortTermMemory,
-        chatRoomManager: ChatRoomManager, // Added chatRoomManager
-        skillsDir: string
+        chatRoomManager: ChatRoomManager
     ) {
         this.modelRouter = modelRouter;
         this.contextAssembler = contextAssembler;
         this.shortTermMemory = shortTermMemory;
-        this.chatRoomManager = chatRoomManager; // Added assignment
-        this.skillsDir = skillsDir;
+        this.chatRoomManager = chatRoomManager;
     }
 
     /**
@@ -46,8 +43,7 @@ export class AgentRegistry {
             this.modelRouter,
             this.contextAssembler,
             this.shortTermMemory,
-            this.chatRoomManager, // Passed chatRoomManager
-            this.skillsDir
+            this.chatRoomManager
         );
         this.agents.set(config.id, agent);
         log.info(`Created agent: ${config.id} (${config.name})`);

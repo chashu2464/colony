@@ -23,7 +23,6 @@ const log = new Logger('Colony');
 
 export interface ColonyOptions {
     agentConfigDir?: string;
-    skillsDir?: string;
     dataDir?: string;
     enableLongTermMemory?: boolean;
     mem0ConfigPath?: string;
@@ -47,7 +46,6 @@ export class Colony {
 
     constructor(options: ColonyOptions = {}) {
         const agentConfigDir = options.agentConfigDir ?? path.join(process.cwd(), 'config', 'agents');
-        const skillsDir = options.skillsDir ?? path.join(process.cwd(), 'skills');
         const dataDir = options.dataDir ?? path.join(process.cwd(), '.data', 'sessions');
         const mem0ConfigPath = options.mem0ConfigPath ?? path.join(process.cwd(), 'config', 'mem0.yaml');
         const discordConfigPath = options.discordConfigPath ?? path.join(process.cwd(), 'config', 'discord.yaml');
@@ -97,8 +95,7 @@ export class Colony {
             this.modelRouter,
             this.contextAssembler,
             this.shortTermMemory,
-            this.chatRoomManager,
-            skillsDir
+            this.chatRoomManager
         );
 
         // Set agentRegistry in chatRoomManager

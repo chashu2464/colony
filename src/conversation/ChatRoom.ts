@@ -52,21 +52,6 @@ export class ChatRoom {
         this.agents.set(agent.id, agent);
         this.agentsByName.set(agent.name, agent);
 
-        // Wire the agent's sendMessage handler to publish through the bus
-        agent.setSendMessageHandler((roomId, message) => {
-            if (roomId === this.id) {
-                this.messageBus.publish(message);
-            }
-        });
-
-        // Wire the agent's getMessages handler for passive visibility
-        agent.setGetMessagesHandler((roomId, limit) => {
-            if (roomId === this.id) {
-                return this.getMessages(limit);
-            }
-            return [];
-        });
-
         // Auto-detect default agent from config
         if (agent.config.isDefault) {
             this.setDefaultAgent(agent.id);
