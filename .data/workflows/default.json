@@ -2,8 +2,8 @@
   "task_id": "042E7D46-CCC5-4099-B8F6-97A9F42C7328",
   "task_name": "Untitled Task",
   "description": "",
-  "current_stage": 0,
-  "stage_name": "0. Brainstorming",
+  "current_stage": 1,
+  "stage_name": "1. Initial Requirements (IR)",
   "status": "active",
   "assignments": {
     "architect": null,
@@ -17,6 +17,12 @@
       "path": "evidence.txt",
       "description": "test1",
       "created_at": "2026-02-22T07:34:56Z"
+    },
+    {
+      "stage": 1,
+      "path": "evidence.txt",
+      "description": "test2",
+      "created_at": "2026-02-22T07:34:57Z"
     }
   ],
   "reviews": [],
@@ -29,6 +35,15 @@
       "notes": "Workflow initialized",
       "git_commit_hash": "dcf91a89fbd5292cfafba812a489f013880a2788",
       "timestamp": "2026-02-22T07:34:39Z"
+    },
+    {
+      "from_stage": 0,
+      "to_stage": 1,
+      "action": "next",
+      "actor": "",
+      "notes": "test1",
+      "git_commit_hash": "d31ffb0132c061ae3023a6096e389255195ea42e",
+      "timestamp": "2026-02-22T07:34:56Z"
     }
   ]
 }
