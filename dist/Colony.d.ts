@@ -9,7 +9,6 @@ import type { Participant } from './types.js';
 import type { LongTermMemory } from './memory/types.js';
 export interface ColonyOptions {
     agentConfigDir?: string;
-    skillsDir?: string;
     dataDir?: string;
     enableLongTermMemory?: boolean;
     mem0ConfigPath?: string;
@@ -35,8 +34,9 @@ export declare class Colony {
     initialize(): Promise<void>;
     /**
      * Create a new chat session with agents.
+     * @param workingDir - Optional working directory for CLI tools (defaults to current directory)
      */
-    createSession(name: string, agentIds?: string[]): string;
+    createSession(name: string, agentIds?: string[], workingDir?: string): string;
     /**
      * Send a message from a human into a room.
      */

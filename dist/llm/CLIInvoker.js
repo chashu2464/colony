@@ -240,7 +240,7 @@ async function invoke(cli, prompt, options = {}) {
         throw new InvokeError(`CLI "${cli}" not found in PATH`, { type: 'spawn_error', cli });
     }
     const args = config.buildArgs(prompt, sessionId);
-    log.info(`Invoking ${cli}`, { sessionId: sessionId ?? 'new' });
+    log.info(`Invoking ${cli}`, { sessionId: sessionId ?? 'new', cwd: options.cwd ?? 'default' });
     return new Promise((resolve, reject) => {
         let settled = false;
         let childExitCode = null;
@@ -248,6 +248,7 @@ async function invoke(cli, prompt, options = {}) {
         const child = (0, child_process_1.spawn)(cliPath, args, {
             stdio: ['ignore', 'pipe', 'pipe'],
             env: { ...process.env, ...options.env },
+            cwd: options.cwd, // Set working directory
         });
         const textChunks = [];
         let capturedSessionId = null;
@@ -277,6 +278,22 @@ async function invoke(cli, prompt, options = {}) {
             process.off('SIGINT', cleanup);
             process.off('SIGTERM', cleanup);
         };
+        // ── AbortSignal ────────────────────────────────────
+        const onAbort = () => {
+            if (settled)
+                return;
+            child.kill('SIGTERM');
+            setTimeout(() => { if (!child.killed)
+                child.kill('SIGKILL'); }, 2000);
+            settle('reject', new InvokeError('Invocation aborted', { type: 'exit_error', cli, stderr }));
+        };
+        if (options.signal) {
+            if (options.signal.aborted) {
+                onAbort();
+                return;
+            }
+            options.signal.addEventListener('abort', onAbort);
+        }
         // ── Settle logic ───────────────────────────────────
         function settle(action, value) {
             if (settled)
@@ -284,6 +301,9 @@ async function invoke(cli, prompt, options = {}) {
             settled = true;
             clearInterval(idleChecker);
             removeCleanupListeners();
+            if (options.signal) {
+                options.signal.removeEventListener('abort', onAbort);
+            }
             if (action === 'resolve')
                 resolve(value);
             else

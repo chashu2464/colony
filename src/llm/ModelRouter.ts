@@ -76,7 +76,26 @@ export class ModelRouter {
                             log.error(`Non-retryable error for ${model}: ${err.message}`);
                             break;
                         }
-                        log.warn(`Retryable error for ${model} (attempt ${attempt + 1}): ${err.message}`);
+
+                        // Check for hard quota/rate limit exhaustion from the underlying CLI
+                        const errMsgLower = err.message.toLowerCase();
+                        const isQuotaExhausted = errMsgLower.includes('429')
+                            || errMsgLower.includes('capacity available')
+                            || errMsgLower.includes('resource_exhausted')
+                            || errMsgLower.includes('quota')
+                            || errMsgLower.includes('too many requests');
+
+                        if (isQuotaExhausted) {
+                            log.warn(`Model capacity/quota issue for ${model}: ${err.message}.`);
+                        } else {
+                            log.warn(`Retryable error for ${model} (attempt ${attempt + 1}): ${err.message}`);
+                        }
+
+                        if (attempt < this.maxRetries) {
+                            const delayMs = attempt === 0 ? 5000 : 30000;
+                            log.info(`Waiting ${delayMs}ms before retrying ${model}...`);
+                            await new Promise(resolve => setTimeout(resolve, delayMs));
+                        }
                     } else {
                         log.error(`Unexpected error for ${model}:`, err);
                         break;

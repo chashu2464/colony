@@ -45,6 +45,14 @@ export declare class DiscordBot {
      */
     private cmdCurrent;
     /**
+     * Command: Stop/Pause current session.
+     */
+    private cmdStop;
+    /**
+     * Command: Start/Resume current session.
+     */
+    private cmdStart;
+    /**
      * Command: Show system status.
      */
     private cmdStatus;
@@ -52,6 +60,10 @@ export declare class DiscordBot {
      * Command: List all agents.
      */
     private cmdAgents;
+    /**
+     * Command: Delete a session.
+     */
+    private cmdDelete;
     /**
      * Command: Show help.
      */

@@ -1,28 +1,53 @@
 "use strict";
 // ── Colony: Agent Runtime ────────────────────────────────
 // Core agent loop: receives routed messages, assembles context,
-// invokes LLM, executes skills.
+// invokes LLM via CLI (which handles tool execution natively).
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Agent = void 0;
-const crypto_1 = require("crypto");
+const fs = __importStar(require("fs"));
+const path = __importStar(require("path"));
 const Logger_js_1 = require("../utils/Logger.js");
 const EventBus_js_1 = require("../utils/EventBus.js");
 const SkillManager_js_1 = require("./skills/SkillManager.js");
 const log = new Logger_js_1.Logger('Agent');
-/**
- * Skill invocation pattern in LLM output.
- * Agent LLM should output JSON blocks like:
- *   ```json
- *   {"skill": "send-message", "params": {"content": "hello"}}
- *   ```
- */
-const SKILL_PATTERN = /```json\s*\n?\s*(\{[\s\S]*?"skill"\s*:[\s\S]*?\})\s*\n?\s*```/g;
 class Agent {
     id;
     name;
     config;
     events = new EventBus_js_1.EventBus();
-    skillManager = new SkillManager_js_1.SkillManager();
     modelRouter;
     status = 'idle';
     messageQueue = [];
@@ -32,40 +57,38 @@ class Agent {
     // Memory system
     contextAssembler;
     shortTermMemory;
-    // Callbacks set by ChatRoom
-    sendMessageToRoom;
-    getMessagesFromRoom;
-    constructor(config, modelRouter, contextAssembler, shortTermMemory, skillsDir) {
+    chatRoomManager;
+    // Track active invocations per room
+    activeInvocations = new Map();
+    constructor(config, modelRouter, contextAssembler, shortTermMemory, chatRoomManager) {
         this.id = config.id;
         this.name = config.name;
         this.config = config;
         this.modelRouter = modelRouter;
         this.contextAssembler = contextAssembler;
         this.shortTermMemory = shortTermMemory;
-        // Discover skills from filesystem, then load the ones configured for this agent
-        if (skillsDir) {
-            this.skillManager.discoverFromDirectory(skillsDir);
-        }
-        this.skillManager.loadSkills(config.skills);
+        this.chatRoomManager = chatRoomManager;
         // Register this agent with the context assembler
-        this.contextAssembler.registerAgent(config, this.skillManager);
+        // Note: SkillManager is still used for context assembly (skill descriptions)
+        // but actual skill execution is handled by CLI
+        const skillManager = new SkillManager_js_1.SkillManager();
+        this.contextAssembler.registerAgent(config, skillManager);
     }
     // ── Public API ───────────────────────────────────────
     getStatus() {
         return this.status;
     }
     /**
-     * Register message sender callback (called by ChatRoom).
+     * Cancel any active invocation for the given room.
      */
-    setSendMessageHandler(handler) {
-        this.sendMessageToRoom = handler;
-    }
-    /**
-     * Register get-messages callback (called by ChatRoom).
-     * Enables the get_messages skill for passive visibility.
-     */
-    setGetMessagesHandler(handler) {
-        this.getMessagesFromRoom = handler;
+    abortRoomInvocation(roomId) {
+        const controller = this.activeInvocations.get(roomId);
+        if (controller) {
+            log.info(`[${this.name}] Aborting invocation for room ${roomId}`);
+            controller.abort();
+            this.activeInvocations.delete(roomId);
+            this.setStatus('idle');
+        }
     }
     /**
      * Receive a message that has been routed to this agent.
@@ -110,6 +133,18 @@ class Agent {
         try {
             const sessionName = `agent-${this.id}-room-${message.roomId}`;
             let round = 0;
+            // Retrieve the ChatRoom instance
+            const chatRoom = this.chatRoomManager.getRoom(message.roomId);
+            if (!chatRoom) {
+                log.error(`[${this.name}] ChatRoom ${message.roomId} not found for message processing.`);
+                this.setStatus('error');
+                return;
+            }
+            // Setup working directory and skills symlinks if needed
+            const workingDir = chatRoom.workingDir;
+            if (workingDir) {
+                await this.ensureSkillsSymlinks(workingDir);
+            }
             // Use ContextAssembler to build the initial prompt
             let currentPrompt = await this.contextAssembler.assemble({
                 agentId: this.id,
@@ -118,50 +153,62 @@ class Agent {
                 tokenBudget: 8000, // Adjust based on model context window
                 includeHistory: true,
                 includeLongTerm: true, // ✅ Enable long-term memory (Mem0)
+                chatRoom: chatRoom, // Pass the chatRoom instance
             });
             while (round < Agent.MAX_FOLLOW_UP_ROUNDS) {
                 round++;
                 const existingSession = this.roomSessions.get(message.roomId);
                 log.info(`[${this.name}] Invoking LLM (round ${round}) for message from ${message.sender.name}...`);
-                const result = await this.modelRouter.invoke(this.config.model.primary, currentPrompt, {
-                    sessionName,
-                    sessionId: existingSession ?? undefined,
-                    env: {
-                        COLONY_AGENT_ID: this.id,
-                        COLONY_ROOM_ID: message.roomId,
-                        COLONY_API: process.env.COLONY_API ?? 'http://localhost:3001',
-                    },
-                }, this.config.model.fallback);
-                // ── Log full raw LLM response for debugging ──
-                log.info(`[${this.name}] ── LLM Response round ${round} (${result.text.length} chars) ──`);
-                log.info(`[${this.name}] ${result.text}`);
-                log.info(`[${this.name}] ── End Response ──`);
-                // Save session ID for this room
-                if (result.sessionId) {
-                    this.roomSessions.set(message.roomId, result.sessionId);
-                }
-                // Parse and execute skill invocations, collect results
-                const { skillResults, calledSendMessage } = await this.processLLMResponse(result.text, message.roomId, result.toolCalls || []);
-                // If send_message was called, the agent has spoken — done.
-                // If no data-returning skills were called, also done.
-                if (calledSendMessage || skillResults.length === 0) {
-                    // Store important context to long-term memory
-                    await this.storeToLongTermMemory(message, result.text);
+                const controller = new AbortController();
+                this.activeInvocations.set(message.roomId, controller);
+                try {
+                    const result = await this.modelRouter.invoke(this.config.model.primary, currentPrompt, {
+                        sessionName,
+                        sessionId: existingSession ?? undefined,
+                        cwd: workingDir, // Set working directory for CLI
+                        signal: controller.signal,
+                        env: {
+                            COLONY_AGENT_ID: this.id,
+                            COLONY_ROOM_ID: message.roomId,
+                            COLONY_API: process.env.COLONY_API ?? 'http://localhost:3001',
+                        },
+                    }, this.config.model.fallback);
+                    // ── Log full raw LLM response for debugging ──
+                    log.info(`[${this.name}] ── LLM Response round ${round} (${result.text.length} chars) ──`);
+                    log.info(`[${this.name}] ${result.text}`);
+                    log.info(`[${this.name}] ── End Response ──`);
+                    // Save session ID for this room
+                    if (result.sessionId) {
+                        this.roomSessions.set(message.roomId, result.sessionId);
+                    }
+                    // Check if CLI executed any tools
+                    const toolCalls = result.toolCalls || [];
+                    const hasSendMessage = toolCalls.some(t => t.name === 'send-message' ||
+                        t.name === 'send_message');
+                    if (hasSendMessage || toolCalls.length === 0) {
+                        // Agent has spoken or no tools were called - done
+                        await this.storeToLongTermMemory(message, result.text);
+                        break;
+                    }
+                    // Tools were called but no send-message
+                    // This shouldn't happen in normal flow, but handle it gracefully
+                    log.warn(`[${this.name}] Tools called but no send-message: ${toolCalls.map(t => t.name).join(', ')}`);
                     break;
                 }
-                // Data-returning skills were called (e.g. get_messages)
-                // but send_message was NOT called. Feed results back to LLM.
-                log.info(`[${this.name}] Skills returned data but no send-message called. Feeding results back to LLM (round ${round + 1})...`);
-                const feedbackParts = skillResults.map(sr => `## 技能 "${sr.skill}" 的结果:\n${sr.output}`);
-                currentPrompt = feedbackParts.join('\n\n') +
-                    '\n\n请根据以上信息，使用 send-message 技能来回复用户。' +
-                    '\n```json\n{"skill": "send-message", "params": {"content": "你的回复内容"}}\n```';
+                finally {
+                    this.activeInvocations.delete(message.roomId);
+                }
             }
         }
         catch (err) {
             log.error(`[${this.name}] Error handling message:`, err);
             this.setStatus('error');
             const errMsg = err.message ?? '';
+            if (errMsg.toLowerCase().includes('aborted')) {
+                log.info(`[${this.name}] Invocation was aborted for room ${message.roomId}`);
+                this.setStatus('idle');
+                return;
+            }
             if (errMsg.includes('exhausted') || errMsg.includes('rate')) {
                 log.warn(`[${this.name}] Agent hit rate limit on model: ${this.config.model.primary}`);
                 this.setStatus('rate_limited');
@@ -199,91 +246,54 @@ class Agent {
         }
     }
     /**
-     * Parse LLM response for skill invocations and execute them.
-     * Returns skill results for data-returning skills and whether send_message was called.
+     * Ensure skills symlinks exist in the working directory.
+     * Creates .claude/skills and .gemini/skills pointing to Colony's skills directory.
      */
-    async processLLMResponse(response, roomId, toolCalls = []) {
-        const matches = [...response.matchAll(SKILL_PATTERN)];
-        if (matches.length === 0) {
-            // If native tools were used, trust the CLI handled it (no warning)
-            if (toolCalls.length > 0) {
-                log.info(`[${this.name}] Native tool execution detected (${toolCalls.length} calls). Skills handled by CLI.`);
-                return { skillResults: [], calledSendMessage: true };
-            }
-            log.warn(`[${this.name}] ⚠ No skill invocations found in response! The model did not call send-message.`);
-            log.warn(`[${this.name}] Raw response was: ${response.substring(0, 500)}`);
-            return { skillResults: [], calledSendMessage: false };
+    async ensureSkillsSymlinks(workingDir) {
+        const colonySkillsDir = path.join(process.cwd(), 'skills');
+        // Check if Colony skills directory exists
+        if (!fs.existsSync(colonySkillsDir)) {
+            log.warn(`Colony skills directory not found: ${colonySkillsDir}`);
+            return;
         }
-        log.info(`[${this.name}] Found ${matches.length} skill invocation(s)`);
-        const skillResults = [];
-        let calledSendMessage = false;
-        for (const match of matches) {
-            const jsonStr = match[1];
-            if (!jsonStr)
-                continue;
+        // Ensure working directory exists
+        if (!fs.existsSync(workingDir)) {
+            log.warn(`Working directory does not exist: ${workingDir}`);
+            return;
+        }
+        // Create symlinks for both Claude and Gemini
+        for (const cliDir of ['.claude', '.gemini']) {
+            const targetDir = path.join(workingDir, cliDir);
+            const skillsLink = path.join(targetDir, 'skills');
             try {
-                const invocation = JSON.parse(jsonStr);
-                if (invocation.skill === 'send-message') {
-                    calledSendMessage = true;
+                // Create CLI directory if it doesn't exist
+                if (!fs.existsSync(targetDir)) {
+                    fs.mkdirSync(targetDir, { recursive: true });
                 }
-                const result = await this.executeSkill(invocation.skill, invocation.params, roomId);
-                if (result && !result.success && result.error) {
-                    // Skill failed (e.g. unknown skill) — feed error back to LLM
-                    skillResults.push({ skill: invocation.skill, output: `❌ 错误: ${result.error}` });
+                // Check if symlink already exists and is valid
+                if (fs.existsSync(skillsLink)) {
+                    const stats = fs.lstatSync(skillsLink);
+                    if (stats.isSymbolicLink()) {
+                        const linkTarget = fs.readlinkSync(skillsLink);
+                        if (path.resolve(workingDir, linkTarget) === colonySkillsDir) {
+                            // Symlink already correct
+                            continue;
+                        }
+                        // Remove incorrect symlink
+                        fs.unlinkSync(skillsLink);
+                    }
+                    else {
+                        log.warn(`${skillsLink} exists but is not a symlink, skipping`);
+                        continue;
+                    }
                 }
-                else if (result && result.output && invocation.skill !== 'send-message') {
-                    // Data-returning skill succeeded
-                    skillResults.push({ skill: invocation.skill, output: result.output });
-                }
+                // Create symlink
+                fs.symlinkSync(colonySkillsDir, skillsLink, 'dir');
+                log.info(`Created skills symlink: ${skillsLink} -> ${colonySkillsDir}`);
             }
-            catch (err) {
-                log.error(`[${this.name}] Failed to parse skill invocation:`, jsonStr, err);
+            catch (error) {
+                log.error(`Failed to create skills symlink for ${cliDir}:`, error);
             }
-        }
-        return { skillResults, calledSendMessage };
-    }
-    async executeSkill(skillName, params, roomId) {
-        const skill = this.skillManager.get(skillName);
-        if (!skill) {
-            const availableSkills = this.skillManager.getAll().map(s => s.name).join(', ');
-            log.warn(`[${this.name}] Unknown skill: "${skillName}" — available: [${availableSkills}]`);
-            return {
-                success: false,
-                error: `技能 "${skillName}" 不存在。可用的技能有: ${availableSkills}。请使用正确的技能名称。`,
-            };
-        }
-        this.setStatus('executing_skill');
-        log.info(`[${this.name}] Executing skill: ${skillName}`);
-        const context = {
-            agentId: this.id,
-            roomId,
-            sendMessage: (content, mentions) => {
-                const msg = {
-                    id: (0, crypto_1.randomUUID)(),
-                    roomId,
-                    sender: { id: this.id, type: 'agent', name: this.name },
-                    content,
-                    mentions: mentions ?? [],
-                    timestamp: new Date(),
-                    metadata: { skillInvocation: true },
-                };
-                this.sendMessageToRoom?.(roomId, msg);
-                this.events.emit('message_sent', msg);
-            },
-            getMessages: (limit) => {
-                return this.getMessagesFromRoom?.(roomId, limit) ?? [];
-            },
-        };
-        try {
-            const result = await skill.execute(params, context);
-            if (!result.success) {
-                log.warn(`[${this.name}] Skill "${skillName}" failed: ${result.error}`);
-            }
-            return result;
-        }
-        catch (err) {
-            log.error(`[${this.name}] Skill "${skillName}" threw:`, err);
-            return null;
         }
     }
     setStatus(status) {

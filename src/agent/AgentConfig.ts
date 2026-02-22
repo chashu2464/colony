@@ -48,7 +48,6 @@ export function loadAgentConfig(filePath: string): AgentConfig {
         name: parsed.name as string,
         model: { primary, fallback },
         personality: (parsed.personality as string).trim(),
-        skills: (parsed.skills as string[]) ?? ['send_message'],
         rules: parsed.rules as string[] | undefined,
         isDefault: (parsed.is_default as boolean | undefined) ?? false,
     };

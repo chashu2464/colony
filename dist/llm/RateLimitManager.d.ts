@@ -20,6 +20,9 @@ export declare class RateLimitManager {
     constructor(customQuotas?: Partial<Record<SupportedCLI, Partial<ModelQuota>>>);
     /**
      * Check if a model has capacity for a request.
+     *
+     * NOTE: Currently disabled to avoid false positives.
+     * The actual rate limiting is handled by the CLI/API itself.
      */
     canUse(model: SupportedCLI): boolean;
     /**

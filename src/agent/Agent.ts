@@ -2,6 +2,8 @@
 // Core agent loop: receives routed messages, assembles context,
 // invokes LLM via CLI (which handles tool execution natively).
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { Logger } from '../utils/Logger.js';
 import { EventBus } from '../utils/EventBus.js';
 import { SkillManager } from './skills/SkillManager.js';
@@ -41,6 +43,9 @@ export class Agent {
     private shortTermMemory: ShortTermMemory;
     private chatRoomManager: ChatRoomManager;
 
+    // Track active invocations per room
+    private activeInvocations = new Map<string, AbortController>();
+
     constructor(
         config: AgentConfig,
         modelRouter: ModelRouter,
@@ -67,6 +72,19 @@ export class Agent {
 
     getStatus(): AgentStatus {
         return this.status;
+    }
+
+    /**
+     * Cancel any active invocation for the given room.
+     */
+    abortRoomInvocation(roomId: string): void {
+        const controller = this.activeInvocations.get(roomId);
+        if (controller) {
+            log.info(`[${this.name}] Aborting invocation for room ${roomId}`);
+            controller.abort();
+            this.activeInvocations.delete(roomId);
+            this.setStatus('idle');
+        }
     }
 
     /**
@@ -130,6 +148,12 @@ export class Agent {
                 return;
             }
 
+            // Setup working directory and skills symlinks if needed
+            const workingDir = chatRoom.workingDir;
+            if (workingDir) {
+                await this.ensureSkillsSymlinks(workingDir);
+            }
+
             // Use ContextAssembler to build the initial prompt
             let currentPrompt = await this.contextAssembler.assemble({
                 agentId: this.id,
@@ -147,54 +171,70 @@ export class Agent {
 
                 log.info(`[${this.name}] Invoking LLM (round ${round}) for message from ${message.sender.name}...`);
 
-                const result = await this.modelRouter.invoke(
-                    this.config.model.primary,
-                    currentPrompt,
-                    {
-                        sessionName,
-                        sessionId: existingSession ?? undefined,
-                        env: {
-                            COLONY_AGENT_ID: this.id,
-                            COLONY_ROOM_ID: message.roomId,
-                            COLONY_API: process.env.COLONY_API ?? 'http://localhost:3001',
+                const controller = new AbortController();
+                this.activeInvocations.set(message.roomId, controller);
+
+                try {
+                    const result = await this.modelRouter.invoke(
+                        this.config.model.primary,
+                        currentPrompt,
+                        {
+                            sessionName,
+                            sessionId: existingSession ?? undefined,
+                            cwd: workingDir, // Set working directory for CLI
+                            signal: controller.signal,
+                            env: {
+                                COLONY_AGENT_ID: this.id,
+                                COLONY_ROOM_ID: message.roomId,
+                                COLONY_API: process.env.COLONY_API ?? 'http://localhost:3001',
+                            },
                         },
-                    },
-                    this.config.model.fallback
-                );
+                        this.config.model.fallback
+                    );
 
-                // ── Log full raw LLM response for debugging ──
-                log.info(`[${this.name}] ── LLM Response round ${round} (${result.text.length} chars) ──`);
-                log.info(`[${this.name}] ${result.text}`);
-                log.info(`[${this.name}] ── End Response ──`);
+                    // ── Log full raw LLM response for debugging ──
+                    log.info(`[${this.name}] ── LLM Response round ${round} (${result.text.length} chars) ──`);
+                    log.info(`[${this.name}] ${result.text}`);
+                    log.info(`[${this.name}] ── End Response ──`);
 
-                // Save session ID for this room
-                if (result.sessionId) {
-                    this.roomSessions.set(message.roomId, result.sessionId);
-                }
+                    // Save session ID for this room
+                    if (result.sessionId) {
+                        this.roomSessions.set(message.roomId, result.sessionId);
+                    }
 
-                // Check if CLI executed any tools
-                const toolCalls = result.toolCalls || [];
-                const hasSendMessage = toolCalls.some(t =>
-                    t.name === 'send-message' ||
-                    t.name === 'send_message'
-                );
+                    // Check if CLI executed any tools
+                    const toolCalls = result.toolCalls || [];
+                    const hasSendMessage = toolCalls.some(t =>
+                        t.name === 'send-message' ||
+                        t.name === 'send_message'
+                    );
 
-                if (hasSendMessage || toolCalls.length === 0) {
-                    // Agent has spoken or no tools were called - done
-                    await this.storeToLongTermMemory(message, result.text);
+                    if (hasSendMessage || toolCalls.length === 0) {
+                        // Agent has spoken or no tools were called - done
+                        await this.storeToLongTermMemory(message, result.text);
+                        break;
+                    }
+
+                    // Tools were called but no send-message
+                    // This shouldn't happen in normal flow, but handle it gracefully
+                    log.warn(`[${this.name}] Tools called but no send-message: ${toolCalls.map(t => t.name).join(', ')}`);
                     break;
+                } finally {
+                    this.activeInvocations.delete(message.roomId);
                 }
-
-                // Tools were called but no send-message
-                // This shouldn't happen in normal flow, but handle it gracefully
-                log.warn(`[${this.name}] Tools called but no send-message: ${toolCalls.map(t => t.name).join(', ')}`);
-                break;
             }
         } catch (err) {
             log.error(`[${this.name}] Error handling message:`, err);
             this.setStatus('error');
 
             const errMsg = (err as Error).message ?? '';
+
+            if (errMsg.toLowerCase().includes('aborted')) {
+                log.info(`[${this.name}] Invocation was aborted for room ${message.roomId}`);
+                this.setStatus('idle');
+                return;
+            }
+
             if (errMsg.includes('exhausted') || errMsg.includes('rate')) {
                 log.warn(`[${this.name}] Agent hit rate limit on model: ${this.config.model.primary}`);
                 this.setStatus('rate_limited');
@@ -233,6 +273,62 @@ export class Agent {
             log.debug(`[${this.name}] Stored conversation to long-term memory`);
         } catch (error) {
             log.error(`[${this.name}] Failed to store to long-term memory:`, error);
+        }
+    }
+
+    /**
+     * Ensure skills symlinks exist in the working directory.
+     * Creates .claude/skills and .gemini/skills pointing to Colony's skills directory.
+     */
+    private async ensureSkillsSymlinks(workingDir: string): Promise<void> {
+        const colonySkillsDir = path.join(process.cwd(), 'skills');
+
+        // Check if Colony skills directory exists
+        if (!fs.existsSync(colonySkillsDir)) {
+            log.warn(`Colony skills directory not found: ${colonySkillsDir}`);
+            return;
+        }
+
+        // Ensure working directory exists
+        if (!fs.existsSync(workingDir)) {
+            log.warn(`Working directory does not exist: ${workingDir}`);
+            return;
+        }
+
+        // Create symlinks for both Claude and Gemini
+        for (const cliDir of ['.claude', '.gemini']) {
+            const targetDir = path.join(workingDir, cliDir);
+            const skillsLink = path.join(targetDir, 'skills');
+
+            try {
+                // Create CLI directory if it doesn't exist
+                if (!fs.existsSync(targetDir)) {
+                    fs.mkdirSync(targetDir, { recursive: true });
+                }
+
+                // Check if symlink already exists and is valid
+                if (fs.existsSync(skillsLink)) {
+                    const stats = fs.lstatSync(skillsLink);
+                    if (stats.isSymbolicLink()) {
+                        const linkTarget = fs.readlinkSync(skillsLink);
+                        if (path.resolve(workingDir, linkTarget) === colonySkillsDir) {
+                            // Symlink already correct
+                            continue;
+                        }
+                        // Remove incorrect symlink
+                        fs.unlinkSync(skillsLink);
+                    } else {
+                        log.warn(`${skillsLink} exists but is not a symlink, skipping`);
+                        continue;
+                    }
+                }
+
+                // Create symlink
+                fs.symlinkSync(colonySkillsDir, skillsLink, 'dir');
+                log.info(`Created skills symlink: ${skillsLink} -> ${colonySkillsDir}`);
+            } catch (error) {
+                log.error(`Failed to create skills symlink for ${cliDir}:`, error);
+            }
         }
     }
 

@@ -17,6 +17,7 @@ export class ChatRoom {
     readonly id: string;
     readonly name: string;
     readonly createdAt: Date;
+    readonly workingDir?: string;
 
     private agents = new Map<string, Agent>();
     private agentsByName = new Map<string, Agent>();  // name → agent for @name routing
@@ -26,12 +27,14 @@ export class ChatRoom {
     private unsubscribers: (() => void)[] = [];
     private defaultAgentId: string | null = null;
     private autoSaveCallback?: (roomId: string) => Promise<void>;
+    private isPaused: boolean = false;
 
-    constructor(name: string, messageBus: MessageBus, id?: string) {
+    constructor(name: string, messageBus: MessageBus, id?: string, workingDir?: string) {
         this.id = id ?? uuid();
         this.name = name;
         this.createdAt = new Date();
         this.messageBus = messageBus;
+        this.workingDir = workingDir;
 
         // Subscribe to messages on this room via the bus
         const unsub = this.messageBus.subscribe(this.id, (message) => {
@@ -134,6 +137,10 @@ export class ChatRoom {
      * The `mentions` param can contain agent names OR IDs — both work.
      */
     sendHumanMessage(senderId: string, content: string, mentions?: string[]): Message {
+        if (this.isPaused) {
+            throw new Error(`Room "${this.name}" is paused`);
+        }
+
         const sender = this.humanParticipants.get(senderId);
         if (!sender) {
             throw new Error(`Human "${senderId}" is not in this room`);
@@ -171,6 +178,10 @@ export class ChatRoom {
      * The agent must belong to this room.
      */
     sendAgentMessage(agentId: string, content: string, mentions?: string[]): Message {
+        if (this.isPaused) {
+            throw new Error(`Room "${this.name}" is paused`);
+        }
+
         const agent = this.agents.get(agentId);
         if (!agent) {
             throw new Error(`Agent "${agentId}" is not in this room`);
@@ -283,6 +294,7 @@ export class ChatRoom {
             participants,
             createdAt: this.createdAt,
             messageCount: this.messageHistory.length,
+            isPaused: this.isPaused,
         };
     }
 
@@ -304,6 +316,10 @@ export class ChatRoom {
         return this.defaultAgentId;
     }
 
+    getIsPaused(): boolean {
+        return this.isPaused;
+    }
+
     // ── Lifecycle ────────────────────────────────────────
 
     /**
@@ -318,6 +334,8 @@ export class ChatRoom {
             humanParticipants: Array.from(this.humanParticipants.values()),
             messages: this.messageHistory,
             defaultAgentId: this.defaultAgentId,
+            isPaused: this.isPaused,
+            workingDir: this.workingDir,
         };
     }
 
@@ -327,6 +345,53 @@ export class ChatRoom {
     restoreMessages(messages: Message[]): void {
         this.messageHistory = [...messages];
         log.info(`Restored ${messages.length} messages to room "${this.name}"`);
+    }
+
+    /**
+     * Set paused state (used when loading from persistence).
+     */
+    setPausedState(isPaused: boolean): void {
+        this.isPaused = isPaused;
+    }
+
+    /**
+     * Pause the chat room.
+     */
+    pause(): void {
+        if (!this.isPaused) {
+            this.isPaused = true;
+            this.messageBus.emitColonyEvent({ type: 'session_paused', roomId: this.id });
+
+            // Abort any ongoing LLM invocations for all agents in this room
+            for (const agent of this.agents.values()) {
+                if (typeof agent.abortRoomInvocation === 'function') {
+                    agent.abortRoomInvocation(this.id);
+                }
+            }
+
+            if (this.autoSaveCallback) {
+                this.autoSaveCallback(this.id).catch(err => {
+                    log.error(`Auto-save failed on pause for room ${this.id}:`, err);
+                });
+            }
+            log.info(`ChatRoom paused: "${this.name}" (${this.id})`);
+        }
+    }
+
+    /**
+     * Resume the chat room.
+     */
+    resume(): void {
+        if (this.isPaused) {
+            this.isPaused = false;
+            this.messageBus.emitColonyEvent({ type: 'session_resumed', roomId: this.id });
+            if (this.autoSaveCallback) {
+                this.autoSaveCallback(this.id).catch(err => {
+                    log.error(`Auto-save failed on resume for room ${this.id}:`, err);
+                });
+            }
+            log.info(`ChatRoom resumed: "${this.name}" (${this.id})`);
+        }
     }
 
     /**

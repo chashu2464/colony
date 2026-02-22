@@ -18,9 +18,10 @@ class ChatRoomManager {
     }
     /**
      * Create a new chat room with specified agents.
+     * @param workingDir - Optional working directory for CLI tools
      */
-    createRoom(name, agentIds) {
-        const room = new ChatRoom_js_1.ChatRoom(name, this.messageBus);
+    createRoom(name, agentIds, workingDir) {
+        const room = new ChatRoom_js_1.ChatRoom(name, this.messageBus, undefined, workingDir);
         this.rooms.set(room.id, room);
         // Set up auto-save on message
         room.setAutoSaveCallback(async (roomId) => {
@@ -42,6 +43,13 @@ class ChatRoomManager {
      */
     getRoom(roomId) {
         return this.rooms.get(roomId);
+    }
+    /**
+     * Get rooms by exact name (case-insensitive).
+     */
+    getRoomByName(name) {
+        const target = name.toLowerCase();
+        return Array.from(this.rooms.values()).filter(r => r.name.toLowerCase() === target);
     }
     /**
      * List all rooms.
@@ -83,7 +91,7 @@ class ChatRoomManager {
             return null;
         }
         const roomData = data;
-        const room = new ChatRoom_js_1.ChatRoom(roomData.name, this.messageBus, roomData.id);
+        const room = new ChatRoom_js_1.ChatRoom(roomData.name, this.messageBus, roomData.id, roomData.workingDir);
         this.rooms.set(room.id, room);
         // Set up auto-save on message
         room.setAutoSaveCallback(async (roomId) => {
@@ -107,6 +115,10 @@ class ChatRoomManager {
             catch (err) {
                 log.warn(`Failed to restore default agent ${roomData.defaultAgentId}:`, err);
             }
+        }
+        // Restore paused state
+        if (roomData.isPaused) {
+            room.setPausedState(true);
         }
         // Restore message history
         if (roomData.messages && roomData.messages.length > 0) {
@@ -140,6 +152,24 @@ class ChatRoomManager {
         if (!room)
             throw new Error(`Room not found: ${roomId}`);
         room.addHuman(participant);
+    }
+    /**
+     * Pause a chat room.
+     */
+    pauseRoom(roomId) {
+        const room = this.rooms.get(roomId);
+        if (!room)
+            throw new Error(`Room not found: ${roomId}`);
+        room.pause();
+    }
+    /**
+     * Resume a chat room.
+     */
+    resumeRoom(roomId) {
+        const room = this.rooms.get(roomId);
+        if (!room)
+            throw new Error(`Room not found: ${roomId}`);
+        room.resume();
     }
 }
 exports.ChatRoomManager = ChatRoomManager;

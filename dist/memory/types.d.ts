@@ -93,6 +93,7 @@ export interface AssembleOptions {
     tokenBudget: number;
     includeHistory?: boolean;
     includeLongTerm?: boolean;
+    chatRoom: any;
 }
 export interface TokenBudget {
     total: number;

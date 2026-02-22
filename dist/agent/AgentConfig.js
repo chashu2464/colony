@@ -76,7 +76,6 @@ function loadAgentConfig(filePath) {
         name: parsed.name,
         model: { primary, fallback },
         personality: parsed.personality.trim(),
-        skills: parsed.skills ?? ['send_message'],
         rules: parsed.rules,
         isDefault: parsed.is_default ?? false,
     };

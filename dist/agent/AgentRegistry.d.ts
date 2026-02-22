@@ -2,14 +2,15 @@ import { Agent } from './Agent.js';
 import { ModelRouter } from '../llm/ModelRouter.js';
 import { ContextAssembler } from '../memory/ContextAssembler.js';
 import { ShortTermMemory } from '../memory/ShortTermMemory.js';
+import { ChatRoomManager } from '../conversation/ChatRoomManager.js';
 import type { AgentConfig, AgentStatus } from '../types.js';
 export declare class AgentRegistry {
     private agents;
     private modelRouter;
     private contextAssembler;
     private shortTermMemory;
-    private skillsDir;
-    constructor(modelRouter: ModelRouter, contextAssembler: ContextAssembler, shortTermMemory: ShortTermMemory, skillsDir: string);
+    private chatRoomManager;
+    constructor(modelRouter: ModelRouter, contextAssembler: ContextAssembler, shortTermMemory: ShortTermMemory, chatRoomManager: ChatRoomManager);
     /**
      * Create and register an agent from a config object.
      */

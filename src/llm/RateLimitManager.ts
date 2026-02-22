@@ -56,16 +56,25 @@ export class RateLimitManager {
 
     /**
      * Check if a model has capacity for a request.
+     *
+     * NOTE: Currently disabled to avoid false positives.
+     * The actual rate limiting is handled by the CLI/API itself.
      */
     canUse(model: SupportedCLI): boolean {
         const quota = this.quotas.get(model);
         if (!quota) return false;
+
+        // Always return true - let CLI handle rate limiting
+        return true;
+
+        /* Original logic (disabled):
         this.maybeResetWindow(quota);
         return (
             quota.currentUsage.requests < quota.requestsPerMinute &&
             quota.currentUsage.tokens < quota.tokensPerMinute &&
             quota.currentUsage.dailyTokens < quota.tokensPerDay
         );
+        */
     }
 
     /**

@@ -64,6 +64,13 @@ export class MessageBus {
     }
 
     /**
+     * Dispatch a ColonyEvent to subscribers.
+     */
+    emitColonyEvent(event: ColonyEvent): void {
+        this.events.emit('colony_event', event);
+    }
+
+    /**
      * Remove all subscribers for a room.
      */
     clearRoom(roomId: string): void {

@@ -143,9 +143,10 @@ export class Colony {
 
     /**
      * Create a new chat session with agents.
+     * @param workingDir - Optional working directory for CLI tools (defaults to current directory)
      */
-    createSession(name: string, agentIds?: string[]): string {
-        const room = this.chatRoomManager.createRoom(name, agentIds);
+    createSession(name: string, agentIds?: string[], workingDir?: string): string {
+        const room = this.chatRoomManager.createRoom(name, agentIds, workingDir);
         return room.id;
     }
 

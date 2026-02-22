@@ -25,7 +25,6 @@ function createTestAgentConfig(id: string, name: string): AgentConfig {
         name,
         model: { primary: 'claude' },
         personality: `I am ${name}, a helpful assistant.`,
-        skills: ['send-message', 'get-messages'],
     };
 }
 
@@ -97,8 +96,8 @@ async function runTests() {
         toPromptBlock: () => '## Available Skills\n- send-message: Send a message\n- get-messages: Get recent messages',
         get: () => null,
         getAll: () => [],
-        loadSkills: () => {},
-        discoverFromDirectory: () => {},
+        loadSkills: () => { },
+        discoverFromDirectory: () => { },
     };
     assembler.registerAgent(agentConfig, mockSkillManager as any);
 

@@ -51,6 +51,12 @@ class MessageBus {
         this.events.emit('colony_event', { type: 'message', data: message });
     }
     /**
+     * Dispatch a ColonyEvent to subscribers.
+     */
+    emitColonyEvent(event) {
+        this.events.emit('colony_event', event);
+    }
+    /**
      * Remove all subscribers for a room.
      */
     clearRoom(roomId) {

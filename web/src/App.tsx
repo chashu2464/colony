@@ -4,7 +4,7 @@ import './index.css';
 import { useWebSocket, type WSEvent } from './hooks/useWebSocket';
 import {
   fetchSessions, fetchMessages, fetchAgents,
-  createSession, joinSession, sendMessage,
+  createSession, joinSession, sendMessage, pauseSession, resumeSession, deleteSession,
   type Session, type Message, type AgentInfo,
 } from './api';
 
@@ -34,6 +34,7 @@ export default function App() {
   const [input, setInput] = useState('');
   const [showNewModal, setShowNewModal] = useState(false);
   const [newSessionName, setNewSessionName] = useState('');
+  const [newSessionWorkingDir, setNewSessionWorkingDir] = useState('');
   const [thinkingAgents, setThinkingAgents] = useState<Set<string>>(new Set());
 
   // Load initial data
@@ -66,6 +67,16 @@ export default function App() {
       fetchSessions().then(setSessions).catch(console.error);
     }
 
+    if (event.type === 'session_paused') {
+      const roomId = (event as any).roomId;
+      setSessions(prev => prev.map(s => s.id === roomId ? { ...s, isPaused: true } : s));
+    }
+
+    if (event.type === 'session_resumed') {
+      const roomId = (event as any).roomId;
+      setSessions(prev => prev.map(s => s.id === roomId ? { ...s, isPaused: false } : s));
+    }
+
     if (event.type === 'agent_status') {
       setAgents(prev =>
         prev.map(a => a.id === event.agentId ? { ...a, status: event.status ?? a.status } : a)
@@ -95,13 +106,15 @@ export default function App() {
 
   async function handleCreateSession() {
     if (!newSessionName.trim()) return;
-    const session = await createSession(newSessionName.trim());
+    const workingDir = newSessionWorkingDir.trim() || undefined;
+    const session = await createSession(newSessionName.trim(), undefined, workingDir);
     // Join as human
     await joinSession(session.id, { id: USER_ID, type: 'human', name: USER_NAME });
     setSessions(prev => [...prev, session]);
     setActiveSession(session.id);
     setShowNewModal(false);
     setNewSessionName('');
+    setNewSessionWorkingDir('');
   }
 
   async function handleSelectSession(sessionId: string) {
@@ -139,6 +152,33 @@ export default function App() {
     }
   }
 
+  async function handleTogglePause() {
+    if (!activeSession) return;
+    const session = sessions.find(s => s.id === activeSession);
+    if (!session) return;
+    if (session.isPaused) {
+      await resumeSession(activeSession);
+    } else {
+      await pauseSession(activeSession);
+    }
+    // Update local state optimistically
+    setSessions(prev => prev.map(s => s.id === activeSession ? { ...s, isPaused: !session.isPaused } : s));
+  }
+
+  async function handleDeleteSession(sessionId: string) {
+    if (!confirm('确定要删除这个会话吗？所有消息历史将被永久删除。')) return;
+
+    try {
+      await deleteSession(sessionId);
+      setSessions(prev => prev.filter(s => s.id !== sessionId));
+      if (activeSession === sessionId) {
+        setActiveSession(null);
+      }
+    } catch (error) {
+      alert('删除会话失败: ' + (error as Error).message);
+    }
+  }
+
   const activeSessionData = sessions.find(s => s.id === activeSession);
 
   return (
@@ -159,15 +199,41 @@ export default function App() {
             <div
               key={session.id}
               className={`session-item ${activeSession === session.id ? 'active' : ''}`}
-              onClick={() => handleSelectSession(session.id)}
             >
-              <div className="session-icon">💬</div>
-              <div className="session-info">
-                <div className="session-name">{session.name}</div>
-                <div className="session-meta">
-                  {session.participants.length} 参与者 · {session.messageCount} 消息
+              <div
+                style={{ display: 'flex', alignItems: 'center', flex: 1, cursor: 'pointer' }}
+                onClick={() => handleSelectSession(session.id)}
+              >
+                <div className="session-icon">💬</div>
+                <div className="session-info">
+                  <div className="session-name">{session.name}</div>
+                  <div className="session-meta">
+                    {session.participants.length} 参与者 · {session.messageCount} 消息
+                  </div>
                 </div>
               </div>
+              <button
+                className="delete-session-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteSession(session.id);
+                }}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#999',
+                  cursor: 'pointer',
+                  padding: '4px 8px',
+                  fontSize: '16px',
+                  opacity: 0.6,
+                  transition: 'opacity 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+                onMouseLeave={(e) => e.currentTarget.style.opacity = '0.6'}
+                title="删除会话"
+              >
+                🗑️
+              </button>
             </div>
           ))}
         </div>
@@ -183,14 +249,33 @@ export default function App() {
           <>
             {/* Header */}
             <div className="chat-header">
-              <div className="chat-header-title">{activeSessionData.name}</div>
-              <div className="chat-header-agents">
-                {agents.map(agent => (
-                  <div key={agent.id} className="agent-badge">
-                    <span className={`status-dot ${agent.status}`} />
-                    {agent.name}
-                  </div>
-                ))}
+              <div className="chat-header-title">
+                {activeSessionData.name}
+                {activeSessionData.isPaused && <span className="paused-badge" style={{ marginLeft: 8, fontSize: '0.8em', background: '#ffebee', color: '#c62828', padding: '2px 6px', borderRadius: 4 }}>已暂停</span>}
+              </div>
+              <div className="chat-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <button
+                  className="pause-btn"
+                  onClick={handleTogglePause}
+                  style={{
+                    padding: '4px 10px',
+                    borderRadius: '4px',
+                    border: '1px solid #ddd',
+                    background: 'white',
+                    cursor: 'pointer',
+                    fontSize: '0.9em'
+                  }}
+                >
+                  {activeSessionData.isPaused ? '▶ 恢复' : '⏸ 暂停'}
+                </button>
+                <div className="chat-header-agents">
+                  {agents.map(agent => (
+                    <div key={agent.id} className="agent-badge">
+                      <span className={`status-dot ${agent.status}`} />
+                      {agent.name}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -244,23 +329,35 @@ export default function App() {
 
             {/* Input */}
             <div className="chat-input-container">
-              <div className="chat-input-wrapper">
-                <textarea
-                  className="chat-input"
-                  placeholder="输入消息... 使用 @名称 指定 Agent（如 @开发者）"
-                  value={input}
-                  onChange={e => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  rows={1}
-                />
-                <button
-                  className="send-btn"
-                  onClick={handleSend}
-                  disabled={!input.trim()}
-                >
-                  发送
-                </button>
-              </div>
+              {activeSessionData.isPaused ? (
+                <div className="chat-input-paused" style={{ textAlign: 'center', padding: '20px', color: '#666', background: '#f5f5f5', borderRadius: '8px' }}>
+                  <p>当前会话已暂停，无法发送消息</p>
+                  <button
+                    onClick={handleTogglePause}
+                    style={{ marginTop: '10px', padding: '6px 16px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                  >
+                    恢复会话
+                  </button>
+                </div>
+              ) : (
+                <div className="chat-input-wrapper">
+                  <textarea
+                    className="chat-input"
+                    placeholder="输入消息... 使用 @名称 指定 Agent（如 @开发者）"
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    rows={1}
+                  />
+                  <button
+                    className="send-btn"
+                    onClick={handleSend}
+                    disabled={!input.trim()}
+                  >
+                    发送
+                  </button>
+                </div>
+              )}
             </div>
           </>
         ) : (
@@ -308,9 +405,20 @@ export default function App() {
               placeholder="会话名称"
               value={newSessionName}
               onChange={e => setNewSessionName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleCreateSession()}
+              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleCreateSession()}
               autoFocus
             />
+            <input
+              className="modal-input"
+              placeholder="工作目录（可选，留空则使用 Colony 目录）"
+              value={newSessionWorkingDir}
+              onChange={e => setNewSessionWorkingDir(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleCreateSession()}
+              style={{ marginTop: '10px' }}
+            />
+            <div style={{ fontSize: '0.85em', color: '#666', marginTop: '8px', marginBottom: '12px' }}>
+              示例: /Users/username/projects/my-app
+            </div>
             <div className="modal-actions">
               <button className="modal-btn secondary" onClick={() => setShowNewModal(false)}>
                 取消

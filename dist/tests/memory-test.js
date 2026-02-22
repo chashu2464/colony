@@ -22,7 +22,20 @@ function createTestAgentConfig(id, name) {
         name,
         model: { primary: 'claude' },
         personality: `I am ${name}, a helpful assistant.`,
-        skills: ['send-message', 'get-messages'],
+    };
+}
+function createMockChatRoom(roomId, participants = []) {
+    return {
+        getInfo: () => ({
+            id: roomId,
+            name: 'Test Room',
+            participants: participants.length > 0 ? participants : [
+                { id: 'agent1', type: 'agent', name: 'Test Agent' },
+                { id: 'user1', type: 'human', name: 'Test User' }
+            ],
+            createdAt: new Date(),
+            messageCount: 0
+        })
     };
 }
 async function runTests() {
@@ -83,6 +96,7 @@ async function runTests() {
         currentMessage: currentMsg,
         tokenBudget: 2000,
         includeHistory: true,
+        chatRoom: createMockChatRoom('room2'),
     });
     console.log('✓ Assembled prompt:');
     console.log(`  Length: ${prompt.length} chars`);

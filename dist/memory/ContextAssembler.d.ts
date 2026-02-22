@@ -19,6 +19,7 @@ export declare class ContextAssembler implements IContextAssembler {
     assemble(options: AssembleOptions): Promise<string>;
     private buildIdentitySection;
     private buildRulesSection;
+    private buildParticipantsSection;
     private buildGuidelinesSection;
     private buildHistorySection;
     private buildCurrentMessageSection;

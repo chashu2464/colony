@@ -236,7 +236,7 @@ export async function invoke(
     }
 
     const args = config.buildArgs(prompt, sessionId);
-    log.info(`Invoking ${cli}`, { sessionId: sessionId ?? 'new' });
+    log.info(`Invoking ${cli}`, { sessionId: sessionId ?? 'new', cwd: options.cwd ?? 'default' });
 
     return new Promise<InvokeResult>((resolve, reject) => {
         let settled = false;
@@ -246,6 +246,7 @@ export async function invoke(
         const child = spawn(cliPath, args, {
             stdio: ['ignore', 'pipe', 'pipe'],
             env: { ...process.env, ...options.env },
+            cwd: options.cwd, // Set working directory
         });
 
         const textChunks: string[] = [];
@@ -286,12 +287,30 @@ export async function invoke(
             process.off('SIGTERM', cleanup);
         };
 
+        // ── AbortSignal ────────────────────────────────────
+        const onAbort = () => {
+            if (settled) return;
+            child.kill('SIGTERM');
+            setTimeout(() => { if (!child.killed) child.kill('SIGKILL'); }, 2000);
+            settle('reject', new InvokeError('Invocation aborted', { type: 'exit_error', cli, stderr }));
+        };
+        if (options.signal) {
+            if (options.signal.aborted) {
+                onAbort();
+                return;
+            }
+            options.signal.addEventListener('abort', onAbort);
+        }
+
         // ── Settle logic ───────────────────────────────────
         function settle(action: 'resolve' | 'reject', value: InvokeResult | InvokeError): void {
             if (settled) return;
             settled = true;
             clearInterval(idleChecker);
             removeCleanupListeners();
+            if (options.signal) {
+                options.signal.removeEventListener('abort', onAbort);
+            }
             if (action === 'resolve') resolve(value as InvokeResult);
             else reject(value as InvokeError);
         }

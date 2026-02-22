@@ -139,11 +139,20 @@ export class DiscordBot {
                 case 'current':
                     await this.cmdCurrent(message);
                     break;
+                case 'stop':
+                    await this.cmdStop(message);
+                    break;
+                case 'start':
+                    await this.cmdStart(message);
+                    break;
                 case 'status':
                     await this.cmdStatus(message);
                     break;
                 case 'agents':
                     await this.cmdAgents(message);
+                    break;
+                case 'delete':
+                    await this.cmdDelete(message, args);
                     break;
                 case 'help':
                     await this.cmdHelp(message);
@@ -162,22 +171,40 @@ export class DiscordBot {
      */
     private async cmdCreate(message: Message, args: string[]): Promise<void> {
         if (args.length === 0) {
-            await message.reply('Usage: `/colony create <name> [agent1,agent2,...]`');
+            await message.reply(
+                'Usage: `/colony create <name> [agent1,agent2,...] [--dir /path/to/project]`\n\n' +
+                'Examples:\n' +
+                '• `/colony create MyProject` - Create session in Colony directory\n' +
+                '• `/colony create MyProject architect,developer` - With specific agents\n' +
+                '• `/colony create MyProject --dir /Users/me/projects/app` - With custom working directory'
+            );
             return;
         }
 
         const name = args[0];
-        const agentIds = args[1]?.split(',').map(s => s.trim());
+        let agentIds: string[] | undefined;
+        let workingDir: string | undefined;
 
-        const sessionId = this.colony.createSession(name, agentIds);
+        // Parse arguments
+        for (let i = 1; i < args.length; i++) {
+            if (args[i] === '--dir' && i + 1 < args.length) {
+                workingDir = args[i + 1];
+                i++; // Skip next arg
+            } else if (!agentIds && !args[i].startsWith('--')) {
+                agentIds = args[i].split(',').map(s => s.trim());
+            }
+        }
+
+        const sessionId = this.colony.createSession(name, agentIds, workingDir);
         const room = this.colony.chatRoomManager.getRoom(sessionId);
 
         await message.reply(
             `✅ Session created\n` +
             `ID: \`${sessionId}\`\n` +
             `Name: ${name}\n` +
-            `Agents: ${room?.getInfo().participants.filter(p => p.type === 'agent').map(p => p.name).join(', ')}\n\n` +
-            `Use \`${this.config.bot.prefix} join ${sessionId}\` to join the session.`
+            `Agents: ${room?.getInfo().participants.filter(p => p.type === 'agent').map(p => p.name).join(', ')}\n` +
+            (workingDir ? `Working Dir: \`${workingDir}\`\n` : '') +
+            `\nUse \`${this.config.bot.prefix} join ${name}\` to join the session.`
         );
     }
 
@@ -205,17 +232,30 @@ export class DiscordBot {
      */
     private async cmdJoin(message: Message, args: string[]): Promise<void> {
         if (args.length === 0) {
-            await message.reply('Usage: `/colony join <session-id>`');
+            await message.reply('Usage: `/colony join <session-id-or-name>`');
             return;
         }
 
-        const sessionId = args[0];
-        const room = this.colony.chatRoomManager.getRoom(sessionId);
+        const identifier = args[0];
+        let room = this.colony.chatRoomManager.getRoom(identifier);
 
         if (!room) {
-            await message.reply(`❌ Session not found: ${sessionId}`);
+            // Try to find by name
+            const roomsByName = this.colony.chatRoomManager.getRoomByName(identifier);
+            if (roomsByName.length === 1) {
+                room = roomsByName[0];
+            } else if (roomsByName.length > 1) {
+                await message.reply(`❌ Multiple sessions found with the name "${identifier}". Please use the exact Session ID instead.`);
+                return;
+            }
+        }
+
+        if (!room) {
+            await message.reply(`❌ Session not found: ${identifier}`);
             return;
         }
+
+        const sessionId = room.id;
 
         // Add user as participant
         this.colony.joinSession(sessionId, {
@@ -285,6 +325,44 @@ export class DiscordBot {
     }
 
     /**
+     * Command: Stop/Pause current session.
+     */
+    private async cmdStop(message: Message): Promise<void> {
+        const userSession = this.userSessions.get(message.author.id);
+
+        if (!userSession?.sessionId) {
+            await message.reply('You are not in any session.');
+            return;
+        }
+
+        try {
+            this.colony.chatRoomManager.pauseRoom(userSession.sessionId);
+            await message.reply('⏸ Session paused. No new messages can be sent until resumed.');
+        } catch (error) {
+            await message.reply(`❌ Failed to pause session: ${(error as Error).message}`);
+        }
+    }
+
+    /**
+     * Command: Start/Resume current session.
+     */
+    private async cmdStart(message: Message): Promise<void> {
+        const userSession = this.userSessions.get(message.author.id);
+
+        if (!userSession?.sessionId) {
+            await message.reply('You are not in any session.');
+            return;
+        }
+
+        try {
+            this.colony.chatRoomManager.resumeRoom(userSession.sessionId);
+            await message.reply('▶ Session resumed. You can now send messages again.');
+        } catch (error) {
+            await message.reply(`❌ Failed to resume session: ${(error as Error).message}`);
+        }
+    }
+
+    /**
      * Command: Show system status.
      */
     private async cmdStatus(message: Message): Promise<void> {
@@ -315,6 +393,56 @@ export class DiscordBot {
     }
 
     /**
+     * Command: Delete a session.
+     */
+    private async cmdDelete(message: Message, args: string[]): Promise<void> {
+        if (args.length === 0) {
+            await message.reply('Usage: `/colony delete <session-id-or-name>`');
+            return;
+        }
+
+        const identifier = args[0];
+        let room = this.colony.chatRoomManager.getRoom(identifier);
+
+        if (!room) {
+            // Try to find by name
+            const roomsByName = this.colony.chatRoomManager.getRoomByName(identifier);
+            if (roomsByName.length === 1) {
+                room = roomsByName[0];
+            } else if (roomsByName.length > 1) {
+                await message.reply(`❌ Multiple sessions found with the name "${identifier}". Please use the exact Session ID instead.`);
+                return;
+            }
+        }
+
+        if (!room) {
+            await message.reply(`❌ Session not found: \`${identifier}\``);
+            return;
+        }
+
+        const sessionId = room.id;
+        const roomName = room.getInfo().name;
+
+        try {
+            const deleted = await this.colony.chatRoomManager.deleteRoom(sessionId);
+            if (deleted) {
+                // Remove from user sessions if they were in this room
+                for (const [userId, userSession] of this.userSessions.entries()) {
+                    if (userSession.sessionId === sessionId) {
+                        this.userSessions.delete(userId);
+                    }
+                }
+
+                await message.reply(`✅ Session deleted: **${roomName}** (\`${sessionId}\`)`);
+            } else {
+                await message.reply(`❌ Failed to delete session: \`${sessionId}\``);
+            }
+        } catch (error) {
+            await message.reply(`❌ Error deleting session: ${(error as Error).message}`);
+        }
+    }
+
+    /**
      * Command: Show help.
      */
     private async cmdHelp(message: Message): Promise<void> {
@@ -322,11 +450,14 @@ export class DiscordBot {
         await message.reply(
             `**Colony Discord Bot Commands**\n\n` +
             `**Session Management:**\n` +
-            `\`${prefix} create <name> [agents]\` - Create a new session\n` +
+            `\`${prefix} create <name> [agents] [--dir /path]\` - Create a new session\n` +
             `\`${prefix} list\` - List all sessions\n` +
-            `\`${prefix} join <id>\` - Join a session\n` +
+            `\`${prefix} join <name|id>\` - Join a session\n` +
             `\`${prefix} leave\` - Leave current session\n` +
-            `\`${prefix} current\` - Show current session\n\n` +
+            `\`${prefix} delete <name|id>\` - Delete a session\n` +
+            `\`${prefix} current\` - Show current session\n` +
+            `\`${prefix} stop\` - Pause current session\n` +
+            `\`${prefix} start\` - Resume current session\n\n` +
             `**Status:**\n` +
             `\`${prefix} status\` - Show system status\n` +
             `\`${prefix} agents\` - List all agents\n\n` +
@@ -341,6 +472,15 @@ export class DiscordBot {
      */
     private async forwardToColony(message: Message, userSession: UserSession): Promise<void> {
         try {
+            // Check if room is paused before processing mentions
+            if (userSession.sessionId) {
+                const room = this.colony.chatRoomManager.getRoom(userSession.sessionId);
+                if (room?.getIsPaused()) {
+                    await message.reply('⏸ Current session is paused. Use `/colony start` to resume.');
+                    return;
+                }
+            }
+
             // Parse mentions (@agent-name)
             const mentions: string[] = [];
             const mentionRegex = /@(\S+)/g;

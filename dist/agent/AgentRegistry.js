@@ -12,12 +12,12 @@ class AgentRegistry {
     modelRouter;
     contextAssembler;
     shortTermMemory;
-    skillsDir;
-    constructor(modelRouter, contextAssembler, shortTermMemory, skillsDir) {
+    chatRoomManager;
+    constructor(modelRouter, contextAssembler, shortTermMemory, chatRoomManager) {
         this.modelRouter = modelRouter;
         this.contextAssembler = contextAssembler;
         this.shortTermMemory = shortTermMemory;
-        this.skillsDir = skillsDir;
+        this.chatRoomManager = chatRoomManager;
     }
     /**
      * Create and register an agent from a config object.
@@ -26,7 +26,7 @@ class AgentRegistry {
         if (this.agents.has(config.id)) {
             log.warn(`Agent "${config.id}" already exists — replacing`);
         }
-        const agent = new Agent_js_1.Agent(config, this.modelRouter, this.contextAssembler, this.shortTermMemory, this.skillsDir);
+        const agent = new Agent_js_1.Agent(config, this.modelRouter, this.contextAssembler, this.shortTermMemory, this.chatRoomManager);
         this.agents.set(config.id, agent);
         log.info(`Created agent: ${config.id} (${config.name})`);
         return agent;

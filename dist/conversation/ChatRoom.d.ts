@@ -5,6 +5,7 @@ export declare class ChatRoom {
     readonly id: string;
     readonly name: string;
     readonly createdAt: Date;
+    readonly workingDir?: string;
     private agents;
     private agentsByName;
     private humanParticipants;
@@ -13,7 +14,8 @@ export declare class ChatRoom {
     private unsubscribers;
     private defaultAgentId;
     private autoSaveCallback?;
-    constructor(name: string, messageBus: MessageBus, id?: string);
+    private isPaused;
+    constructor(name: string, messageBus: MessageBus, id?: string, workingDir?: string);
     /**
      * Add an agent to this room.
      */
@@ -69,6 +71,7 @@ export declare class ChatRoom {
     getMessages(limit?: number): Message[];
     getParticipantIds(): string[];
     getDefaultAgentId(): string | null;
+    getIsPaused(): boolean;
     /**
      * Serialize room state for persistence.
      */
@@ -77,6 +80,18 @@ export declare class ChatRoom {
      * Restore message history (used when loading from persistence).
      */
     restoreMessages(messages: Message[]): void;
+    /**
+     * Set paused state (used when loading from persistence).
+     */
+    setPausedState(isPaused: boolean): void;
+    /**
+     * Pause the chat room.
+     */
+    pause(): void;
+    /**
+     * Resume the chat room.
+     */
+    resume(): void;
     /**
      * Set auto-save callback (called after each message).
      */

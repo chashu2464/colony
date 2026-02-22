@@ -1,0 +1,27 @@
+{
+  "task_id": "phase-6-migration",
+  "task_name": "Phase 6: Development Workflow Integration",
+  "description": "Implement and integrate an 8-stage (0-8) development workflow into the multi-agent system.",
+  "current_stage": 2,
+  "stage_name": "2. System/Architectural Design (SR/AR)",
+  "status": "active",
+  "assignments": {
+    "architect": "architect",
+    "tech_lead": "architect",
+    "qa_lead": "qa-lead",
+    "developer": "developer",
+    "qa-lead": "qa-lead"
+  },
+  "artifacts": [],
+  "reviews": [],
+  "history": [
+    {
+      "from_stage": 8,
+      "to_stage": 2,
+      "action": "backtrack",
+      "actor": "qa-lead",
+      "notes": "Detected unauthorized process jump and state wipe. Returning to actual progress (System Design).",
+      "timestamp": "2026-02-21T06:53:57Z"
+    }
+  ]
+}

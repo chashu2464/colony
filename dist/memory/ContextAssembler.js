@@ -36,6 +36,7 @@ class ContextAssembler {
             throw new Error(`Agent ${options.agentId} not registered with ContextAssembler`);
         }
         const skillManager = this.skillManagers.get(options.agentId);
+        const chatRoom = options.chatRoom; // Get chatRoom from options
         // Build all sections
         const sections = [];
         // 1. Agent Identity (high priority, always included)
@@ -66,6 +67,13 @@ class ContextAssembler {
                 });
             }
         }
+        // 3.5. Participants (high priority, for agent awareness)
+        sections.push({
+            name: 'participants',
+            content: this.buildParticipantsSection(chatRoom),
+            priority: 80, // High priority to ensure agent knows who is around
+            tokenCount: 0,
+        });
         // 4. Collaboration Guidelines (medium priority)
         sections.push({
             name: 'guidelines',
@@ -112,7 +120,8 @@ class ContextAssembler {
         const finalSections = this.applyTokenBudget(sections, options.tokenBudget);
         const prompt = finalSections.map(s => s.content).join('\n\n');
         const totalTokens = finalSections.reduce((sum, s) => sum + s.tokenCount, 0);
-        log.info(`Assembled prompt for ${config.name}: ${totalTokens} tokens (budget: ${options.tokenBudget})`);
+        const sectionNames = finalSections.map(s => s.name).join(', ');
+        log.info(`Assembled prompt for ${config.name}: ${totalTokens} tokens (budget: ${options.tokenBudget}), sections: [${sectionNames}]`);
         return prompt;
     }
     // ── Section Builders ─────────────────────────────────
@@ -126,23 +135,35 @@ class ContextAssembler {
         }
         return lines.join('\n');
     }
+    buildParticipantsSection(chatRoom) {
+        const info = chatRoom.getInfo();
+        const lines = ['## 房间参与者'];
+        lines.push('当前房间内的参与者有：');
+        for (const p of info.participants) {
+            lines.push(`- @${p.name} (${p.type === 'agent' ? '代理' : '人类'})`);
+        }
+        lines.push('\n你可以通过 @name 的方式提及他们。');
+        const result = lines.join('\n');
+        log.debug(`Built participants section with ${info.participants.length} participants`);
+        return result;
+    }
     buildGuidelinesSection() {
-        return `## 🎯 你的目标
+        return `## 协作指南
 
-你是一个高效的 AI 协作助手，致力于与团队（用户和其他 Agent）共同解决复杂问题。
-你的核心任务不仅仅是"回复消息"，而是**执行任务**并**达成结果**。
+### 核心目标
+作为高效的 AI 协作助手，你的任务是执行并达成结果，而不仅仅是回复消息。
 
-## 🛠️ 工具使用指南
+### 元规则 (Meta Rules)
+1. 不确定就提问：遇到不清楚的需求或技术细节时，向相关 Agent 或用户提问，不要硬猜。
+2. 禁止表演性同意：如果有疑虑或更好的方案，必须明确提出。
+3. 交接必须说明 WHY：提交代码或方案时，说明设计理由和技术选型原因。
+4. 重要变更需确认：涉及架构、API 或数据结构的重大调整，必须 @相关 Agent 并等待明确的放行信号（如：可以、LGTM、通过）后方可继续。
+5. 保持上下文连贯：使用 get-messages 了解对话历史。
 
-- **执行工作**：使用你的能力来推进任务完成。
-- **沟通进度**：使用 \`send-message\` 来汇报工作结果、请求澄清或确认下一步。
-- **获取上下文**：如果不清楚任务背景，请使用 \`get-messages\` 查看历史记录。
-
-## ⚠️ 沟通规则
-
-1. **保持主动**：收到消息后，如果需要采取行动，请立即执行。
-2. **必须回应**：你无法直接说话，**必须**调用 \`send-message\` 技能来让团队看到你的回复。
-3. **结果导向**：不要只说"通过"，要展示你做了什么（例如："已更新文件 X，通过测试"）。`;
+### 工具与沟通
+- 执行工作：使用工具推进任务完成。
+- 沟通进度：使用 send-message 汇报结果、请求澄清或确认下一步。你无法直接说话，必须调用此技能。
+- 结果导向：不要只说"完成"，要展示具体成果（如：已更新文件 X，通过测试）。`;
     }
     buildHistorySection(roomId, currentMessage) {
         // Get recent messages (excluding the current one)
@@ -169,7 +190,7 @@ class ContextAssembler {
         const lines = ['## 当前消息'];
         lines.push(`**来自**: ${message.sender.name} (${message.sender.type})`);
         if (message.mentions.includes(agentId)) {
-            lines.push(`**⚡ 你被 @提及了，请务必用 send-message 回复。**`);
+            lines.push(`**你被 @提及了，请务必用 send-message 回复。**`);
         }
         lines.push(`**内容**: ${message.content}`);
         return lines.join('\n');
@@ -244,8 +265,8 @@ class ContextAssembler {
                 }
             }
         }
-        // Sort result back to logical order (identity → rules → skills → guidelines → history → long-term → current)
-        const order = ['identity', 'rules', 'skills', 'guidelines', 'history', 'long-term', 'current'];
+        // Sort result back to logical order (identity → rules → skills → participants → guidelines → history → long-term → current)
+        const order = ['identity', 'rules', 'skills', 'participants', 'guidelines', 'history', 'long-term', 'current'];
         result.sort((a, b) => {
             const aIdx = order.indexOf(a.name);
             const bIdx = order.indexOf(b.name);

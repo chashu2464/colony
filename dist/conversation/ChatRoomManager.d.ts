@@ -11,12 +11,17 @@ export declare class ChatRoomManager {
     constructor(messageBus: MessageBus, agentRegistry: AgentRegistry, sessionManager: SessionManager);
     /**
      * Create a new chat room with specified agents.
+     * @param workingDir - Optional working directory for CLI tools
      */
-    createRoom(name: string, agentIds?: string[]): ChatRoom;
+    createRoom(name: string, agentIds?: string[], workingDir?: string): ChatRoom;
     /**
      * Get a room by ID.
      */
     getRoom(roomId: string): ChatRoom | undefined;
+    /**
+     * Get rooms by exact name (case-insensitive).
+     */
+    getRoomByName(name: string): ChatRoom[];
     /**
      * List all rooms.
      */
@@ -41,4 +46,12 @@ export declare class ChatRoomManager {
      * Add a human to a room.
      */
     joinRoom(roomId: string, participant: Participant): void;
+    /**
+     * Pause a chat room.
+     */
+    pauseRoom(roomId: string): void;
+    /**
+     * Resume a chat room.
+     */
+    resumeRoom(roomId: string): void;
 }

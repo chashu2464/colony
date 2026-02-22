@@ -65,7 +65,6 @@ class Colony {
     modelRouter;
     constructor(options = {}) {
         const agentConfigDir = options.agentConfigDir ?? path.join(process.cwd(), 'config', 'agents');
-        const skillsDir = options.skillsDir ?? path.join(process.cwd(), 'skills');
         const dataDir = options.dataDir ?? path.join(process.cwd(), '.data', 'sessions');
         const mem0ConfigPath = options.mem0ConfigPath ?? path.join(process.cwd(), 'config', 'mem0.yaml');
         const discordConfigPath = options.discordConfigPath ?? path.join(process.cwd(), 'config', 'discord.yaml');
@@ -95,10 +94,15 @@ class Colony {
         // Initialize components
         this.rateLimitManager = new RateLimitManager_js_1.RateLimitManager();
         this.modelRouter = new ModelRouter_js_1.ModelRouter(this.rateLimitManager);
-        this.agentRegistry = new AgentRegistry_js_1.AgentRegistry(this.modelRouter, this.contextAssembler, this.shortTermMemory, skillsDir);
         this.messageBus = new MessageBus_js_1.MessageBus();
         this.sessionManager = new SessionManager_js_1.SessionManager(dataDir);
-        this.chatRoomManager = new ChatRoomManager_js_1.ChatRoomManager(this.messageBus, this.agentRegistry, this.sessionManager);
+        // Initialize chatRoomManager first (needed by agentRegistry)
+        this.chatRoomManager = new ChatRoomManager_js_1.ChatRoomManager(this.messageBus, null, // Will be set after agentRegistry is created
+        this.sessionManager);
+        // Now initialize agentRegistry with chatRoomManager
+        this.agentRegistry = new AgentRegistry_js_1.AgentRegistry(this.modelRouter, this.contextAssembler, this.shortTermMemory, this.chatRoomManager);
+        // Set agentRegistry in chatRoomManager
+        this.chatRoomManager.agentRegistry = this.agentRegistry;
         // Load agent configs
         const agents = this.agentRegistry.loadFromDirectory(agentConfigDir);
         log.info(`Colony initialized with ${agents.length} agents`);
@@ -137,9 +141,10 @@ class Colony {
     }
     /**
      * Create a new chat session with agents.
+     * @param workingDir - Optional working directory for CLI tools (defaults to current directory)
      */
-    createSession(name, agentIds) {
-        const room = this.chatRoomManager.createRoom(name, agentIds);
+    createSession(name, agentIds, workingDir) {
+        const room = this.chatRoomManager.createRoom(name, agentIds, workingDir);
         return room.id;
     }
     /**

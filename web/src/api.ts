@@ -8,6 +8,7 @@ export interface Session {
     participants: Participant[];
     createdAt: string;
     messageCount: number;
+    isPaused?: boolean;
 }
 
 export interface Participant {
@@ -41,11 +42,11 @@ export async function fetchSessions(): Promise<Session[]> {
     return data.sessions;
 }
 
-export async function createSession(name: string, agentIds?: string[]): Promise<Session> {
+export async function createSession(name: string, agentIds?: string[], workingDir?: string): Promise<Session> {
     const res = await fetch(`${API_BASE}/sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, agentIds }),
+        body: JSON.stringify({ name, agentIds, workingDir }),
     });
     const data = await res.json();
     return data.session;
@@ -57,6 +58,20 @@ export async function joinSession(sessionId: string, participant: Participant): 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ participant }),
     });
+}
+
+export async function pauseSession(sessionId: string): Promise<void> {
+    await fetch(`${API_BASE}/sessions/${sessionId}/pause`, { method: 'POST' });
+}
+
+export async function resumeSession(sessionId: string): Promise<void> {
+    await fetch(`${API_BASE}/sessions/${sessionId}/resume`, { method: 'POST' });
+}
+
+export async function deleteSession(sessionId: string): Promise<boolean> {
+    const res = await fetch(`${API_BASE}/sessions/${sessionId}`, { method: 'DELETE' });
+    const data = await res.json();
+    return data.deleted;
 }
 
 export async function fetchMessages(sessionId: string, limit?: number): Promise<Message[]> {

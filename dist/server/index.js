@@ -107,12 +107,12 @@ function createColonyServer(options) {
     });
     // Create a new room
     app.post('/api/sessions', (req, res) => {
-        const { name, agentIds } = req.body;
+        const { name, agentIds, workingDir } = req.body;
         if (!name) {
             res.status(400).json({ error: 'name is required' });
             return;
         }
-        const room = colony.chatRoomManager.createRoom(name, agentIds);
+        const room = colony.chatRoomManager.createRoom(name, agentIds, workingDir);
         res.json({ session: room.getInfo() });
     });
     // Get a single room
@@ -225,6 +225,26 @@ function createColonyServer(options) {
         }
         catch (err) {
             res.status(500).json({ error: err.message });
+        }
+    });
+    // Pause a session
+    app.post('/api/sessions/:id/pause', (req, res) => {
+        try {
+            colony.chatRoomManager.pauseRoom(req.params.id);
+            res.json({ ok: true });
+        }
+        catch (err) {
+            res.status(404).json({ error: err.message });
+        }
+    });
+    // Resume a session
+    app.post('/api/sessions/:id/resume', (req, res) => {
+        try {
+            colony.chatRoomManager.resumeRoom(req.params.id);
+            res.json({ ok: true });
+        }
+        catch (err) {
+            res.status(404).json({ error: err.message });
         }
     });
     // ── REST: Agents ──────────────────────────────────

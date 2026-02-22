@@ -17,6 +17,10 @@ export declare class MessageBus {
      */
     publish(message: Message): void;
     /**
+     * Dispatch a ColonyEvent to subscribers.
+     */
+    emitColonyEvent(event: ColonyEvent): void;
+    /**
      * Remove all subscribers for a room.
      */
     clearRoom(roomId: string): void;

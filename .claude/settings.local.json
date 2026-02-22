@@ -29,7 +29,18 @@
       "Bash(xargs kill:*)",
       "Bash(npm start)",
       "Bash(kill:*)",
-      "Bash(xargs:*)"
+      "Bash(xargs:*)",
+      "Bash(find:*)",
+      "Bash(git add:*)",
+      "Bash(git reset:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(git merge:*)",
+      "Bash(grep:*)",
+      "Bash(head:*)",
+      "Bash(env:*)",
+      "Bash(ls:*)",
+      "Bash(npm run:*)"
     ]
   }
 }

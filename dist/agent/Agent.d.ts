@@ -2,6 +2,7 @@ import { EventBus } from '../utils/EventBus.js';
 import { ModelRouter } from '../llm/ModelRouter.js';
 import { ContextAssembler } from '../memory/ContextAssembler.js';
 import { ShortTermMemory } from '../memory/ShortTermMemory.js';
+import { ChatRoomManager } from '../conversation/ChatRoomManager.js';
 import type { AgentConfig, AgentStatus, Message } from '../types.js';
 interface AgentEventMap {
     'status_change': {
@@ -15,7 +16,6 @@ export declare class Agent {
     readonly name: string;
     readonly config: AgentConfig;
     readonly events: EventBus<AgentEventMap>;
-    private skillManager;
     private modelRouter;
     private status;
     private messageQueue;
@@ -23,19 +23,14 @@ export declare class Agent {
     private roomSessions;
     private contextAssembler;
     private shortTermMemory;
-    private sendMessageToRoom?;
-    private getMessagesFromRoom?;
-    constructor(config: AgentConfig, modelRouter: ModelRouter, contextAssembler: ContextAssembler, shortTermMemory: ShortTermMemory, skillsDir?: string);
+    private chatRoomManager;
+    private activeInvocations;
+    constructor(config: AgentConfig, modelRouter: ModelRouter, contextAssembler: ContextAssembler, shortTermMemory: ShortTermMemory, chatRoomManager: ChatRoomManager);
     getStatus(): AgentStatus;
     /**
-     * Register message sender callback (called by ChatRoom).
+     * Cancel any active invocation for the given room.
      */
-    setSendMessageHandler(handler: (roomId: string, message: Message) => void): void;
-    /**
-     * Register get-messages callback (called by ChatRoom).
-     * Enables the get_messages skill for passive visibility.
-     */
-    setGetMessagesHandler(handler: (roomId: string, limit?: number) => Message[]): void;
+    abortRoomInvocation(roomId: string): void;
     /**
      * Receive a message that has been routed to this agent.
      * The ChatRoom has already decided this agent should handle this message
@@ -58,11 +53,10 @@ export declare class Agent {
      */
     private storeToLongTermMemory;
     /**
-     * Parse LLM response for skill invocations and execute them.
-     * Returns skill results for data-returning skills and whether send_message was called.
+     * Ensure skills symlinks exist in the working directory.
+     * Creates .claude/skills and .gemini/skills pointing to Colony's skills directory.
      */
-    private processLLMResponse;
-    private executeSkill;
+    private ensureSkillsSymlinks;
     private setStatus;
 }
 export {};

@@ -13,7 +13,6 @@ export interface AgentConfig {
         fallback?: SupportedCLI[];
     };
     personality: string;
-    skills: string[];
     rules?: string[];
     /** If true, this agent receives messages when nobody is explicitly @mentioned. */
     isDefault?: boolean;
@@ -60,6 +59,8 @@ export interface InvokeOptions {
     sessionName?: string;
     idleTimeoutMs?: number;
     env?: Record<string, string>;
+    cwd?: string; // Working directory for CLI process
+    signal?: AbortSignal;
     onToken?: (token: string) => void;
     onToolUse?: (tool: ToolUseEvent) => void;
     onError?: (error: Error) => void;
@@ -122,6 +123,7 @@ export interface ChatRoomInfo {
     participants: Participant[];
     createdAt: Date;
     messageCount: number;
+    isPaused?: boolean;
 }
 
 // ── Event Types ──────────────────────────────────────────
@@ -133,6 +135,8 @@ export type ColonyEvent =
     | { type: 'typing'; agentId: string; roomId: string }
     | { type: 'room_created'; room: ChatRoomInfo }
     | { type: 'room_deleted'; roomId: string }
+    | { type: 'session_paused'; roomId: string }
+    | { type: 'session_resumed'; roomId: string }
     | { type: 'milestone'; roomId: string; milestone: string };
 
 // ── Context Assembly Types (for agent awareness) ─────────

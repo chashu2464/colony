@@ -155,13 +155,33 @@
     "updatedAt": "2026-02-19T11:08:30.072Z"
   },
   "agent-developer-room-59608dfc-292d-4b8c-9440-5eab01029a30": {
-    "sessionId": "f146d0a6-912d-45f7-9a61-b762b495f1c4",
+    "sessionId": "f442591b-d73a-4fb4-81b1-a95524d237d5",
     "cli": "gemini",
-    "updatedAt": "2026-02-20T05:00:33.520Z"
+    "updatedAt": "2026-02-21T06:42:28.364Z"
   },
   "agent-developer-room-99335e22-c324-4846-8de2-0c9f80cf2c6d": {
     "sessionId": "bf6a55e0-8a49-425d-b0db-34266e620311",
     "cli": "gemini",
-    "updatedAt": "2026-02-19T18:00:58.265Z"
+    "updatedAt": "2026-02-21T14:48:52.427Z"
+  },
+  "agent-architect-room-59608dfc-292d-4b8c-9440-5eab01029a30": {
+    "sessionId": "476e74fb-0b64-4600-95ea-52a2bf171b1f",
+    "cli": "gemini",
+    "updatedAt": "2026-02-21T06:42:37.603Z"
+  },
+  "agent-qa-lead-room-59608dfc-292d-4b8c-9440-5eab01029a30": {
+    "sessionId": "f8866621-e0ec-42b1-927e-e2815a54c39f",
+    "cli": "gemini",
+    "updatedAt": "2026-02-21T06:31:10.250Z"
+  },
+  "agent-developer-room-98c28eae-a232-4a76-b788-1ee5f3c6c86d": {
+    "sessionId": "ede129fe-1aa9-4882-80b6-9fa5fd1108ae",
+    "cli": "gemini",
+    "updatedAt": "2026-02-22T03:04:15.109Z"
+  },
+  "agent-architect-room-98c28eae-a232-4a76-b788-1ee5f3c6c86d": {
+    "sessionId": "00b51bab-f122-4978-91ec-3ee1b88aac1a",
+    "cli": "claude",
+    "updatedAt": "2026-02-22T03:20:24.750Z"
   }
 }
