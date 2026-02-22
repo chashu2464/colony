@@ -114,9 +114,9 @@ graph TD
   - [x] Task milestone notifications
   - [x] Mobile-friendly commands and messaging
 - **Phase 6: Development Workflow Integration**
-  - [ ] Development workflow skill (8-stage process)
-  - [ ] Role assignment for agents (Architect, Tech Lead, QA Lead, Developer)
-  - [ ] Workflow state machine and checkpoint tracking
+  - [x] Development workflow skill (8-stage process)
+  - [x] Role assignment for agents (Architect, Tech Lead, QA Lead, Developer)
+  - [x] Workflow state machine and checkpoint tracking
 - **Phase 7: Verification & Polish**
   - [ ] Token usage / rate limit dashboard
   - [ ] End-to-end integration testing

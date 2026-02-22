@@ -42,6 +42,7 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 - Use `status` to check the current stage before proceeding.
 - **Stage 6 (Implementation)** can ONLY begin after **Stage 5 (Test Case Design)** is completed.
 - Always provide `notes` and `evidence` (file paths) when moving to the `next` stage.
+- **Automated Git Snapshots**: Pushing successful `next` stages will automatically execute a `git commit` to capture the project state. The `notes` you provide will form the commit message.
 
 ## Advanced Actions
 
@@ -56,3 +57,4 @@ If a task is rejected during review or needs to revert to an earlier state (for 
 ```bash
 echo '{"action": "backtrack", "target_stage": 6, "reason": "Failed integration tests, needs fix."}' | bash scripts/handler.sh
 ```
+> **Safety Notice**: Backtracking merely updates the workflow metadata to unblock progress; it does NOT automatically execute `git reset --hard` to destroy your uncommitted code. Instead, the resulting JSON output will contain a `warning` property detailing the exact `git reset` terminal command you (or the Agent) should run manually to roll back the codebase cleanly to that target stage.

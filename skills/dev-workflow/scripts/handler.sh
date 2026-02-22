@@ -30,6 +30,13 @@ function get_git_hash() {
   fi
 }
 
+function get_main_branch() {
+  if git rev-parse --verify main >/dev/null 2>&1; then echo "main"
+  elif git rev-parse --verify master >/dev/null 2>&1; then echo "master"
+  else echo ""
+  fi
+}
+
 function do_git_commit() {
   local stage_num=$1
   local stage_name=$2
@@ -123,7 +130,26 @@ EOF
         ;;
     esac
     
-    # Git Auto-commit
+    # Git Auto-commit & Branching
+    TASK_ID=$(jq -r '.task_id' "$WORKFLOW_FILE")
+    BRANCH_NAME="feature/task-${TASK_ID}"
+
+    if [ "$NEXT" -eq 6 ]; then
+      if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        # Create and checkout feature branch
+        git checkout -b "$BRANCH_NAME" >/dev/null 2>&1 || git checkout "$BRANCH_NAME" >/dev/null 2>&1
+      fi
+    elif [ "$NEXT" -eq 8 ]; then
+      if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+        # Merge back to main branch
+        MAIN_BRANCH=$(get_main_branch)
+        if [ ! -z "$MAIN_BRANCH" ]; then
+          git checkout "$MAIN_BRANCH" >/dev/null 2>&1
+          git merge "$BRANCH_NAME" -m "Merge feature branch for workflow task $TASK_ID" >/dev/null 2>&1 || true
+        fi
+      fi
+    fi
+
     do_git_commit "$NEXT" "${STAGES[$NEXT]}" "$NOTES"
     CURRENT_HASH=$(get_git_hash)
 
@@ -200,7 +226,12 @@ EOF
       
     # Prepend a git reset warning to the JSON response by injecting a special meta field so Agents can read it seamlessly
     if [ ! -z "$TARGET_HASH" ]; then
-      WARNING_MSG="Workflow backtracked. To explicitly rollback workspace files to Stage $TARGET, execute: git reset --hard $TARGET_HASH (WARNING: destructs uncommitted files)"
+      TASK_ID=$(jq -r '.task_id' "$WORKFLOW_FILE")
+      BRANCH_STR=""
+      if [[ "$TARGET" -eq 6 || "$TARGET" -eq 7 ]]; then
+         BRANCH_STR="Ensure you are on branch feature/task-${TASK_ID}. Then "
+      fi
+      WARNING_MSG="Workflow backtracked. ${BRANCH_STR}To explicitly rollback workspace files to Stage $TARGET, execute: git reset --hard $TARGET_HASH (WARNING: destructs uncommitted files)"
       jq --arg msg "$WARNING_MSG" '.warning = $msg' "$WORKFLOW_FILE"
     else
       cat "$WORKFLOW_FILE"

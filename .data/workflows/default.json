@@ -1,6 +1,6 @@
 {
-  "task_id": "220FA4F9-65B0-4E74-B41E-AF774795E0DD",
-  "task_name": "git test",
+  "task_id": "042E7D46-CCC5-4099-B8F6-97A9F42C7328",
+  "task_name": "Untitled Task",
   "description": "",
   "current_stage": 0,
   "stage_name": "0. Brainstorming",
@@ -14,9 +14,9 @@
   "artifacts": [
     {
       "stage": 0,
-      "path": "test-evidence.md",
-      "description": "Git commit generation test",
-      "created_at": "2026-02-22T04:19:36Z"
+      "path": "evidence.txt",
+      "description": "test1",
+      "created_at": "2026-02-22T07:34:56Z"
     }
   ],
   "reviews": [],
@@ -27,8 +27,8 @@
       "action": "init",
       "actor": "",
       "notes": "Workflow initialized",
-      "git_commit_hash": "f30705b195174ba3689f7d9877afdd34887c8fc2",
-      "timestamp": "2026-02-22T04:14:24Z"
+      "git_commit_hash": "dcf91a89fbd5292cfafba812a489f013880a2788",
+      "timestamp": "2026-02-22T07:34:39Z"
     }
   ]
 }
