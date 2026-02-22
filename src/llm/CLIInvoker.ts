@@ -165,7 +165,7 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
 
     codex: {
         buildArgs: (prompt, sessionId) => {
-            const args = ['-p', prompt, '--output-format', 'stream-json'];
+            const args = ['-p', prompt, '--output-format', 'stream-json', '--yolo'];
             if (sessionId) args.push('--resume', sessionId);
             return args;
         },

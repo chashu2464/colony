@@ -43,6 +43,8 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 - **Stage 6 (Implementation)** can ONLY begin after **Stage 5 (Test Case Design)** is completed.
 - Always provide `notes` and `evidence` (file paths) when moving to the `next` stage.
 - **Automated Git Snapshots**: Pushing successful `next` stages will automatically execute a `git commit` to capture the project state. The `notes` you provide will form the commit message.
+  - **Branching Strategy**: Upon advancing to **Stage 6 (Implementation)**, the workflow will automatically create and check out a dedicated feature branch (`feature/task-<ID>`). All development commits will reside here.
+  - **Auto-Merging**: Upon successfully advancing to **Stage 8 (Go-Live Review)**, the workflow will automatically switch back to the main branch (`master` or `main`) and merge the feature branch in.
 
 ## Advanced Actions
 

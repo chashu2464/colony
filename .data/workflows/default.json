@@ -2,8 +2,8 @@
   "task_id": "042E7D46-CCC5-4099-B8F6-97A9F42C7328",
   "task_name": "Untitled Task",
   "description": "",
-  "current_stage": 1,
-  "stage_name": "1. Initial Requirements (IR)",
+  "current_stage": 2,
+  "stage_name": "2. System/Architectural Design (SR/AR)",
   "status": "active",
   "assignments": {
     "architect": null,
@@ -22,6 +22,24 @@
       "stage": 1,
       "path": "evidence.txt",
       "description": "test2",
+      "created_at": "2026-02-22T07:34:57Z"
+    },
+    {
+      "stage": 2,
+      "path": "evidence.txt",
+      "description": "test3",
+      "created_at": "2026-02-22T07:34:57Z"
+    },
+    {
+      "stage": 2,
+      "path": "evidence.txt",
+      "description": "test4",
+      "created_at": "2026-02-22T07:34:57Z"
+    },
+    {
+      "stage": 2,
+      "path": "evidence.txt",
+      "description": "test5",
       "created_at": "2026-02-22T07:34:57Z"
     }
   ],
@@ -44,6 +62,15 @@
       "notes": "test1",
       "git_commit_hash": "d31ffb0132c061ae3023a6096e389255195ea42e",
       "timestamp": "2026-02-22T07:34:56Z"
+    },
+    {
+      "from_stage": 1,
+      "to_stage": 2,
+      "action": "next",
+      "actor": "",
+      "notes": "test2",
+      "git_commit_hash": "56b00f13a41090ee8e8c6ec8323988c16e931c40",
+      "timestamp": "2026-02-22T07:34:57Z"
     }
   ]
 }
