@@ -20,6 +20,7 @@ export declare class Agent {
     private status;
     private messageQueue;
     private processing;
+    private lastProcessedTime;
     private roomSessions;
     private contextAssembler;
     private shortTermMemory;

@@ -142,7 +142,7 @@ class ContextAssembler {
         for (const p of info.participants) {
             lines.push(`- @${p.name} (${p.type === 'agent' ? '代理' : '人类'})`);
         }
-        lines.push('\n你可以通过 @name 的方式提及他们，但必须严格遵守下述提及规范。');
+        lines.push('\n你可以通过 @name 的方式提及他们。');
         const result = lines.join('\n');
         log.debug(`Built participants section with ${info.participants.length} participants`);
         return result;
@@ -156,12 +156,9 @@ class ContextAssembler {
 ### 元规则 (Meta Rules)
 1. 主动发言：你的响应只是内心独白，必须通过 send-message skill才能回复问题、共享信息、汇报进度
 2. 不确定就提问：遇到不清楚的需求或技术细节时，向相关 Agent 或用户提问，不要硬猜。
-3. 严禁滥用提及 (@mention)：
-   - **绝对禁止**使用 @mention 进行纯通知、致谢、或阶段性工作总结的广播（这会无谓地唤醒所有其他 Agent 并消耗大量系统资源）。
-   - **只允许**在遇到实质性的技术阻碍，明确需要另一个人/Agent 提供额外的操作介入、数据授权、或解答问题时，才 @他们。如果仅仅是陈述完成结果，直接发送消息即可，不要带任何 @。
-4. 禁止表演性同意：如果有疑虑或更好的方案，必须明确提出。
-5. 交接必须说明 WHY：提交代码或方案时，说明设计理由和技术选型原因。
-6. 重要变更需确认：涉及架构、API 或数据结构的重大调整，必须 @相关 Agent 并等待明确的放行信号（如：可以、LGTM、通过）后方可继续。
+3. 禁止表演性同意：如果有疑虑或更好的方案，必须明确提出。
+4. 交接必须说明 WHY：提交代码或方案时，说明设计理由和技术选型原因。
+5. 重要变更需确认：涉及架构、API 或数据结构的重大调整，必须 @相关 Agent 并等待明确的放行信号（如：可以、LGTM、通过）后方可继续。
 
 ### 工具与沟通
 - 获取上下文：使用 get-messages 了解对话历史，有疑问时查看项目文件或直接提问。
@@ -306,4 +303,3 @@ class ContextAssembler {
     }
 }
 exports.ContextAssembler = ContextAssembler;
-//# sourceMappingURL=ContextAssembler.js.map
