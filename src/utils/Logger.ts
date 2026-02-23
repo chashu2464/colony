@@ -1,6 +1,10 @@
 // ── Colony: Logger Utility ────────────────────────────────
 // Structured console logger with component tagging.
 
+import * as fs from 'fs';
+import * as path from 'path';
+import { format } from 'util';
+
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
 const LEVEL_ORDER: Record<LogLevel, number> = {
@@ -49,6 +53,35 @@ export class Logger {
         const ts = new Date().toISOString();
         const color = LEVEL_COLORS[level];
         const prefix = `${color}[${ts}] [${level.toUpperCase()}] [${this.component}]${RESET}`;
+        
+        // Console output
         console.log(prefix, msg, ...args);
+
+        // File output (persistence)
+        if (process.env.LOG_TO_FILE !== 'false') {
+            this.logToFile(level, ts, msg, ...args);
+        }
+    }
+
+    /**
+     * Persist log to a file, rotated by date.
+     */
+    private logToFile(level: LogLevel, ts: string, msg: string, ...args: unknown[]): void {
+        try {
+            const logDir = process.env.LOG_DIR || 'logs';
+            if (!fs.existsSync(logDir)) {
+                fs.mkdirSync(logDir, { recursive: true });
+            }
+
+            const dateStr = ts.split('T')[0];
+            const logFile = path.join(logDir, `colony-${dateStr}.log`);
+            
+            const content = format(msg, ...args);
+            const logEntry = `[${ts}] [${level.toUpperCase()}] [${this.component}] ${content}\n`;
+            
+            fs.appendFileSync(logFile, logEntry);
+        } catch (err) {
+            // Fail silently to avoid interrupting the main flow
+        }
     }
 }

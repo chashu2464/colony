@@ -181,6 +181,20 @@ If you want to skip Mem0 setup for now:
 
 See `docs/mem0-integration-guide.md` for detailed Mem0 setup.
 
+## Logging
+
+Colony features a structured logger with console output and optional file persistence.
+- **Console**: ANSI-colored output with component tagging.
+- **File Persistence**: Logs are stored in the `logs/` directory (configurable via `LOG_DIR`).
+- **Date Rotation**: Log files are automatically rotated by date (e.g., `colony-2026-02-23.log`).
+
+Configure logging in your `.env` file:
+```bash
+LOG_LEVEL=info
+LOG_TO_FILE=true
+LOG_DIR=logs
+```
+
 ## Agents Configuration
 
 Agents are defined in `agents.yaml` (or JSON):
