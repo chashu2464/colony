@@ -64,6 +64,13 @@ export class ChatRoom {
     }
 
     /**
+     * Get all active agents in this room.
+     */
+    getAgents(): Agent[] {
+        return Array.from(this.agents.values());
+    }
+
+    /**
      * Remove an agent from this room.
      */
     removeAgent(agentId: string): void {
@@ -136,11 +143,7 @@ export class ChatRoom {
      * Send a message from a human into this room (publishes through bus).
      * The `mentions` param can contain agent names OR IDs — both work.
      */
-    sendHumanMessage(senderId: string, content: string, mentions?: string[]): Message {
-        if (this.isPaused) {
-            throw new Error(`Room "${this.name}" is paused`);
-        }
-
+    sendHumanMessage(senderId: string, content: string, mentions?: string[], metadata?: Message['metadata']): Message {
         const sender = this.humanParticipants.get(senderId);
         if (!sender) {
             throw new Error(`Human "${senderId}" is not in this room`);
@@ -167,6 +170,7 @@ export class ChatRoom {
             content,
             mentions: resolvedMentionIds,
             timestamp: new Date(),
+            ...(metadata ? { metadata } : {}),
         };
 
         this.messageBus.publish(message);
@@ -177,11 +181,7 @@ export class ChatRoom {
      * Send a message as an agent into this room (used by CLI skill scripts).
      * The agent must belong to this room.
      */
-    sendAgentMessage(agentId: string, content: string, mentions?: string[]): Message {
-        if (this.isPaused) {
-            throw new Error(`Room "${this.name}" is paused`);
-        }
-
+    sendAgentMessage(agentId: string, content: string, mentions?: string[], metadata?: Message['metadata']): Message {
         const agent = this.agents.get(agentId);
         if (!agent) {
             throw new Error(`Agent "${agentId}" is not in this room`);
@@ -204,7 +204,10 @@ export class ChatRoom {
             content,
             mentions: resolvedMentionIds,
             timestamp: new Date(),
-            metadata: { skillInvocation: true },
+            metadata: {
+                skillInvocation: true,
+                ...metadata,
+            },
         };
 
         this.messageBus.publish(message);

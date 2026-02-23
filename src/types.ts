@@ -44,6 +44,11 @@ export interface MessageMetadata {
     skillInvocation?: boolean;
     tokenUsage?: { input: number; output: number };
     model?: SupportedCLI;
+    isMonologue?: boolean;
+    error?: string;
+    toolCalls?: any[];
+    attachments?: { type: string; url: string }[];
+    [key: string]: unknown;
 }
 
 export interface Participant {

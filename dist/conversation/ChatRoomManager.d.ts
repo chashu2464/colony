@@ -47,11 +47,7 @@ export declare class ChatRoomManager {
      */
     joinRoom(roomId: string, participant: Participant): void;
     /**
-     * Pause a chat room.
+     * Stop a chat room (abort agent threads)
      */
-    pauseRoom(roomId: string): void;
-    /**
-     * Resume a chat room.
-     */
-    resumeRoom(roomId: string): void;
+    stopRoom(roomId: string): void;
 }

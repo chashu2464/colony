@@ -336,10 +336,10 @@ export class DiscordBot {
         }
 
         try {
-            this.colony.chatRoomManager.pauseRoom(userSession.sessionId);
-            await message.reply('⏸ Session paused. No new messages can be sent until resumed.');
+            this.colony.chatRoomManager.stopRoom(userSession.sessionId);
+            await message.reply('🛑 All generating agent threads in this session have been stopped.');
         } catch (error) {
-            await message.reply(`❌ Failed to pause session: ${(error as Error).message}`);
+            await message.reply(`❌ Failed to stop agents: ${(error as Error).message}`);
         }
     }
 
@@ -355,8 +355,7 @@ export class DiscordBot {
         }
 
         try {
-            this.colony.chatRoomManager.resumeRoom(userSession.sessionId);
-            await message.reply('▶ Session resumed. You can now send messages again.');
+            await message.reply('▶ The session is already active. Global pausing was removed.');
         } catch (error) {
             await message.reply(`❌ Failed to resume session: ${(error as Error).message}`);
         }

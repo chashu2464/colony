@@ -227,20 +227,10 @@ function createColonyServer(options) {
             res.status(500).json({ error: err.message });
         }
     });
-    // Pause a session
-    app.post('/api/sessions/:id/pause', (req, res) => {
+    // Stop a session
+    app.post('/api/sessions/:id/stop', (req, res) => {
         try {
-            colony.chatRoomManager.pauseRoom(req.params.id);
-            res.json({ ok: true });
-        }
-        catch (err) {
-            res.status(404).json({ error: err.message });
-        }
-    });
-    // Resume a session
-    app.post('/api/sessions/:id/resume', (req, res) => {
-        try {
-            colony.chatRoomManager.resumeRoom(req.params.id);
+            colony.chatRoomManager.stopRoom(req.params.id);
             res.json({ ok: true });
         }
         catch (err) {

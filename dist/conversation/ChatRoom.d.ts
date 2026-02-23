@@ -21,6 +21,10 @@ export declare class ChatRoom {
      */
     addAgent(agent: Agent): void;
     /**
+     * Get all active agents in this room.
+     */
+    getAgents(): Agent[];
+    /**
      * Remove an agent from this room.
      */
     removeAgent(agentId: string): void;
@@ -50,12 +54,12 @@ export declare class ChatRoom {
      * Send a message from a human into this room (publishes through bus).
      * The `mentions` param can contain agent names OR IDs — both work.
      */
-    sendHumanMessage(senderId: string, content: string, mentions?: string[]): Message;
+    sendHumanMessage(senderId: string, content: string, mentions?: string[], metadata?: Message['metadata']): Message;
     /**
      * Send a message as an agent into this room (used by CLI skill scripts).
      * The agent must belong to this room.
      */
-    sendAgentMessage(agentId: string, content: string, mentions?: string[]): Message;
+    sendAgentMessage(agentId: string, content: string, mentions?: string[], metadata?: Message['metadata']): Message;
     /**
      * Layered message routing:
      *   Layer 1: If message has @mentions → route only to mentioned agents

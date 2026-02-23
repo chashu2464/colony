@@ -154,17 +154,17 @@ export class Agent {
     private async handleMessage(message: Message): Promise<void> {
         this.setStatus('thinking');
 
+        // Retrieve the ChatRoom instance outside try-catch to allow error logging
+        const chatRoom = this.chatRoomManager.getRoom(message.roomId);
+        if (!chatRoom) {
+            log.error(`[${this.name}] ChatRoom ${message.roomId} not found for message processing.`);
+            this.setStatus('error');
+            return;
+        }
+
         try {
             const sessionName = `agent-${this.id}-room-${message.roomId}`;
             let round = 0;
-
-            // Retrieve the ChatRoom instance
-            const chatRoom = this.chatRoomManager.getRoom(message.roomId);
-            if (!chatRoom) {
-                log.error(`[${this.name}] ChatRoom ${message.roomId} not found for message processing.`);
-                this.setStatus('error');
-                return;
-            }
 
             // Setup working directory and skills symlinks if needed
             const workingDir = chatRoom.workingDir;
@@ -220,6 +220,14 @@ export class Agent {
                         this.roomSessions.set(message.roomId, result.sessionId);
                     }
 
+                    // Broadcast inner monologue / trace to frontend
+                    if (result.text || (result.toolCalls && result.toolCalls.length > 0)) {
+                        chatRoom.sendAgentMessage(this.id, result.text || '(Silent Execution)', [], {
+                            isMonologue: true,
+                            toolCalls: result.toolCalls || [],
+                        });
+                    }
+
                     // Check if CLI executed any tools
                     const toolCalls = result.toolCalls || [];
                     const hasSendMessage = toolCalls.some(t =>
@@ -246,6 +254,10 @@ export class Agent {
             this.setStatus('error');
 
             const errMsg = (err as Error).message ?? '';
+            chatRoom?.sendAgentMessage(this.id, `Agent Pipeline Crashed: ${errMsg}`, [], {
+                isMonologue: true,
+                error: errMsg,
+            } as any);
 
             if (errMsg.toLowerCase().includes('aborted')) {
                 log.info(`[${this.name}] Invocation was aborted for room ${message.roomId}`);

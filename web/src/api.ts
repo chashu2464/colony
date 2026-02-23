@@ -24,7 +24,13 @@ export interface Message {
     content: string;
     mentions: string[];
     timestamp: string;
-    metadata?: { skillInvocation?: boolean; model?: string };
+    metadata?: {
+        isMonologue?: boolean;
+        toolCalls?: any[];
+        error?: string;
+        attachments?: { type: string; url: string }[];
+        [key: string]: unknown;
+    };
 }
 
 export interface AgentInfo {
@@ -60,12 +66,8 @@ export async function joinSession(sessionId: string, participant: Participant): 
     });
 }
 
-export async function pauseSession(sessionId: string): Promise<void> {
-    await fetch(`${API_BASE}/sessions/${sessionId}/pause`, { method: 'POST' });
-}
-
-export async function resumeSession(sessionId: string): Promise<void> {
-    await fetch(`${API_BASE}/sessions/${sessionId}/resume`, { method: 'POST' });
+export async function stopSession(sessionId: string): Promise<void> {
+    await fetch(`${API_BASE}/sessions/${sessionId}/stop`, { method: 'POST' });
 }
 
 export async function deleteSession(sessionId: string): Promise<boolean> {
@@ -88,11 +90,12 @@ export async function sendMessage(
     senderId: string,
     content: string,
     mentions?: string[],
+    metadata?: Message['metadata']
 ): Promise<Message> {
     const res = await fetch(`${API_BASE}/sessions/${sessionId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ senderId, content, mentions }),
+        body: JSON.stringify({ senderId, content, mentions, metadata }),
     });
     const data = await res.json();
     return data.message;

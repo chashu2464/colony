@@ -154,22 +154,19 @@ class ChatRoomManager {
         room.addHuman(participant);
     }
     /**
-     * Pause a chat room.
+     * Stop a chat room (abort agent threads)
      */
-    pauseRoom(roomId) {
+    stopRoom(roomId) {
         const room = this.rooms.get(roomId);
         if (!room)
             throw new Error(`Room not found: ${roomId}`);
-        room.pause();
-    }
-    /**
-     * Resume a chat room.
-     */
-    resumeRoom(roomId) {
-        const room = this.rooms.get(roomId);
-        if (!room)
-            throw new Error(`Room not found: ${roomId}`);
-        room.resume();
+        const agents = room.getAgents();
+        for (const agent of agents) {
+            if (typeof agent.abortRoomInvocation === 'function') {
+                agent.abortRoomInvocation(roomId);
+            }
+        }
+        log.info(`Aborted threads for room: ${roomId}`);
     }
 }
 exports.ChatRoomManager = ChatRoomManager;

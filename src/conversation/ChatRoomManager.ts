@@ -193,20 +193,17 @@ export class ChatRoomManager {
     }
 
     /**
-     * Pause a chat room.
+     * Stop a chat room (abort agent threads)
      */
-    pauseRoom(roomId: string): void {
+    stopRoom(roomId: string): void {
         const room = this.rooms.get(roomId);
         if (!room) throw new Error(`Room not found: ${roomId}`);
-        room.pause();
-    }
-
-    /**
-     * Resume a chat room.
-     */
-    resumeRoom(roomId: string): void {
-        const room = this.rooms.get(roomId);
-        if (!room) throw new Error(`Room not found: ${roomId}`);
-        room.resume();
+        const agents = room.getAgents();
+        for (const agent of agents) {
+            if (typeof agent.abortRoomInvocation === 'function') {
+                agent.abortRoomInvocation(roomId);
+            }
+        }
+        log.info(`Aborted threads for room: ${roomId}`);
     }
 }

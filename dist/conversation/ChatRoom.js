@@ -53,6 +53,12 @@ class ChatRoom {
         log.info(`Agent "${agent.name}" joined room "${this.name}"`);
     }
     /**
+     * Get all active agents in this room.
+     */
+    getAgents() {
+        return Array.from(this.agents.values());
+    }
+    /**
      * Remove an agent from this room.
      */
     removeAgent(agentId) {
@@ -117,10 +123,7 @@ class ChatRoom {
      * Send a message from a human into this room (publishes through bus).
      * The `mentions` param can contain agent names OR IDs — both work.
      */
-    sendHumanMessage(senderId, content, mentions) {
-        if (this.isPaused) {
-            throw new Error(`Room "${this.name}" is paused`);
-        }
+    sendHumanMessage(senderId, content, mentions, metadata) {
         const sender = this.humanParticipants.get(senderId);
         if (!sender) {
             throw new Error(`Human "${senderId}" is not in this room`);
@@ -146,6 +149,7 @@ class ChatRoom {
             content,
             mentions: resolvedMentionIds,
             timestamp: new Date(),
+            ...(metadata ? { metadata } : {}),
         };
         this.messageBus.publish(message);
         return message;
@@ -154,10 +158,7 @@ class ChatRoom {
      * Send a message as an agent into this room (used by CLI skill scripts).
      * The agent must belong to this room.
      */
-    sendAgentMessage(agentId, content, mentions) {
-        if (this.isPaused) {
-            throw new Error(`Room "${this.name}" is paused`);
-        }
+    sendAgentMessage(agentId, content, mentions, metadata) {
         const agent = this.agents.get(agentId);
         if (!agent) {
             throw new Error(`Agent "${agentId}" is not in this room`);
@@ -179,7 +180,10 @@ class ChatRoom {
             content,
             mentions: resolvedMentionIds,
             timestamp: new Date(),
-            metadata: { skillInvocation: true },
+            metadata: {
+                skillInvocation: true,
+                ...metadata,
+            },
         };
         this.messageBus.publish(message);
         return message;

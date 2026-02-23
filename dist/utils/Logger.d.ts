@@ -8,4 +8,8 @@ export declare class Logger {
     warn(msg: string, ...args: unknown[]): void;
     error(msg: string, ...args: unknown[]): void;
     private log;
+    /**
+     * Persist log to a file, rotated by date.
+     */
+    private logToFile;
 }

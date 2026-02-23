@@ -1,12 +1,16 @@
 // ── Colony: Main App ─────────────────────────────────────
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import './index.css';
 import { useWebSocket, type WSEvent } from './hooks/useWebSocket';
 import {
   fetchSessions, fetchMessages, fetchAgents,
-  createSession, joinSession, sendMessage, pauseSession, resumeSession, deleteSession,
-  type Session, type Message, type AgentInfo,
+  createSession, joinSession, sendMessage, stopSession, deleteSession,
+  type Session, type Message, type AgentInfo, type Participant
 } from './api';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import { Paperclip, Send, X } from 'lucide-react';
+import { MonologueBlock } from './MonologueBlock';
 
 const USER_ID = 'human-user';
 const USER_NAME = '用户';
@@ -36,6 +40,7 @@ export default function App() {
   const [newSessionName, setNewSessionName] = useState('');
   const [newSessionWorkingDir, setNewSessionWorkingDir] = useState('');
   const [thinkingAgents, setThinkingAgents] = useState<Set<string>>(new Set());
+  const [attachments, setAttachments] = useState<{ type: string; url: string }[]>([]);
 
   // Load initial data
   useEffect(() => {
@@ -67,14 +72,8 @@ export default function App() {
       fetchSessions().then(setSessions).catch(console.error);
     }
 
-    if (event.type === 'session_paused') {
-      const roomId = (event as any).roomId;
-      setSessions(prev => prev.map(s => s.id === roomId ? { ...s, isPaused: true } : s));
-    }
-
-    if (event.type === 'session_resumed') {
-      const roomId = (event as any).roomId;
-      setSessions(prev => prev.map(s => s.id === roomId ? { ...s, isPaused: false } : s));
+    if (event.type === 'session_stopped') {
+      // Future-proofing for visual Stop alerts if needed.
     }
 
     if (event.type === 'agent_status') {
@@ -141,8 +140,9 @@ export default function App() {
       if (agent) mentions.push(agent.name); // send name, e.g. "开发者"
     }
 
-    await sendMessage(activeSession, USER_ID, input.trim(), mentions);
+    await sendMessage(activeSession, USER_ID, input.trim(), mentions, { attachments });
     setInput('');
+    setAttachments([]);
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -152,17 +152,13 @@ export default function App() {
     }
   }
 
-  async function handleTogglePause() {
+  async function handleStopGeneration() {
     if (!activeSession) return;
-    const session = sessions.find(s => s.id === activeSession);
-    if (!session) return;
-    if (session.isPaused) {
-      await resumeSession(activeSession);
-    } else {
-      await pauseSession(activeSession);
+    try {
+      await stopSession(activeSession);
+    } catch (error) {
+      console.error('Failed to stop generation:', error);
     }
-    // Update local state optimistically
-    setSessions(prev => prev.map(s => s.id === activeSession ? { ...s, isPaused: !session.isPaused } : s));
   }
 
   async function handleDeleteSession(sessionId: string) {
@@ -179,7 +175,43 @@ export default function App() {
     }
   }
 
+  function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files) return;
+
+    Array.from(files).forEach((file) => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          setAttachments(prev => [...prev, { type: 'image', url: event.target!.result as string }]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+    e.target.value = ''; // reset
+  }
+
+  function removeAttachment(index: number) {
+    setAttachments(prev => prev.filter((_, i) => i !== index));
+  }
+
   const activeSessionData = sessions.find(s => s.id === activeSession);
+
+  const groupedMessages: { sender: Participant, messages: Message[], timestamp: string, id: string }[] = [];
+  messages.forEach(msg => {
+    const lastGroup = groupedMessages[groupedMessages.length - 1];
+    if (lastGroup && lastGroup.sender.id === msg.sender.id) {
+      lastGroup.messages.push(msg);
+    } else {
+      groupedMessages.push({
+        sender: msg.sender,
+        messages: [msg],
+        timestamp: msg.timestamp as unknown as string,
+        id: msg.id
+      });
+    }
+  });
 
   return (
     <>
@@ -251,22 +283,22 @@ export default function App() {
             <div className="chat-header">
               <div className="chat-header-title">
                 {activeSessionData.name}
-                {activeSessionData.isPaused && <span className="paused-badge" style={{ marginLeft: 8, fontSize: '0.8em', background: '#ffebee', color: '#c62828', padding: '2px 6px', borderRadius: 4 }}>已暂停</span>}
               </div>
               <div className="chat-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <button
                   className="pause-btn"
-                  onClick={handleTogglePause}
+                  onClick={handleStopGeneration}
                   style={{
                     padding: '4px 10px',
                     borderRadius: '4px',
                     border: '1px solid #ddd',
-                    background: 'white',
+                    background: '#ffebee',
+                    color: '#c62828',
                     cursor: 'pointer',
                     fontSize: '0.9em'
                   }}
                 >
-                  {activeSessionData.isPaused ? '▶ 恢复' : '⏸ 暂停'}
+                  ⏹️ 停止
                 </button>
                 <div className="chat-header-agents">
                   {agents.map(agent => (
@@ -288,22 +320,50 @@ export default function App() {
                   <p>输入消息开始与 Agent 交流，使用 @名称 指定 Agent</p>
                 </div>
               ) : (
-                messages.map(msg => (
+                groupedMessages.map(group => (
                   <div
-                    key={msg.id}
-                    className={`message ${msg.sender.id === USER_ID ? 'self' : ''}`}
+                    key={group.id}
+                    className={`message ${group.sender.id === USER_ID ? 'self' : ''}`}
                   >
-                    <div className={`message-avatar ${getAgentColor(msg.sender.id)}`}>
-                      {getInitial(msg.sender.name)}
+                    <div className={`message-avatar ${getAgentColor(group.sender.id)}`}>
+                      {getInitial(group.sender.name)}
                     </div>
                     <div className="message-body">
                       <div className="message-header">
-                        <span className="message-sender">{msg.sender.name}</span>
-                        <span className="message-time">{formatTime(msg.timestamp)}</span>
+                        <span className="message-sender">{group.sender.name}</span>
+                        <span className="message-time">{formatTime(group.timestamp)}</span>
                       </div>
-                      <div className="message-content">
-                        {msg.content}
-                      </div>
+
+                      {group.messages.map((msg, idx) => (
+                        <React.Fragment key={msg.id}>
+                          {msg.metadata?.isMonologue ? (
+                            <MonologueBlock
+                              text={msg.content}
+                              toolCalls={msg.metadata.toolCalls}
+                              error={msg.metadata.error}
+                            />
+                          ) : (
+                            // Only render the message content if it actually has text or attachments
+                            (msg.content.trim() || (msg.metadata?.attachments && msg.metadata.attachments.length > 0)) ? (
+                              <div className="message-content" style={{ marginTop: idx > 0 ? 8 : 0 }}>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {msg.content}
+                                </ReactMarkdown>
+
+                                {msg.metadata?.attachments && msg.metadata.attachments.length > 0 && (
+                                  <div className="attachment-preview">
+                                    {msg.metadata.attachments.map((att, attIdx) => (
+                                      <div key={attIdx} className="attachment-thumbnail">
+                                        <img src={att.url} alt="attachment" />
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ) : null
+                          )}
+                        </React.Fragment>
+                      ))}
                     </div>
                   </div>
                 ))
@@ -329,18 +389,24 @@ export default function App() {
 
             {/* Input */}
             <div className="chat-input-container">
-              {activeSessionData.isPaused ? (
-                <div className="chat-input-paused" style={{ textAlign: 'center', padding: '20px', color: '#666', background: '#f5f5f5', borderRadius: '8px' }}>
-                  <p>当前会话已暂停，无法发送消息</p>
-                  <button
-                    onClick={handleTogglePause}
-                    style={{ marginTop: '10px', padding: '6px 16px', background: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-                  >
-                    恢复会话
-                  </button>
-                </div>
-              ) : (
-                <div className="chat-input-wrapper">
+              <div className="chat-input-wrapper" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                {attachments.length > 0 && (
+                  <div className="attachment-preview">
+                    {attachments.map((att, idx) => (
+                      <div key={idx} className="attachment-thumbnail">
+                        <img src={att.url} alt="upload preview" />
+                        <button className="attachment-remove" onClick={() => removeAttachment(idx)}>
+                          <X size={10} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="input-actions-row">
+                  <label className="btn-icon" title="上传图片">
+                    <input type="file" accept="image/*" multiple hidden onChange={handleImageUpload} />
+                    <Paperclip size={18} />
+                  </label>
                   <textarea
                     className="chat-input"
                     placeholder="输入消息... 使用 @名称 指定 Agent（如 @开发者）"
@@ -349,15 +415,16 @@ export default function App() {
                     onKeyDown={handleKeyDown}
                     rows={1}
                   />
+
                   <button
                     className="send-btn"
                     onClick={handleSend}
-                    disabled={!input.trim()}
+                    disabled={!input.trim() && attachments.length === 0}
                   >
-                    发送
+                    <Send size={16} style={{ marginRight: 6 }} /> 发送
                   </button>
                 </div>
-              )}
+              </div>
             </div>
           </>
         ) : (

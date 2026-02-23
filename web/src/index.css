@@ -691,3 +691,231 @@ body {
   0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
   40% { transform: scale(1); opacity: 1; }
 }
+
+/* ── Cat Cafe Light Theme Variations ─────────────────────── */
+:root {
+  /* Web Mockup "Cat Cafe" overrides */
+  --bg-primary: #FDF8F5;
+  --bg-secondary: #fff;
+  --bg-tertiary: #fafafa;
+  --border-glass: rgba(0, 0, 0, 0.08);
+  
+  --text-primary: #333;
+  --text-secondary: #666;
+  --text-muted: #999;
+  --text-accent: #f28b82;
+
+  --agent-architect: #f9a8d4;
+  --agent-developer: #93c5fd;
+  --agent-qa: #6ee7b7;
+  --agent-human: #fbbf24;
+
+  --accent-primary: #f28b82;
+  --accent-gradient: linear-gradient(135deg, #f28b82 0%, #ffb4a2 100%);
+  
+  --bg-glass: rgba(255, 255, 255, 0.9);
+  --bg-glass-hover: rgba(240, 240, 240, 0.8);
+}
+
+.monologue-container {
+  background: #f1f3f5;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin: 6px 0;
+  overflow: hidden;
+  font-size: 13px;
+  color: #555;
+}
+
+.monologue-header {
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  user-select: none;
+  background: rgba(0,0,0,0.02);
+}
+
+.monologue-header:hover {
+  background: rgba(0,0,0,0.04);
+}
+
+.monologue-icon {
+  color: #888;
+}
+
+.monologue-title {
+  font-weight: 500;
+  color: #666;
+}
+
+.monologue-content {
+  padding: 12px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.monologue-text {
+  font-family: inherit;
+  line-height: 1.5;
+  background: #fff;
+  padding: 10px;
+  border-radius: 6px;
+  border: 1px solid #eee;
+}
+
+.monologue-tools {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tool-call-block {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.tool-call-header {
+  font-weight: 600;
+  color: #444;
+  margin-bottom: 6px;
+  font-family: monospace;
+}
+
+.tool-call-input {
+  background: #f8f9fa;
+  padding: 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  overflow-x: auto;
+  color: #24292e;
+  margin: 0;
+}
+
+.monologue-error {
+  color: #ef4444;
+  background: #fef2f2;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+  font-weight: 500;
+}
+
+/* ── Typography & Markdown ── */
+.message-content h1, 
+.message-content h2, 
+.message-content h3 {
+  margin-top: 10px;
+  margin-bottom: 6px;
+  color: #222;
+}
+
+.message-content p {
+  margin-bottom: 8px;
+}
+
+.message-content p:last-child {
+  margin-bottom: 0;
+}
+
+.message-content pre {
+  background: #282c34;
+  color: #abb2bf;
+  padding: 12px;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.message-content code {
+  font-family: monospace;
+  background: rgba(0,0,0,0.05);
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.message-content pre code {
+  background: transparent;
+  padding: 0;
+}
+
+/* Update Layout */
+.input-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.attachment-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.attachment-thumbnail {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #ddd;
+}
+
+.attachment-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.attachment-remove {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  background: red;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  cursor: pointer;
+  border: none;
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  background: white;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.btn-stop {
+  background: #ef4444;
+  color: white;
+  border-color: #dc2626;
+}
+.btn-stop:hover {
+  background: #dc2626;
+  color: white;
+}
