@@ -34,6 +34,7 @@ export class Agent {
     private status: AgentStatus = 'idle';
     private messageQueue: Message[] = [];
     private processing = false;
+    private lastProcessedTime = 0;
 
     // Per-room session IDs for conversation isolation
     private roomSessions = new Map<string, string>();
@@ -119,12 +120,24 @@ export class Agent {
         if (this.processing) return;
         this.processing = true;
 
-        while (this.messageQueue.length > 0) {
-            const message = this.messageQueue.shift()!;
-            await this.handleMessage(message);
-        }
+        try {
+            while (this.messageQueue.length > 0) {
+                // Ensure at least 1s cooldown since last message finished
+                const now = Date.now();
+                const elapsed = now - this.lastProcessedTime;
+                if (elapsed < 1000) {
+                    const delay = 1000 - elapsed;
+                    log.info(`[${this.name}] Cooling down for ${delay}ms before processing next message...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
 
-        this.processing = false;
+                const message = this.messageQueue.shift()!;
+                await this.handleMessage(message);
+                this.lastProcessedTime = Date.now();
+            }
+        } finally {
+            this.processing = false;
+        }
     }
 
     /**
