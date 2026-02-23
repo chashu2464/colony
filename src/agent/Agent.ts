@@ -132,8 +132,13 @@ export class Agent {
                 }
 
                 const message = this.messageQueue.shift()!;
-                await this.handleMessage(message);
-                this.lastProcessedTime = Date.now();
+                try {
+                    await this.handleMessage(message);
+                } catch (error) {
+                    log.error(`[${this.name}] Error handling message ${message.id}:`, error);
+                } finally {
+                    this.lastProcessedTime = Date.now();
+                }
             }
         } finally {
             this.processing = false;
