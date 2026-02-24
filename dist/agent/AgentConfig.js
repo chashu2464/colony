@@ -74,6 +74,7 @@ function loadAgentConfig(filePath) {
     const config = {
         id: parsed.id,
         name: parsed.name,
+        description: parsed.description,
         model: { primary, fallback },
         personality: parsed.personality.trim(),
         rules: parsed.rules,

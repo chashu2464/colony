@@ -140,7 +140,8 @@ class ContextAssembler {
         const lines = ['## 房间参与者'];
         lines.push('当前房间内的参与者有：');
         for (const p of info.participants) {
-            lines.push(`- @${p.name} (${p.type === 'agent' ? '代理' : '人类'})`);
+            const roleDesc = p.description ? ` - ${p.description}` : '';
+            lines.push(`- @${p.name} (${p.type === 'agent' ? '代理' : '人类'})${roleDesc}`);
         }
         lines.push('\n你可以通过 @name 的方式提及他们，但必须严格遵守下述提及规范。');
         const result = lines.join('\n');

@@ -12,6 +12,7 @@ export interface AgentConfig {
         primary: SupportedCLI;
         fallback?: SupportedCLI[];
     };
+    description?: string;
     personality: string;
     rules?: string[];
     /** If true, this agent receives messages when nobody is explicitly @mentioned. */
@@ -55,9 +56,16 @@ export interface Participant {
     id: string;
     type: 'agent' | 'human';
     name: string;
+    description?: string;
 }
 
-// ── LLM Types ────────────────────────────────────────────
+// ── Agent Directory ──────────────────────────────────────
+
+export interface AgentInfo {
+    id: string;
+    name: string;
+    description?: string;
+}
 
 export interface InvokeOptions {
     sessionId?: string;

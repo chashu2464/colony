@@ -180,6 +180,10 @@ class Agent {
                 round++;
                 const existingSession = this.roomSessions.get(message.roomId);
                 log.info(`[${this.name}] Invoking LLM (round ${round}) for message from ${message.sender.name}...`);
+                // Broadcast "thinking" indicator immediately so the UI sees activity
+                chatRoom.sendAgentMessage(this.id, `正在调用 ${this.config.model.primary} 处理消息...`, [], {
+                    isMonologue: true,
+                });
                 const controller = new AbortController();
                 this.activeInvocations.set(message.roomId, controller);
                 try {
@@ -193,7 +197,13 @@ class Agent {
                             COLONY_ROOM_ID: message.roomId,
                             COLONY_API: process.env.COLONY_API ?? 'http://localhost:3001',
                         },
-                    }, this.config.model.fallback);
+                    }, this.config.model.fallback, {
+                        onStatusUpdate: (statusMsg) => {
+                            chatRoom.sendAgentMessage(this.id, statusMsg, [], {
+                                isMonologue: true,
+                            });
+                        },
+                    });
                     // ── Log full raw LLM response for debugging ──
                     log.info(`[${this.name}] ── LLM Response round ${round} (${result.text.length} chars) ──`);
                     log.info(`[${this.name}] ${result.text}`);
@@ -230,21 +240,29 @@ class Agent {
         }
         catch (err) {
             log.error(`[${this.name}] Error handling message:`, err);
-            this.setStatus('error');
             const errMsg = err.message ?? '';
-            chatRoom?.sendAgentMessage(this.id, `Agent Pipeline Crashed: ${errMsg}`, [], {
-                isMonologue: true,
-                error: errMsg,
-            });
             if (errMsg.toLowerCase().includes('aborted')) {
                 log.info(`[${this.name}] Invocation was aborted for room ${message.roomId}`);
+                chatRoom?.sendAgentMessage(this.id, `⏹️ 已停止执行`, [], {
+                    isMonologue: true,
+                });
                 this.setStatus('idle');
                 return;
             }
-            if (errMsg.includes('exhausted') || errMsg.includes('rate')) {
+            if (errMsg.includes('exhausted') || errMsg.includes('rate') || errMsg.includes('429') || errMsg.includes('capacity')) {
                 log.warn(`[${this.name}] Agent hit rate limit on model: ${this.config.model.primary}`);
+                chatRoom?.sendAgentMessage(this.id, `⚠️ 模型调用受限: ${errMsg}`, [], {
+                    isMonologue: true,
+                    error: errMsg,
+                });
                 this.setStatus('rate_limited');
+                return;
             }
+            this.setStatus('error');
+            chatRoom?.sendAgentMessage(this.id, `❌ 调用出错: ${errMsg}`, [], {
+                isMonologue: true,
+                error: errMsg,
+            });
             return;
         }
         this.setStatus('idle');

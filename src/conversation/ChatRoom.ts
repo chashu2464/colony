@@ -287,6 +287,7 @@ export class ChatRoom {
                 id: a.id,
                 type: 'agent' as const,
                 name: a.name,
+                description: a.config.description,
             })),
             ...Array.from(this.humanParticipants.values()),
         ];

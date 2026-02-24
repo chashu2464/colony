@@ -64,6 +64,7 @@ class AgentRegistry {
         return this.getAll().map(a => ({
             id: a.id,
             name: a.name,
+            description: a.config.description,
             status: a.getStatus(),
             model: a.config.model.primary,
         }));

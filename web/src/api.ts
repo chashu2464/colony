@@ -15,6 +15,7 @@ export interface Participant {
     id: string;
     type: 'agent' | 'human';
     name: string;
+    description?: string;
 }
 
 export interface Message {
@@ -36,6 +37,7 @@ export interface Message {
 export interface AgentInfo {
     id: string;
     name: string;
+    description?: string;
     status: string;
     model: string;
 }

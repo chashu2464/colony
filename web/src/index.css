@@ -544,6 +544,55 @@ body {
   gap: 6px;
 }
 
+.agent-card-description {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  padding: 4px 8px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-glass);
+}
+
+/* ── Modal Agent Select ───────────────────────────────── */
+.modal-agent-select {
+  margin-bottom: 16px;
+}
+
+.modal-agent-list {
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  background: var(--bg-primary);
+}
+
+.modal-agent-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.modal-agent-item:last-child {
+  border-bottom: none;
+}
+
+.modal-agent-item:hover {
+  background: var(--bg-glass-hover);
+}
+
+.modal-agent-item input[type="checkbox"] {
+  accent-color: var(--accent-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
 /* ── Empty State ───────────────────────────────────────── */
 .empty-state {
   flex: 1;

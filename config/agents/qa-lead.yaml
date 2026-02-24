@@ -1,5 +1,6 @@
 id: qa-lead
 name: "QA负责人"
+description: "负责测试用例设计、自动化验证和Bug报告"
 model:
   primary: gemini
   fallback: [claude]

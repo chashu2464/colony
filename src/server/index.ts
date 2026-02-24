@@ -226,6 +226,13 @@ export function createColonyServer(options: ServerOptions) {
     app.post('/api/sessions/:id/stop', (req, res) => {
         try {
             colony.chatRoomManager.stopRoom(req.params.id);
+            // Broadcast a system message to confirm stop
+            const room = colony.chatRoomManager.getRoom(req.params.id);
+            if (room) {
+                room.sendAgentMessage('system', '⏹️ 已停止所有 Agent 的执行', [], {
+                    isMonologue: true,
+                });
+            }
             res.json({ ok: true });
         } catch (err) {
             res.status(404).json({ error: (err as Error).message });

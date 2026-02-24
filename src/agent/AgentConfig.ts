@@ -46,6 +46,7 @@ export function loadAgentConfig(filePath: string): AgentConfig {
     const config: AgentConfig = {
         id: parsed.id as string,
         name: parsed.name as string,
+        description: parsed.description as string | undefined,
         model: { primary, fallback },
         personality: (parsed.personality as string).trim(),
         rules: parsed.rules as string[] | undefined,

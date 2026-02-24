@@ -83,10 +83,11 @@ export class AgentRegistry {
     /**
      * Get a summary of all agents and their status.
      */
-    getStatusSummary(): Array<{ id: string; name: string; status: AgentStatus; model: string }> {
+    getStatusSummary(): Array<{ id: string; name: string; description?: string; status: AgentStatus; model: string }> {
         return this.getAll().map(a => ({
             id: a.id,
             name: a.name,
+            description: a.config.description,
             status: a.getStatus(),
             model: a.config.model.primary,
         }));

@@ -37,6 +37,7 @@ export declare class AgentRegistry {
     getStatusSummary(): Array<{
         id: string;
         name: string;
+        description?: string;
         status: AgentStatus;
         model: string;
     }>;

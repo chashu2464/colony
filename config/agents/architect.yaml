@@ -1,5 +1,6 @@
 id: architect
 name: "架构师"
+description: "负责整体系统设计、技术规范和方案评审"
 model:
   primary: claude
   fallback: [gemini]

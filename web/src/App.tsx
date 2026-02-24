@@ -41,6 +41,7 @@ export default function App() {
   const [newSessionWorkingDir, setNewSessionWorkingDir] = useState('');
   const [thinkingAgents, setThinkingAgents] = useState<Set<string>>(new Set());
   const [attachments, setAttachments] = useState<{ type: string; url: string }[]>([]);
+  const [newSessionAgentIds, setNewSessionAgentIds] = useState<string[]>([]);
 
   // Load initial data
   useEffect(() => {
@@ -103,10 +104,22 @@ export default function App() {
 
   // ── Handlers ────────────────────────────────────────
 
+  function openNewSessionModal() {
+    setNewSessionAgentIds(agents.map(a => a.id));
+    setShowNewModal(true);
+  }
+
+  function toggleAgentSelection(agentId: string) {
+    setNewSessionAgentIds(prev =>
+      prev.includes(agentId) ? prev.filter(id => id !== agentId) : [...prev, agentId]
+    );
+  }
+
   async function handleCreateSession() {
     if (!newSessionName.trim()) return;
+    if (newSessionAgentIds.length === 0) return;
     const workingDir = newSessionWorkingDir.trim() || undefined;
-    const session = await createSession(newSessionName.trim(), undefined, workingDir);
+    const session = await createSession(newSessionName.trim(), newSessionAgentIds, workingDir);
     // Join as human
     await joinSession(session.id, { id: USER_ID, type: 'human', name: USER_NAME });
     setSessions(prev => [...prev, session]);
@@ -114,6 +127,7 @@ export default function App() {
     setShowNewModal(false);
     setNewSessionName('');
     setNewSessionWorkingDir('');
+    setNewSessionAgentIds([]);
   }
 
   async function handleSelectSession(sessionId: string) {
@@ -270,7 +284,7 @@ export default function App() {
           ))}
         </div>
 
-        <button className="new-session-btn" onClick={() => setShowNewModal(true)}>
+        <button className="new-session-btn" onClick={openNewSessionModal}>
           + 创建新会话
         </button>
       </aside>
@@ -300,14 +314,6 @@ export default function App() {
                 >
                   ⏹️ 停止
                 </button>
-                <div className="chat-header-agents">
-                  {agents.map(agent => (
-                    <div key={agent.id} className="agent-badge">
-                      <span className={`status-dot ${agent.status}`} />
-                      {agent.name}
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
 
@@ -440,25 +446,32 @@ export default function App() {
       {activeSession && (
         <div className="agent-panel">
           <div className="agent-panel-title">Agents</div>
-          {agents.map(agent => (
-            <div key={agent.id} className="agent-card">
-              <div className="agent-card-header">
-                <div className={`message-avatar ${getAgentColor(agent.id)}`} style={{ width: 24, height: 24, fontSize: 11 }}>
-                  {getInitial(agent.name)}
+          {agents
+            .filter(agent => activeSessionData?.participants.some(p => p.id === agent.id))
+            .map(agent => (
+              <div key={agent.id} className="agent-card">
+                <div className="agent-card-header">
+                  <div className={`message-avatar ${getAgentColor(agent.id)}`} style={{ width: 24, height: 24, fontSize: 11 }}>
+                    {getInitial(agent.name)}
+                  </div>
+                  <span className="agent-card-name">{agent.name}</span>
+                  <span className="agent-card-model">{agent.model}</span>
                 </div>
-                <span className="agent-card-name">{agent.name}</span>
-                <span className="agent-card-model">{agent.model}</span>
+                <div className="agent-card-status">
+                  <span className={`status-dot ${agent.status}`} />
+                  {agent.status === 'idle' && '空闲'}
+                  {agent.status === 'thinking' && '思考中...'}
+                  {agent.status === 'executing_skill' && '执行技能...'}
+                  {agent.status === 'rate_limited' && '额度受限'}
+                  {agent.status === 'error' && '错误'}
+                </div>
+                {agent.description && (
+                  <div className="agent-card-description">
+                    {agent.description}
+                  </div>
+                )}
               </div>
-              <div className="agent-card-status">
-                <span className={`status-dot ${agent.status}`} />
-                {agent.status === 'idle' && '空闲'}
-                {agent.status === 'thinking' && '思考中...'}
-                {agent.status === 'executing_skill' && '执行技能...'}
-                {agent.status === 'rate_limited' && '额度受限'}
-                {agent.status === 'error' && '错误'}
-              </div>
-            </div>
-          ))}
+            ))}
         </div>
       )}
 
@@ -485,6 +498,35 @@ export default function App() {
             />
             <div style={{ fontSize: '0.85em', color: '#666', marginTop: '8px', marginBottom: '12px' }}>
               示例: /Users/username/projects/my-app
+            </div>
+
+            {/* Agent selection */}
+            <div className="modal-agent-select">
+              <div style={{ fontWeight: 500, marginBottom: '8px', color: '#333' }}>选择参与的 Agent：</div>
+              <div className="modal-agent-list">
+                {agents.map(agent => (
+                  <label key={agent.id} className="modal-agent-item">
+                    <input
+                      type="checkbox"
+                      checked={newSessionAgentIds.includes(agent.id)}
+                      onChange={() => toggleAgentSelection(agent.id)}
+                    />
+                    <div className={`message-avatar ${getAgentColor(agent.id)}`} style={{ width: 22, height: 22, fontSize: 10 }}>
+                      {getInitial(agent.name)}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 500, fontSize: '13px' }}>{agent.name}</div>
+                      {agent.description && (
+                        <div style={{ fontSize: '11px', color: '#888' }}>{agent.description}</div>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#aaa' }}>{agent.model}</span>
+                  </label>
+                ))}
+              </div>
+              {newSessionAgentIds.length === 0 && (
+                <div style={{ fontSize: '12px', color: '#ef4444', marginTop: '6px' }}>请至少选择一个 Agent</div>
+              )}
             </div>
             <div className="modal-actions">
               <button className="modal-btn secondary" onClick={() => setShowNewModal(false)}>
