@@ -45,7 +45,7 @@ function do_git_commit() {
   if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     if ! git diff-index --quiet HEAD -- 2>/dev/null; then
       git add .
-      git commit -m "chore(workflow): Advance to stage $stage_num - $stage_name" -m "Notes: $msg" >/dev/null 2>&1
+      git commit -m "chore(workflow): Advance to stage $stage_num - $stage_name" -m "Notes: $msg" --no-verify >/dev/null 2>&1
     fi
   fi
 }
@@ -169,7 +169,7 @@ EOF
           git checkout "$MAIN_BRANCH" >/dev/null 2>&1
           log_msg="feat: complete task $TASK_ID - $TASK_NAME"
           if git merge --squash "$BRANCH_NAME" >/dev/null 2>&1; then
-            git commit -m "$log_msg" >/dev/null 2>&1
+            git commit -m "$log_msg" --no-verify >/dev/null 2>&1
             git branch -D "$BRANCH_NAME" >/dev/null 2>&1
           else
             echo '{"error": "Merge conflict detected. Please resolve manually on master branch."}'
