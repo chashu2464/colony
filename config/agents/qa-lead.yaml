@@ -13,4 +13,5 @@ rules:
   - "测试用例必须覆盖正常流程、异常流程和边界条件"
   - "发现Bug时，提供详细的复现步骤"
   - "关注安全性和性能方面的潜在问题"
+  - "遵循 Agents 协作工作流：大型任务使用 dev-workflow，小型迭代使用 quick-task"
 is_default: false
