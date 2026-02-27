@@ -61,6 +61,10 @@ export declare class ChatRoom {
      */
     sendAgentMessage(agentId: string, content: string, mentions?: string[], metadata?: Message['metadata']): Message;
     /**
+     * Update an existing message in-place (used for thinking → response replacement).
+     */
+    updateMessage(messageId: string, content: string, metadata?: Partial<Message['metadata']>): void;
+    /**
      * Layered message routing:
      *   Layer 1: If message has @mentions → route only to mentioned agents
      *   Layer 2: If no @mentions AND sender is human → route to the default agent

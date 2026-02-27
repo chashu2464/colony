@@ -27,6 +27,7 @@ export interface Message {
     timestamp: string;
     metadata?: {
         isMonologue?: boolean;
+        isPending?: boolean;
         toolCalls?: any[];
         error?: string;
         attachments?: { type: string; url: string }[];

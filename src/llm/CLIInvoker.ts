@@ -6,10 +6,50 @@ import { spawn, execSync } from 'child_process';
 import { createInterface } from 'readline';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as os from 'os';
+import * as crypto from 'crypto';
 import { Logger } from '../utils/Logger.js';
 import type { SupportedCLI, InvokeOptions, InvokeResult, ToolUseEvent } from '../types.js';
 
 const log = new Logger('CLIInvoker');
+
+// ── Utilities for Attachments ─────────────────────────────
+
+/**
+ * Saves a base64 image data to a temporary file.
+ */
+function saveTempImage(base64Data: string, index: number): string {
+    const tempDir = path.join(os.tmpdir(), 'colony-attachments');
+    if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+    }
+
+    // Extract MIME type and data
+    // Format is usually: data:image/png;base64,iVBORw...
+    const matches = base64Data.match(/^data:image\/(\w+);base64,(.+)$/);
+    if (!matches) throw new Error('Invalid base64 image format');
+
+    const ext = matches[1];
+    const data = matches[2];
+    const filename = `${crypto.randomUUID()}-${index}.${ext}`;
+    const filepath = path.join(tempDir, filename);
+
+    fs.writeFileSync(filepath, Buffer.from(data, 'base64'));
+    return filepath;
+}
+
+/**
+ * Deletes temporary files.
+ */
+function cleanupTempFiles(files: string[]): void {
+    for (const file of files) {
+        try {
+            if (fs.existsSync(file)) fs.unlinkSync(file);
+        } catch (err) {
+            log.warn(`Failed to cleanup temp file ${file}:`, err);
+        }
+    }
+}
 
 // ── Structured Error ─────────────────────────────────────
 
@@ -73,7 +113,7 @@ export function getSession(name: string): SessionRecord | null {
 // ── CLI Configurations ───────────────────────────────────
 
 interface CLIConfigEntry {
-    buildArgs: (prompt: string, sessionId: string | null) => string[];
+    buildArgs: (prompt: string, sessionId: string | null, files?: string[]) => string[];
     extractText: (event: Record<string, unknown>) => string | null;
     extractSessionId: (event: Record<string, unknown>) => string | null;
     extractToolUse: (event: Record<string, unknown>) => ToolUseEvent | null;
@@ -82,7 +122,7 @@ interface CLIConfigEntry {
 
 const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
     claude: {
-        buildArgs: (prompt, sessionId) => {
+        buildArgs: (prompt, sessionId, files) => {
             const args = [
                 '-p', prompt,
                 '--output-format', 'stream-json',
@@ -90,6 +130,11 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
                 '--dangerously-skip-permissions',
             ];
             if (sessionId) args.push('--resume', sessionId);
+            if (files && files.length > 0) {
+                for (const file of files) {
+                    args.push('--file', file);
+                }
+            }
             return args;
         },
         extractText: (event) => {
@@ -128,9 +173,14 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
     },
 
     gemini: {
-        buildArgs: (prompt, sessionId) => {
+        buildArgs: (prompt, sessionId, files) => {
             const args = ['-p', prompt, '--output-format', 'stream-json', '--yolo'];
             if (sessionId) args.push('--resume', sessionId);
+            if (files && files.length > 0) {
+                for (const file of files) {
+                    args.push('--file', file);
+                }
+            }
             return args;
         },
         extractText: (event) => {
@@ -164,9 +214,14 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
     },
 
     codex: {
-        buildArgs: (prompt, sessionId) => {
+        buildArgs: (prompt, sessionId, files) => {
             const args = ['-p', prompt, '--output-format', 'stream-json', '--yolo'];
             if (sessionId) args.push('--resume', sessionId);
+            if (files && files.length > 0) {
+                for (const file of files) {
+                    args.push('--file', file);
+                }
+            }
             return args;
         },
         extractText: (event) => {
@@ -235,165 +290,182 @@ export async function invoke(
         throw new InvokeError(`CLI "${cli}" not found in PATH`, { type: 'spawn_error', cli });
     }
 
-    const args = config.buildArgs(prompt, sessionId);
-    log.info(`Invoking ${cli}`, { sessionId: sessionId ?? 'new', cwd: options.cwd ?? 'default' });
+    const args = config.buildArgs(prompt, sessionId, []); // Initial empty call to find binary
+    log.debug(`CLI path resolution for ${cli}`);
 
-    return new Promise<InvokeResult>((resolve, reject) => {
-        let settled = false;
-        let childExitCode: number | null = null;
-        let rlClosed = false;
+    let tempFiles: string[] = [];
 
-        const child = spawn(cliPath, args, {
-            stdio: ['ignore', 'pipe', 'pipe'],
-            env: { ...process.env, ...options.env },
-            cwd: options.cwd, // Set working directory
-        });
-
-        const textChunks: string[] = [];
-        let capturedSessionId: string | null = null;
-        let stderr = '';
-        let tokenUsage: { input: number; output: number } | undefined;
-        const toolCalls: ToolUseEvent[] = [];
-
-        // ── Idle timeout ───────────────────────────────────
-        let lastActivity = Date.now();
-        const resetActivity = () => { lastActivity = Date.now(); };
-
-        child.stdout.on('data', resetActivity);
-        child.stderr.on('data', resetActivity);
-
-        const idleChecker = setInterval(() => {
-            if (Date.now() - lastActivity > idleTimeoutMs) {
-                clearInterval(idleChecker);
-                child.kill('SIGTERM');
-                setTimeout(() => { if (!child.killed) child.kill('SIGKILL'); }, 5000);
-                settle(
-                    'reject',
-                    new InvokeError(
-                        `${cli} timeout (${Math.round(idleTimeoutMs / 1000)}s idle)`,
-                        { type: 'timeout', cli, stderr }
-                    )
-                );
-            }
-        }, 5000);
-
-        // ── Process cleanup ────────────────────────────────
-        const cleanup = () => { if (!child.killed) child.kill('SIGTERM'); };
-        process.on('SIGINT', cleanup);
-        process.on('SIGTERM', cleanup);
-
-        const removeCleanupListeners = () => {
-            process.off('SIGINT', cleanup);
-            process.off('SIGTERM', cleanup);
-        };
-
-        // ── AbortSignal ────────────────────────────────────
-        const onAbort = () => {
-            if (settled) return;
-            child.kill('SIGTERM');
-            setTimeout(() => { if (!child.killed) child.kill('SIGKILL'); }, 2000);
-            settle('reject', new InvokeError('Invocation aborted', { type: 'exit_error', cli, stderr }));
-        };
-        if (options.signal) {
-            if (options.signal.aborted) {
-                onAbort();
-                return;
-            }
-            options.signal.addEventListener('abort', onAbort);
+    try {
+        // Handle attachments
+        if (options.attachments && options.attachments.length > 0) {
+            tempFiles = options.attachments.map((att, idx) => saveTempImage(att.url, idx));
+            log.info(`Saved ${tempFiles.length} temp image(s) for ${cli}`);
         }
 
-        // ── Settle logic ───────────────────────────────────
-        function settle(action: 'resolve' | 'reject', value: InvokeResult | InvokeError): void {
-            if (settled) return;
-            settled = true;
-            clearInterval(idleChecker);
-            removeCleanupListeners();
-            if (options.signal) {
-                options.signal.removeEventListener('abort', onAbort);
-            }
-            if (action === 'resolve') resolve(value as InvokeResult);
-            else reject(value as InvokeError);
-        }
+        const argsWithFiles = config.buildArgs(prompt, sessionId, tempFiles);
+        log.info(`Invoking ${cli}`, { sessionId: sessionId ?? 'new', cwd: options.cwd ?? 'default', fileCount: tempFiles.length });
 
-        // ── Parse stdout line by line ──────────────────────
-        const rl = createInterface({ input: child.stdout });
+        return await new Promise<InvokeResult>((resolve, reject) => {
+            let settled = false;
+            let childExitCode: number | null = null;
+            let rlClosed = false;
 
-        rl.on('line', (line) => {
-            if (!line.trim()) return;
-            let event: Record<string, unknown>;
-            try { event = JSON.parse(line) as Record<string, unknown>; } catch { return; }
-
-            const sid = config.extractSessionId(event);
-            if (sid) capturedSessionId = sid;
-
-            const text = config.extractText(event);
-            if (text) {
-                textChunks.push(text);
-                options.onToken?.(text);
-            }
-
-            const toolUse = config.extractToolUse(event);
-            if (toolUse) {
-                toolCalls.push(toolUse);
-                options.onToolUse?.(toolUse);
-            }
-
-            const usage = config.extractTokenUsage(event);
-            if (usage) {
-                tokenUsage = usage;
-            }
-        });
-
-        // ── Collect stderr ─────────────────────────────────
-        child.stderr.on('data', (d) => { stderr += d.toString(); });
-
-        // ── Finalize ───────────────────────────────────────
-        function tryFinalize(): void {
-            if (childExitCode === null || !rlClosed) return;
-
-            if (childExitCode !== 0) {
-                settle(
-                    'reject',
-                    new InvokeError(
-                        `${cli} exited with code ${childExitCode}${stderr ? ': ' + stderr.trim() : ''}`,
-                        { type: 'exit_error', cli, code: childExitCode, stderr }
-                    )
-                );
-                return;
-            }
-
-            const finalSessionId = capturedSessionId || sessionId;
-            if (options.sessionName && finalSessionId) {
-                saveSession(options.sessionName, finalSessionId, cli);
-            }
-
-            settle('resolve', {
-                text: textChunks.join(''),
-                sessionId: finalSessionId,
-                tokenUsage,
-                toolCalls,
+            const child = spawn(cliPath, argsWithFiles, {
+                stdio: ['ignore', 'pipe', 'pipe'],
+                env: { ...process.env, ...options.env },
+                cwd: options.cwd, // Set working directory
             });
+
+            const textChunks: string[] = [];
+            let capturedSessionId: string | null = null;
+            let stderr = '';
+            let tokenUsage: { input: number; output: number } | undefined;
+            const toolCalls: ToolUseEvent[] = [];
+
+            // ── Idle timeout ───────────────────────────────────
+            let lastActivity = Date.now();
+            const resetActivity = () => { lastActivity = Date.now(); };
+
+            child.stdout.on('data', resetActivity);
+            child.stderr.on('data', resetActivity);
+
+            const idleChecker = setInterval(() => {
+                if (Date.now() - lastActivity > idleTimeoutMs) {
+                    clearInterval(idleChecker);
+                    child.kill('SIGTERM');
+                    setTimeout(() => { if (!child.killed) child.kill('SIGKILL'); }, 5000);
+                    settle(
+                        'reject',
+                        new InvokeError(
+                            `${cli} timeout (${Math.round(idleTimeoutMs / 1000)}s idle)`,
+                            { type: 'timeout', cli, stderr }
+                        )
+                    );
+                }
+            }, 5000);
+
+            // ── Process cleanup ────────────────────────────────
+            const cleanup = () => { if (!child.killed) child.kill('SIGTERM'); };
+            process.on('SIGINT', cleanup);
+            process.on('SIGTERM', cleanup);
+
+            const removeCleanupListeners = () => {
+                process.off('SIGINT', cleanup);
+                process.off('SIGTERM', cleanup);
+            };
+
+            // ── AbortSignal ────────────────────────────────────
+            const onAbort = () => {
+                if (settled) return;
+                child.kill('SIGTERM');
+                setTimeout(() => { if (!child.killed) child.kill('SIGKILL'); }, 2000);
+                settle('reject', new InvokeError('Invocation aborted', { type: 'exit_error', cli, stderr }));
+            };
+            if (options.signal) {
+                if (options.signal.aborted) {
+                    onAbort();
+                    return;
+                }
+                options.signal.addEventListener('abort', onAbort);
+            }
+
+            // ── Settle logic ───────────────────────────────────
+            function settle(action: 'resolve' | 'reject', value: InvokeResult | InvokeError): void {
+                if (settled) return;
+                settled = true;
+                clearInterval(idleChecker);
+                removeCleanupListeners();
+                if (options.signal) {
+                    options.signal.removeEventListener('abort', onAbort);
+                }
+                if (action === 'resolve') resolve(value as InvokeResult);
+                else reject(value as InvokeError);
+            }
+
+            // ── Parse stdout line by line ──────────────────────
+            const rl = createInterface({ input: child.stdout });
+
+            rl.on('line', (line) => {
+                if (!line.trim()) return;
+                let event: Record<string, unknown>;
+                try { event = JSON.parse(line) as Record<string, unknown>; } catch { return; }
+
+                const sid = config.extractSessionId(event);
+                if (sid) capturedSessionId = sid;
+
+                const text = config.extractText(event);
+                if (text) {
+                    textChunks.push(text);
+                    options.onToken?.(text);
+                }
+
+                const toolUse = config.extractToolUse(event);
+                if (toolUse) {
+                    toolCalls.push(toolUse);
+                    options.onToolUse?.(toolUse);
+                }
+
+                const usage = config.extractTokenUsage(event);
+                if (usage) {
+                    tokenUsage = usage;
+                }
+            });
+
+            // ── Collect stderr ─────────────────────────────────
+            child.stderr.on('data', (d) => { stderr += d.toString(); });
+
+            // ── Finalize ───────────────────────────────────────
+            function tryFinalize(): void {
+                if (childExitCode === null || !rlClosed) return;
+
+                if (childExitCode !== 0) {
+                    settle(
+                        'reject',
+                        new InvokeError(
+                            `${cli} exited with code ${childExitCode}${stderr ? ': ' + stderr.trim() : ''}`,
+                            { type: 'exit_error', cli, code: childExitCode, stderr }
+                        )
+                    );
+                    return;
+                }
+
+                const finalSessionId = capturedSessionId || sessionId;
+                if (options.sessionName && finalSessionId) {
+                    saveSession(options.sessionName, finalSessionId, cli);
+                }
+
+                settle('resolve', {
+                    text: textChunks.join(''),
+                    sessionId: finalSessionId,
+                    tokenUsage,
+                    toolCalls,
+                });
+            }
+
+            rl.on('close', () => {
+                rlClosed = true;
+                tryFinalize();
+            });
+
+            child.on('close', (code) => {
+                childExitCode = code ?? 1;
+                tryFinalize();
+            });
+
+            child.on('error', (err) => {
+                options.onError?.(err);
+                settle(
+                    'reject',
+                    new InvokeError(`Failed to start ${cli}: ${err.message}`, {
+                        type: 'spawn_error',
+                        cli,
+                    })
+                );
+            });
+        });
+    } finally {
+        if (tempFiles.length > 0) {
+            cleanupTempFiles(tempFiles);
         }
-
-        rl.on('close', () => {
-            rlClosed = true;
-            tryFinalize();
-        });
-
-        child.on('close', (code) => {
-            childExitCode = code ?? 1;
-            tryFinalize();
-        });
-
-        child.on('error', (err) => {
-            options.onError?.(err);
-            settle(
-                'reject',
-                new InvokeError(`Failed to start ${cli}: ${err.message}`, {
-                    type: 'spawn_error',
-                    cli,
-                })
-            );
-        });
-    });
+    }
 }

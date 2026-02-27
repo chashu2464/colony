@@ -189,6 +189,25 @@ class ChatRoom {
         return message;
     }
     /**
+     * Update an existing message in-place (used for thinking → response replacement).
+     */
+    updateMessage(messageId, content, metadata) {
+        const msg = this.messageHistory.find(m => m.id === messageId);
+        if (!msg) {
+            log.warn(`updateMessage: message ${messageId} not found`);
+            return;
+        }
+        msg.content = content;
+        if (metadata) {
+            msg.metadata = { ...msg.metadata, ...metadata };
+        }
+        // Emit update event (NOT a new message — frontend replaces in place)
+        this.messageBus.emitColonyEvent({
+            type: 'message_updated',
+            data: { ...msg },
+        });
+    }
+    /**
      * Layered message routing:
      *   Layer 1: If message has @mentions → route only to mentioned agents
      *   Layer 2: If no @mentions AND sender is human → route to the default agent
@@ -218,9 +237,14 @@ class ChatRoom {
         }
         if (mentionIds.length > 0) {
             // ── Layer 1: Explicit @mention routing ──
-            for (const mentionedId of mentionIds) {
-                if (mentionedId === senderId)
-                    continue;
+            // Agent messages: only route to the FIRST mentioned agent (prevent fan-out)
+            // Human messages: route to ALL mentioned agents
+            const otherIds = mentionIds.filter(id => id !== senderId);
+            const agentOnlyIds = otherIds.filter(id => this.agents.has(id));
+            const routeTargets = senderIsAgent
+                ? agentOnlyIds.slice(0, 1) // skip user mentions, pick first agent
+                : otherIds;
+            for (const mentionedId of routeTargets) {
                 const agent = this.agents.get(mentionedId);
                 if (agent) {
                     log.info(`Routing message to @${agent.name} in "${this.name}"`);
@@ -228,6 +252,9 @@ class ChatRoom {
                         log.error(`Error routing to agent "${agent.name}":`, err);
                     });
                 }
+            }
+            if (senderIsAgent && mentionIds.filter(id => id !== senderId).length > 1) {
+                log.warn(`Agent "${message.sender.name}" mentioned ${mentionIds.length} agents, only routing to first one`);
             }
         }
         else if (!senderIsAgent) {

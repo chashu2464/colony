@@ -37,6 +37,7 @@ export interface MessageMetadata {
         type: string;
         url: string;
     }[];
+    isPending?: boolean;
     [key: string]: unknown;
 }
 export interface Participant {
@@ -57,6 +58,10 @@ export interface InvokeOptions {
     env?: Record<string, string>;
     cwd?: string;
     signal?: AbortSignal;
+    attachments?: {
+        type: string;
+        url: string;
+    }[];
     onToken?: (token: string) => void;
     onToolUse?: (tool: ToolUseEvent) => void;
     onError?: (error: Error) => void;
@@ -140,6 +145,9 @@ export type ColonyEvent = {
     type: 'milestone';
     roomId: string;
     milestone: string;
+} | {
+    type: 'message_updated';
+    data: Message;
 };
 export interface AssembleOptions {
     agentId: string;

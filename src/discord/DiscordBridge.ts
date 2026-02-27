@@ -41,6 +41,11 @@ export class DiscordBridge {
             return;
         }
 
+        // Skip monologue messages (thinking, tool calls, etc.) for Discord
+        if (message.metadata?.isMonologue) {
+            return;
+        }
+
         // Find Discord channel for this session
         const channelId = this.sessionChannels.get(message.roomId);
         if (channelId) {

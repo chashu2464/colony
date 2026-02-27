@@ -93,10 +93,10 @@ export class ModelRouter {
                     lastError = err as Error;
 
                     // ── CRITICAL: Check for abort FIRST, before any retry logic ──
-                    const errMsg = (err as Error).message?.toLowerCase() ?? '';
-                    if (errMsg.includes('aborted') || options.signal?.aborted) {
-                        throw err; // Re-throw immediately, do NOT retry
+                    if (options.signal?.aborted) {
+                        throw new InvokeError('Invocation aborted', { type: 'exit_error', cli: model });
                     }
+                    const errMsg = (err as Error).message?.toLowerCase() ?? '';
 
                     if (err instanceof InvokeError) {
                         if (!err.retryable) {

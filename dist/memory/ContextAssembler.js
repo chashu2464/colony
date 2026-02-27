@@ -149,26 +149,26 @@ class ContextAssembler {
         return result;
     }
     buildGuidelinesSection() {
-        return `## 协作指南
+        return `## 【硬性要求】你的回复必须以调用 send-message 工具结束
 
-### 核心目标
-作为高效的 AI 协作助手，你的任务是执行并达成结果，而不仅仅是回复消息。
+> **⚠️ 关键规则：你的思考内容对用户完全不可见。无论分析了什么、做了什么，如果你没有调用 send-message，用户将看不到任何输出。每次响应的最后一步必须是调用 send-message 发送你的回复或结果。**
+
+## 协作指南
 
 ### 元规则 (Meta Rules)
-1. 主动发言：你的响应只是内心独白，必须通过 send-message skill才能回复问题、共享信息、汇报进度
-2. 不确定就提问：遇到不清楚的需求或技术细节时，向相关 Agent 或用户提问，不要硬猜。
-3. 严禁滥用提及 (@mention)：
-   - **绝对禁止**使用 @mention 进行纯通知、致谢、或阶段性工作总结的广播（这会无谓地唤醒所有其他 Agent 并消耗大量系统资源）。
-   - **只允许**在遇到实质性的技术阻碍，明确需要另一个人/Agent 提供额外的操作介入、解答问题或进行工作交接时，才 @他们。如果仅仅是陈述完成结果，直接发送消息即可，不要带任何 @。
-4. 禁止表演性同意：如果有疑虑或更好的方案，必须明确提出。
-5. 交接必须说明 WHY：提交代码或方案时，说明设计理由和技术选型原因。
-6. 重要变更需确认：涉及架构、API 或数据结构的重大调整，必须 @相关 Agent 并等待明确的放行信号（如：可以、LGTM、通过）后方可继续。
+1. **消息不可见原则**：你在此处写的所有内容都是内心独白，只有通过调用 send-message 工具，你的话才会被用户或其他 Agent 看到。
+2. 不确定就提问：遇到不清楚的需求时，先调用 send-message 向用户提问，不要硬猜。
+3. 严禁滥用 @mention：
+    - **只在明确需要另一方操作介入时**才 @他们。陈述结果、总结工作时不带 @。
+    - **一次只能 @ 一个agent**。（不包括用户，可以随意@用户）
+4. 禁止表演性同意：有疑虑或更好的建议必须明确说出来。
+5. 交接必须说明WHY：提交代码或方案时，说明设计理由与决策原因。
+6. 重要变更需确认：涉及架构或 API 的重大调整，必须 @相关方并等待确认信号。
 
-### 工具与沟通
-- 获取上下文：使用 get-messages 了解对话历史，有疑问时查看项目文件或直接提问。
-- 执行工作：使用工具推进任务完成。
-- 沟通进度：使用 send-message 汇报结果、请求澄清或确认下一步。你无法直接说话，必须调用此技能。
-- 结果导向：不要只说"完成"，要展示具体成果（如：已更新文件 X，通过测试）。`;
+### 工作流程
+1. 理解当前消息
+2. 执行必要的工具调用（查阅文件、执行操作等）
+3. **必须调用 send-message 发送回复** ← 永远不能省略这一步`;
     }
     buildHistorySection(roomId, currentMessage) {
         // Get recent messages (excluding the current one)
@@ -192,12 +192,14 @@ class ContextAssembler {
         return lines.join('\n');
     }
     buildCurrentMessageSection(message, agentId) {
-        const lines = ['## 当前消息'];
+        const lines = ['## 当前消息（需要你回应）'];
         lines.push(`**来自**: ${message.sender.name} (${message.sender.type})`);
         if (message.mentions.includes(agentId)) {
-            lines.push(`**你被 @提及了，请务必用 send-message 回复。**`);
+            lines.push(`**⚠️ 你被明确 @提及，必须回复。**`);
         }
         lines.push(`**内容**: ${message.content}`);
+        lines.push('');
+        lines.push('**→ 处理完成后，调用 send-message 工具发送你的回复。这是必须的最后一步。**');
         return lines.join('\n');
     }
     async buildLongTermSection(query, agentId, roomId) {

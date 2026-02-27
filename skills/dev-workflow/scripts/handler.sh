@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# dev-workflow v2 handler script
+# dev-workflow v2.1 handler script
 # Uses jq to manage session-specific workflow state according to docs/SKILL_DESIGN.md.
+# Enhanced with mandatory branching and squash merge.
 
 WORKFLOW_DIR=".data/workflows"
 mkdir -p "$WORKFLOW_DIR"
@@ -49,6 +50,16 @@ function do_git_commit() {
   fi
 }
 
+function ensure_feature_branch() {
+  local branch=$1
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    local current=$(git branch --show-current)
+    if [ "$current" != "$branch" ]; then
+      git checkout "$branch" >/dev/null 2>&1 || git checkout -b "$branch" >/dev/null 2>&1
+    fi
+  fi
+}
+
 # Read input JSON
 INPUT=$(cat)
 
@@ -65,9 +76,17 @@ case "$ACTION" in
     DESCRIPTION=$(echo "$INPUT" | jq -r '.description // ""')
     ASSIGNMENTS=$(echo "$INPUT" | jq -c '.assignments // {"architect":null,"tech_lead":null,"qa_lead":null,"developer":null}')
     
+    TASK_ID="$(uuidgen 2>/dev/null | tr '[:upper:]' '[:lower:]' | cut -c1-8 || echo $RANDOM-$RANDOM)"
+    
+    # Create feature branch immediately
+    BRANCH_NAME="feature/task-${TASK_ID}"
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      git checkout -b "$BRANCH_NAME" >/dev/null 2>&1 || git checkout "$BRANCH_NAME" >/dev/null 2>&1
+    fi
+
     cat > "$WORKFLOW_FILE" <<EOF
 {
-  "task_id": "$(uuidgen 2>/dev/null || echo $RANDOM-$RANDOM)",
+  "task_id": "$TASK_ID",
   "task_name": "$TASK_NAME",
   "description": "$DESCRIPTION",
   "current_stage": 0,
@@ -81,7 +100,7 @@ case "$ACTION" in
 EOF
     # Log init to history
     CURRENT_HASH=$(get_git_hash)
-    HISTORY_ENTRY=$(jq -n --arg actor "$COLONY_AGENT_ID" --arg notes "Workflow initialized" --arg hash "$CURRENT_HASH" '{from_stage: null, to_stage: 0, action: "init", actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'" }')
+    HISTORY_ENTRY=$(jq -n --arg actor "$COLONY_AGENT_ID" --arg notes "Workflow initialized and branch $BRANCH_NAME created" --arg hash "$CURRENT_HASH" '{from_stage: null, to_stage: 0, action: "init", actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'" }')
     jq --argjson entry "$HISTORY_ENTRY" '.history += [$entry]' "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
     
     cat "$WORKFLOW_FILE"
@@ -119,7 +138,6 @@ EOF
     fi
 
     # Guardrails for critical stages requiring approval
-    # Critical stages here are the stages WE JUST FINISHED.
     case $CURRENT in
       2|3|4|5|7|8)
         APPROVED=$(jq --arg stage "$CURRENT" '.reviews | map(select(.stage == ($stage|tonumber) and .status == "approved")) | length' "$WORKFLOW_FILE")
@@ -130,27 +148,39 @@ EOF
         ;;
     esac
     
-    # Git Auto-commit & Branching
+    # Ensure we are on the feature branch
     TASK_ID=$(jq -r '.task_id' "$WORKFLOW_FILE")
+    TASK_NAME=$(jq -r '.task_name' "$WORKFLOW_FILE")
     BRANCH_NAME="feature/task-${TASK_ID}"
+    
+    if [ "$NEXT" -le 7 ]; then
+      ensure_feature_branch "$BRANCH_NAME"
+    fi
 
-    if [ "$NEXT" -eq 6 ]; then
+    # Handle completion and merge
+    if [ "$NEXT" -eq 8 ]; then
       if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        # Create and checkout feature branch
-        git checkout -b "$BRANCH_NAME" >/dev/null 2>&1 || git checkout "$BRANCH_NAME" >/dev/null 2>&1
-      fi
-    elif [ "$NEXT" -eq 8 ]; then
-      if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-        # Merge back to main branch
+        # Commit remaining work on feature branch
+        do_git_commit "$CURRENT" "${STAGES[$CURRENT]}" "Final changes before merge"
+        
+        # Squash Merge back to main branch
         MAIN_BRANCH=$(get_main_branch)
         if [ ! -z "$MAIN_BRANCH" ]; then
           git checkout "$MAIN_BRANCH" >/dev/null 2>&1
-          git merge "$BRANCH_NAME" -m "Merge feature branch for workflow task $TASK_ID" >/dev/null 2>&1 || true
+          log_msg="feat: complete task $TASK_ID - $TASK_NAME"
+          if git merge --squash "$BRANCH_NAME" >/dev/null 2>&1; then
+            git commit -m "$log_msg" >/dev/null 2>&1
+            git branch -D "$BRANCH_NAME" >/dev/null 2>&1
+          else
+            echo '{"error": "Merge conflict detected. Please resolve manually on master branch."}'
+            exit 1
+          fi
         fi
       fi
+    else
+      do_git_commit "$NEXT" "${STAGES[$NEXT]}" "$NOTES"
     fi
 
-    do_git_commit "$NEXT" "${STAGES[$NEXT]}" "$NOTES"
     CURRENT_HASH=$(get_git_hash)
 
     # Store history
@@ -224,14 +254,9 @@ EOF
       '.current_stage = ($target|tonumber) | .stage_name = $target_name | .status = "active" | .history += [$entry]' \
       "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
       
-    # Prepend a git reset warning to the JSON response by injecting a special meta field so Agents can read it seamlessly
     if [ ! -z "$TARGET_HASH" ]; then
       TASK_ID=$(jq -r '.task_id' "$WORKFLOW_FILE")
-      BRANCH_STR=""
-      if [[ "$TARGET" -eq 6 || "$TARGET" -eq 7 ]]; then
-         BRANCH_STR="Ensure you are on branch feature/task-${TASK_ID}. Then "
-      fi
-      WARNING_MSG="Workflow backtracked. ${BRANCH_STR}To explicitly rollback workspace files to Stage $TARGET, execute: git reset --hard $TARGET_HASH (WARNING: destructs uncommitted files)"
+      WARNING_MSG="Workflow backtracked. You should ensure you are on branch feature/task-${TASK_ID}. To explicitly rollback workspace files to Stage $TARGET, execute: git reset --hard $TARGET_HASH (WARNING: destructs uncommitted files)"
       jq --arg msg "$WARNING_MSG" '.warning = $msg' "$WORKFLOW_FILE"
     else
       cat "$WORKFLOW_FILE"

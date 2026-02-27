@@ -68,10 +68,10 @@ class ModelRouter {
                 catch (err) {
                     lastError = err;
                     // ── CRITICAL: Check for abort FIRST, before any retry logic ──
-                    const errMsg = err.message?.toLowerCase() ?? '';
-                    if (errMsg.includes('aborted') || options.signal?.aborted) {
-                        throw err; // Re-throw immediately, do NOT retry
+                    if (options.signal?.aborted) {
+                        throw new CLIInvoker_js_1.InvokeError('Invocation aborted', { type: 'exit_error', cli: model });
                     }
+                    const errMsg = err.message?.toLowerCase() ?? '';
                     if (err instanceof CLIInvoker_js_1.InvokeError) {
                         if (!err.retryable) {
                             log.error(`Non-retryable error for ${model}: ${err.message}`);

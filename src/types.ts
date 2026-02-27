@@ -49,6 +49,7 @@ export interface MessageMetadata {
     error?: string;
     toolCalls?: any[];
     attachments?: { type: string; url: string }[];
+    isPending?: boolean;
     [key: string]: unknown;
 }
 
@@ -74,6 +75,7 @@ export interface InvokeOptions {
     env?: Record<string, string>;
     cwd?: string; // Working directory for CLI process
     signal?: AbortSignal;
+    attachments?: { type: string; url: string }[];
     onToken?: (token: string) => void;
     onToolUse?: (tool: ToolUseEvent) => void;
     onError?: (error: Error) => void;
@@ -150,7 +152,8 @@ export type ColonyEvent =
     | { type: 'room_deleted'; roomId: string }
     | { type: 'session_paused'; roomId: string }
     | { type: 'session_resumed'; roomId: string }
-    | { type: 'milestone'; roomId: string; milestone: string };
+    | { type: 'milestone'; roomId: string; milestone: string }
+    | { type: 'message_updated'; data: Message };
 
 // ── Context Assembly Types (for agent awareness) ─────────
 

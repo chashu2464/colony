@@ -189,10 +189,12 @@ export class Agent {
 
                 log.info(`[${this.name}] Invoking LLM (round ${round}) for message from ${message.sender.name}...`);
 
-                // Broadcast "thinking" indicator immediately so the UI sees activity
-                chatRoom.sendAgentMessage(this.id, `正在调用 ${this.config.model.primary} 处理消息...`, [], {
+                // Send a pending placeholder message — will be updated in-place
+                const pendingMsg = chatRoom.sendAgentMessage(this.id, `正在思考...`, [], {
                     isMonologue: true,
+                    isPending: true,
                 });
+                const pendingId = pendingMsg.id;
 
                 const controller = new AbortController();
                 this.activeInvocations.set(message.roomId, controller);
@@ -206,6 +208,7 @@ export class Agent {
                             sessionId: existingSession ?? undefined,
                             cwd: workingDir, // Set working directory for CLI
                             signal: controller.signal,
+                            attachments: message.metadata?.attachments,
                             env: {
                                 COLONY_AGENT_ID: this.id,
                                 COLONY_ROOM_ID: message.roomId,
@@ -215,9 +218,8 @@ export class Agent {
                         this.config.model.fallback,
                         {
                             onStatusUpdate: (statusMsg: string) => {
-                                chatRoom.sendAgentMessage(this.id, statusMsg, [], {
-                                    isMonologue: true,
-                                });
+                                // Update the pending message with status (e.g. "429, switching...")
+                                chatRoom.updateMessage(pendingId, statusMsg, { isPending: true, isMonologue: true });
                             },
                         }
                     );
@@ -232,12 +234,16 @@ export class Agent {
                         this.roomSessions.set(message.roomId, result.sessionId);
                     }
 
-                    // Broadcast inner monologue / trace to frontend
+                    // Update pending message with actual response content
                     if (result.text || (result.toolCalls && result.toolCalls.length > 0)) {
-                        chatRoom.sendAgentMessage(this.id, result.text || '(Silent Execution)', [], {
+                        chatRoom.updateMessage(pendingId, result.text || '(Silent Execution)', {
                             isMonologue: true,
+                            isPending: false,
                             toolCalls: result.toolCalls || [],
                         });
+                    } else {
+                        // No content — just clear pending state
+                        chatRoom.updateMessage(pendingId, '(无输出)', { isMonologue: true, isPending: false });
                     }
 
                     // Check if CLI executed any tools
@@ -254,38 +260,39 @@ export class Agent {
                     }
 
                     // Tools were called but no send-message
-                    // This shouldn't happen in normal flow, but handle it gracefully
                     log.warn(`[${this.name}] Tools called but no send-message: ${toolCalls.map(t => t.name).join(', ')}`);
                     break;
+                } catch (innerErr) {
+                    const innerErrMsg = (innerErr as Error).message ?? '';
+
+                    // ONLY check the signal itself — don't match error text to avoid
+                    // false positives from CLI errors that contain the word 'aborted'.
+                    if (controller.signal.aborted) {
+                        // Clear stale session so next message starts fresh
+                        this.roomSessions.delete(message.roomId);
+                        chatRoom.updateMessage(pendingId, `⏹️ 已停止执行`, { isMonologue: true, isPending: false });
+                        this.setStatus('idle');
+                        return;
+                    }
+
+                    if (innerErrMsg.includes('exhausted') || innerErrMsg.includes('rate') || innerErrMsg.includes('429') || innerErrMsg.includes('capacity')) {
+                        chatRoom.updateMessage(pendingId, `⚠️ 模型调用受限: ${innerErrMsg}`, { isMonologue: true, isPending: false, error: innerErrMsg });
+                        this.setStatus('rate_limited');
+                        return;
+                    }
+
+                    // Other errors — update pending and re-throw to outer catch
+                    chatRoom.updateMessage(pendingId, `❌ 调用出错: ${innerErrMsg}`, { isMonologue: true, isPending: false, error: innerErrMsg });
+                    throw innerErr;
                 } finally {
                     this.activeInvocations.delete(message.roomId);
                 }
             }
         } catch (err) {
             log.error(`[${this.name}] Error handling message:`, err);
+            this.setStatus('error');
 
             const errMsg = (err as Error).message ?? '';
-
-            if (errMsg.toLowerCase().includes('aborted')) {
-                log.info(`[${this.name}] Invocation was aborted for room ${message.roomId}`);
-                chatRoom?.sendAgentMessage(this.id, `⏹️ 已停止执行`, [], {
-                    isMonologue: true,
-                } as any);
-                this.setStatus('idle');
-                return;
-            }
-
-            if (errMsg.includes('exhausted') || errMsg.includes('rate') || errMsg.includes('429') || errMsg.includes('capacity')) {
-                log.warn(`[${this.name}] Agent hit rate limit on model: ${this.config.model.primary}`);
-                chatRoom?.sendAgentMessage(this.id, `⚠️ 模型调用受限: ${errMsg}`, [], {
-                    isMonologue: true,
-                    error: errMsg,
-                } as any);
-                this.setStatus('rate_limited');
-                return;
-            }
-
-            this.setStatus('error');
             chatRoom?.sendAgentMessage(this.id, `❌ 调用出错: ${errMsg}`, [], {
                 isMonologue: true,
                 error: errMsg,

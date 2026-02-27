@@ -83,13 +83,16 @@ body {
 ::-webkit-scrollbar {
   width: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-full);
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
@@ -274,21 +277,40 @@ body {
   flex-shrink: 0;
 }
 
-.agent-badge .status-dot.idle { background: var(--status-idle); }
+.agent-badge .status-dot.idle {
+  background: var(--status-idle);
+}
+
 .agent-badge .status-dot.thinking {
   background: var(--status-thinking);
   animation: pulse 1.5s ease-in-out infinite;
 }
+
 .agent-badge .status-dot.executing_skill {
   background: var(--status-executing);
   animation: pulse 1s ease-in-out infinite;
 }
-.agent-badge .status-dot.error { background: var(--status-error); }
-.agent-badge .status-dot.rate_limited { background: var(--status-rate-limited); }
+
+.agent-badge .status-dot.error {
+  background: var(--status-error);
+}
+
+.agent-badge .status-dot.rate_limited {
+  background: var(--status-rate-limited);
+}
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.8); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.8);
+  }
 }
 
 /* ── Chat Messages ─────────────────────────────────────── */
@@ -309,8 +331,15 @@ body {
 }
 
 @keyframes messageIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .message.self {
@@ -331,11 +360,22 @@ body {
   color: white;
 }
 
-.message-avatar.agent-architect { background: var(--agent-architect); }
-.message-avatar.agent-developer { background: var(--agent-developer); }
-.message-avatar.agent-qa-lead { background: var(--agent-qa); }
+.message-avatar.agent-architect {
+  background: var(--agent-architect);
+}
+
+.message-avatar.agent-developer {
+  background: var(--agent-developer);
+}
+
+.message-avatar.agent-qa-lead {
+  background: var(--agent-qa);
+}
+
 .message-avatar.agent-human,
-.message-avatar.human { background: var(--agent-human); }
+.message-avatar.human {
+  background: var(--agent-human);
+}
 
 .message-body {
   flex: 1;
@@ -634,8 +674,13 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .modal {
@@ -649,8 +694,15 @@ body {
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .modal h2 {
@@ -732,13 +784,31 @@ body {
   animation: dotBounce 1.4s ease-in-out infinite;
 }
 
-.thinking-dots span:nth-child(1) { animation-delay: 0s; }
-.thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
-.thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+.thinking-dots span:nth-child(1) {
+  animation-delay: 0s;
+}
+
+.thinking-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.thinking-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
 
 @keyframes dotBounce {
-  0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
-  40% { transform: scale(1); opacity: 1; }
+
+  0%,
+  80%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.4;
+  }
+
+  40% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 /* ── Cat Cafe Light Theme Variations ─────────────────────── */
@@ -748,7 +818,7 @@ body {
   --bg-secondary: #fff;
   --bg-tertiary: #fafafa;
   --border-glass: rgba(0, 0, 0, 0.08);
-  
+
   --text-primary: #333;
   --text-secondary: #666;
   --text-muted: #999;
@@ -761,7 +831,7 @@ body {
 
   --accent-primary: #f28b82;
   --accent-gradient: linear-gradient(135deg, #f28b82 0%, #ffb4a2 100%);
-  
+
   --bg-glass: rgba(255, 255, 255, 0.9);
   --bg-glass-hover: rgba(240, 240, 240, 0.8);
 }
@@ -776,6 +846,49 @@ body {
   color: #555;
 }
 
+.monologue-pending {
+  border-color: #a78bfa;
+  background: linear-gradient(135deg, #f5f3ff, #eef2ff);
+  animation: pending-pulse 2s ease-in-out infinite;
+}
+
+.monologue-pending .monologue-header {
+  cursor: default;
+}
+
+.monologue-pending .monologue-title {
+  color: #7c3aed;
+}
+
+@keyframes pending-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+    border-color: #a78bfa;
+  }
+
+  50% {
+    opacity: 0.7;
+    border-color: #c4b5fd;
+  }
+}
+
+.monologue-spinner {
+  animation: spin 1.2s linear infinite;
+  color: #7c3aed;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .monologue-header {
   padding: 8px 12px;
   display: flex;
@@ -783,11 +896,11 @@ body {
   gap: 6px;
   cursor: pointer;
   user-select: none;
-  background: rgba(0,0,0,0.02);
+  background: rgba(0, 0, 0, 0.02);
 }
 
 .monologue-header:hover {
-  background: rgba(0,0,0,0.04);
+  background: rgba(0, 0, 0, 0.04);
 }
 
 .monologue-icon {
@@ -856,8 +969,8 @@ body {
 }
 
 /* ── Typography & Markdown ── */
-.message-content h1, 
-.message-content h2, 
+.message-content h1,
+.message-content h2,
 .message-content h3 {
   margin-top: 10px;
   margin-bottom: 6px;
@@ -872,6 +985,29 @@ body {
   margin-bottom: 0;
 }
 
+.message-content ul,
+.message-content ol {
+  margin: 8px 0;
+  padding-left: 1.5em;
+}
+
+.message-content ul {
+  list-style-type: disc;
+}
+
+.message-content ol {
+  list-style-type: decimal;
+}
+
+.message-content li {
+  margin-bottom: 4px;
+  line-height: 1.5;
+}
+
+.message-content li::marker {
+  color: #666;
+}
+
 .message-content pre {
   background: #282c34;
   color: #abb2bf;
@@ -883,7 +1019,7 @@ body {
 
 .message-content code {
   font-family: monospace;
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
   padding: 2px 4px;
   border-radius: 3px;
 }
@@ -964,6 +1100,7 @@ body {
   color: white;
   border-color: #dc2626;
 }
+
 .btn-stop:hover {
   background: #dc2626;
   color: white;

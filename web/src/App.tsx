@@ -73,6 +73,15 @@ export default function App() {
       fetchSessions().then(setSessions).catch(console.error);
     }
 
+    if (event.type === 'message_updated' && event.data) {
+      const updated = event.data as Message;
+      if (updated.roomId === activeSession) {
+        setMessages(prev =>
+          prev.map(m => m.id === updated.id ? { ...m, content: updated.content, metadata: updated.metadata } : m)
+        );
+      }
+    }
+
     if (event.type === 'session_stopped') {
       // Future-proofing for visual Stop alerts if needed.
     }
@@ -347,6 +356,7 @@ export default function App() {
                               text={msg.content}
                               toolCalls={msg.metadata.toolCalls}
                               error={msg.metadata.error}
+                              isPending={msg.metadata.isPending}
                             />
                           ) : (
                             // Only render the message content if it actually has text or attachments

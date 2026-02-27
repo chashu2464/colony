@@ -25,7 +25,7 @@ export function createColonyServer(options: ServerOptions) {
     const wss = new WebSocketServer({ server });
 
     app.use(cors());
-    app.use(express.json());
+    app.use(express.json({ limit: '10mb' }));
 
     // Set of connected WebSocket clients
     const clients = new Set<WebSocket>();
@@ -127,10 +127,11 @@ export function createColonyServer(options: ServerOptions) {
             res.status(404).json({ error: 'Session not found' });
             return;
         }
-        const { senderId, content, mentions } = req.body as {
+        const { senderId, content, mentions, metadata } = req.body as {
             senderId: string;
             content: string;
             mentions?: string[];
+            metadata?: Message['metadata'];
         };
         if (!senderId || !content) {
             res.status(400).json({ error: 'senderId and content are required' });
@@ -138,7 +139,7 @@ export function createColonyServer(options: ServerOptions) {
         }
 
         try {
-            const message = room.sendHumanMessage(senderId, content, mentions);
+            const message = room.sendHumanMessage(senderId, content, mentions, metadata);
             res.json({ message });
         } catch (err) {
             res.status(400).json({ error: (err as Error).message });
@@ -226,13 +227,6 @@ export function createColonyServer(options: ServerOptions) {
     app.post('/api/sessions/:id/stop', (req, res) => {
         try {
             colony.chatRoomManager.stopRoom(req.params.id);
-            // Broadcast a system message to confirm stop
-            const room = colony.chatRoomManager.getRoom(req.params.id);
-            if (room) {
-                room.sendAgentMessage('system', '⏹️ 已停止所有 Agent 的执行', [], {
-                    isMonologue: true,
-                });
-            }
             res.json({ ok: true });
         } catch (err) {
             res.status(404).json({ error: (err as Error).message });

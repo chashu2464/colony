@@ -157,7 +157,7 @@
   "agent-developer-room-59608dfc-292d-4b8c-9440-5eab01029a30": {
     "sessionId": "f442591b-d73a-4fb4-81b1-a95524d237d5",
     "cli": "gemini",
-    "updatedAt": "2026-02-23T12:27:50.586Z"
+    "updatedAt": "2026-02-27T14:15:31.911Z"
   },
   "agent-developer-room-99335e22-c324-4846-8de2-0c9f80cf2c6d": {
     "sessionId": "bf6a55e0-8a49-425d-b0db-34266e620311",
@@ -165,14 +165,14 @@
     "updatedAt": "2026-02-21T14:48:52.427Z"
   },
   "agent-architect-room-59608dfc-292d-4b8c-9440-5eab01029a30": {
-    "sessionId": "476e74fb-0b64-4600-95ea-52a2bf171b1f",
-    "cli": "gemini",
-    "updatedAt": "2026-02-21T06:42:37.603Z"
+    "sessionId": "46aacc35-366a-4d9c-9041-7da3ff6248a4",
+    "cli": "claude",
+    "updatedAt": "2026-02-27T14:45:59.116Z"
   },
   "agent-qa-lead-room-59608dfc-292d-4b8c-9440-5eab01029a30": {
     "sessionId": "f8866621-e0ec-42b1-927e-e2815a54c39f",
     "cli": "gemini",
-    "updatedAt": "2026-02-23T07:41:56.882Z"
+    "updatedAt": "2026-02-26T15:35:44.167Z"
   },
   "agent-developer-room-98c28eae-a232-4a76-b788-1ee5f3c6c86d": {
     "sessionId": "ede129fe-1aa9-4882-80b6-9fa5fd1108ae",
@@ -183,5 +183,30 @@
     "sessionId": "00b51bab-f122-4978-91ec-3ee1b88aac1a",
     "cli": "claude",
     "updatedAt": "2026-02-22T03:20:24.750Z"
+  },
+  "agent-assistant-room-6a4b1206-5a53-4edd-9beb-53c3c1ce7bcd": {
+    "sessionId": "28f21b1c-863b-430c-bf2b-327acd88783c",
+    "cli": "claude",
+    "updatedAt": "2026-02-24T14:54:38.420Z"
+  },
+  "agent-critic-room-6a4b1206-5a53-4edd-9beb-53c3c1ce7bcd": {
+    "sessionId": "07c6c11d-0d4e-4622-9e30-53c02095f60c",
+    "cli": "claude",
+    "updatedAt": "2026-02-24T15:07:03.373Z"
+  },
+  "agent-strategist-room-b2abb7be-4bf3-406d-ab68-97c8d5625dcc": {
+    "sessionId": "4f7075f1-b9bf-47c2-967a-2230d34bc9e3",
+    "cli": "gemini",
+    "updatedAt": "2026-02-26T04:54:07.481Z"
+  },
+  "agent-researcher-room-b2abb7be-4bf3-406d-ab68-97c8d5625dcc": {
+    "sessionId": "d2d23ae5-5429-433a-95d9-5f8bb4a37efd",
+    "cli": "gemini",
+    "updatedAt": "2026-02-26T04:55:55.282Z"
+  },
+  "agent-critic-room-b2abb7be-4bf3-406d-ab68-97c8d5625dcc": {
+    "sessionId": "a27ccc56-bee1-4523-b11c-30a3cf1d2d25",
+    "cli": "claude",
+    "updatedAt": "2026-02-26T04:56:38.345Z"
   }
 }
