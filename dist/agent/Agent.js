@@ -199,6 +199,7 @@ class Agent {
                             COLONY_AGENT_ID: this.id,
                             COLONY_ROOM_ID: message.roomId,
                             COLONY_API: process.env.COLONY_API ?? 'http://localhost:3001',
+                            CLAUDE_CODE_SESSION_ACCESS_TOKEN: process.env.CLAUDE_CODE_SESSION_ACCESS_TOKEN ?? '',
                         },
                     }, this.config.model.fallback, {
                         onStatusUpdate: (statusMsg) => {

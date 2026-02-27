@@ -177,9 +177,7 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
             const args = ['-p', prompt, '--output-format', 'stream-json', '--yolo'];
             if (sessionId) args.push('--resume', sessionId);
             if (files && files.length > 0) {
-                for (const file of files) {
-                    args.push('--file', file);
-                }
+                log.warn(`Gemini CLI does not support --file parameter. Skipping ${files.length} attachment(s).`);
             }
             return args;
         },
