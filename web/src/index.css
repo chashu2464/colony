@@ -480,9 +480,11 @@ body {
 }
 
 .send-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
+  filter: grayscale(0.8);
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 /* ── Mention Dropdown ──────────────────────────────────── */
@@ -758,6 +760,13 @@ body {
 
 .modal-btn:hover {
   transform: translateY(-1px);
+}
+
+.modal-btn:disabled {
+  opacity: 0.4;
+  filter: grayscale(0.8);
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* ── Thinking Indicator ────────────────────────────────── */

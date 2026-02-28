@@ -542,7 +542,11 @@ export default function App() {
               <button className="modal-btn secondary" onClick={() => setShowNewModal(false)}>
                 取消
               </button>
-              <button className="modal-btn primary" onClick={handleCreateSession}>
+              <button
+                className="modal-btn primary"
+                onClick={handleCreateSession}
+                disabled={!newSessionName.trim() || newSessionAgentIds.length === 0}
+              >
                 创建
               </button>
             </div>

@@ -39,6 +39,6 @@ BODY_RESPONSE=$(echo "$RESPONSE" | sed '$d')
 if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
     echo "$BODY_RESPONSE"
 else
-    echo "Error ($HTTP_CODE): $BODY_RESPONSE" >&2
+    echo "send-message failed (HTTP $HTTP_CODE): $BODY_RESPONSE" >&2
     exit 1
 fi

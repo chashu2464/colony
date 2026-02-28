@@ -129,6 +129,7 @@ function getSession(name) {
 }
 const CLI_CONFIG = {
     claude: {
+        // ...
         buildArgs: (prompt, sessionId, files) => {
             const args = [
                 '-p', prompt,
@@ -164,17 +165,16 @@ const CLI_CONFIG = {
         },
         extractToolUse: (event) => {
             if (event.type !== 'assistant')
-                return null;
+                return [];
             const content = event.message?.content;
             if (!Array.isArray(content))
-                return null;
-            const toolBlock = content.find((b) => b.type === 'tool_use');
-            if (!toolBlock)
-                return null;
-            return {
-                name: toolBlock.name,
-                input: toolBlock.input,
-            };
+                return [];
+            return content
+                .filter((b) => b.type === 'tool_use')
+                .map((b) => ({
+                name: b.name,
+                input: b.input,
+            }));
         },
         extractTokenUsage: (event) => {
             if (event.type === 'result' && event.usage) {
@@ -208,12 +208,12 @@ const CLI_CONFIG = {
         },
         extractToolUse: (event) => {
             if (event.type === 'tool_use') {
-                return {
-                    name: event.tool_name,
-                    input: (event.parameters ?? {}),
-                };
+                return [{
+                        name: event.tool_name,
+                        input: (event.parameters ?? {}),
+                    }];
             }
-            return null;
+            return [];
         },
         extractTokenUsage: (event) => {
             if (event.type === 'result' && (event.usage || event.stats)) {
@@ -249,12 +249,12 @@ const CLI_CONFIG = {
         },
         extractToolUse: (event) => {
             if (event.type === 'tool_call') {
-                return {
-                    name: event.name,
-                    input: (event.arguments ?? {}),
-                };
+                return [{
+                        name: event.name,
+                        input: (event.arguments ?? {}),
+                    }];
             }
-            return null;
+            return [];
         },
         extractTokenUsage: (event) => {
             if (event.type === 'result' && event.usage) {
@@ -388,8 +388,8 @@ async function invoke(cli, prompt, options = {}) {
                     textChunks.push(text);
                     options.onToken?.(text);
                 }
-                const toolUse = config.extractToolUse(event);
-                if (toolUse) {
+                const extractedTools = config.extractToolUse(event);
+                for (const toolUse of extractedTools) {
                     toolCalls.push(toolUse);
                     options.onToolUse?.(toolUse);
                 }
