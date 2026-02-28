@@ -116,12 +116,13 @@ interface CLIConfigEntry {
     buildArgs: (prompt: string, sessionId: string | null, files?: string[]) => string[];
     extractText: (event: Record<string, unknown>) => string | null;
     extractSessionId: (event: Record<string, unknown>) => string | null;
-    extractToolUse: (event: Record<string, unknown>) => ToolUseEvent | null;
+    extractToolUse: (event: Record<string, unknown>) => ToolUseEvent[];
     extractTokenUsage: (event: Record<string, unknown>) => { input: number; output: number } | null;
 }
 
 const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
     claude: {
+        // ...
         buildArgs: (prompt, sessionId, files) => {
             const args = [
                 '-p', prompt,
@@ -153,15 +154,15 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
             return null;
         },
         extractToolUse: (event) => {
-            if (event.type !== 'assistant') return null;
+            if (event.type !== 'assistant') return [];
             const content = (event.message as Record<string, unknown>)?.content;
-            if (!Array.isArray(content)) return null;
-            const toolBlock = content.find((b: Record<string, unknown>) => b.type === 'tool_use');
-            if (!toolBlock) return null;
-            return {
-                name: (toolBlock as Record<string, unknown>).name as string,
-                input: (toolBlock as Record<string, unknown>).input as Record<string, unknown>,
-            };
+            if (!Array.isArray(content)) return [];
+            return content
+                .filter((b: Record<string, unknown>) => b.type === 'tool_use')
+                .map((b: Record<string, unknown>) => ({
+                    name: b.name as string,
+                    input: b.input as Record<string, unknown>,
+                }));
         },
         extractTokenUsage: (event) => {
             if (event.type === 'result' && event.usage) {
@@ -195,12 +196,12 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
         },
         extractToolUse: (event) => {
             if (event.type === 'tool_use') {
-                return {
+                return [{
                     name: event.tool_name as string,
                     input: (event.parameters ?? {}) as Record<string, unknown>,
-                };
+                }];
             }
-            return null;
+            return [];
         },
         extractTokenUsage: (event) => {
             if (event.type === 'result' && (event.usage || event.stats)) {
@@ -236,12 +237,12 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
         },
         extractToolUse: (event) => {
             if (event.type === 'tool_call') {
-                return {
+                return [{
                     name: event.name as string,
                     input: (event.arguments ?? {}) as Record<string, unknown>,
-                };
+                }];
             }
-            return null;
+            return [];
         },
         extractTokenUsage: (event) => {
             if (event.type === 'result' && event.usage) {
@@ -397,8 +398,8 @@ export async function invoke(
                     options.onToken?.(text);
                 }
 
-                const toolUse = config.extractToolUse(event);
-                if (toolUse) {
+                const extractedTools = config.extractToolUse(event);
+                for (const toolUse of extractedTools) {
                     toolCalls.push(toolUse);
                     options.onToolUse?.(toolUse);
                 }

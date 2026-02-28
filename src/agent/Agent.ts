@@ -149,7 +149,7 @@ export class Agent {
      * Maximum follow-up rounds when skills return data that needs
      * to be fed back to the LLM (e.g. get_messages → send_message).
      */
-    private static readonly MAX_FOLLOW_UP_ROUNDS = 3;
+    private static readonly MAX_FOLLOW_UP_ROUNDS = 5;
 
     private async handleMessage(message: Message): Promise<void> {
         this.setStatus('thinking');
@@ -249,20 +249,36 @@ export class Agent {
 
                     // Check if CLI executed any tools
                     const toolCalls = result.toolCalls || [];
-                    const hasSendMessage = toolCalls.some(t =>
-                        t.name === 'send-message' ||
-                        t.name === 'send_message'
-                    );
+                    const hasSendMessage = toolCalls.some(t => {
+                        const name = t.name.toLowerCase();
+                        // Direct match
+                        if (name === 'send-message' || name === 'send_message') return true;
+                        // Gemini CLI 'Skill' wrapper match
+                        if (name === 'skill' && (t.input.name === 'send-message' || t.input.name === 'send_message')) return true;
+                        return false;
+                    });
 
-                    if (hasSendMessage || toolCalls.length === 0) {
-                        // Agent has spoken or no tools were called - done
+                    if (hasSendMessage) {
+                        // Agent has spoken - done with this message
                         await this.storeToLongTermMemory(message, result.text);
                         break;
                     }
 
-                    // Tools were called but no send-message
-                    log.warn(`[${this.name}] Tools called but no send-message: ${toolCalls.map(t => t.name).join(', ')}`);
-                    break;
+                    if (toolCalls.length === 0) {
+                        // No tools called AND no message sent? 
+                        // This usually means the LLM just gave a text response without using send-message.
+                        // We'll consider this done to avoid infinite loops, though ideally they should speak.
+                        await this.storeToLongTermMemory(message, result.text);
+                        break;
+                    }
+
+                    // Tools were called but no send-message. 
+                    // Continue to next round to let LLM see tool outputs and potentially speak.
+                    log.info(`[${this.name}] Tools called (${toolCalls.map(t => t.name).join(', ')}), continuing to round ${round + 1}...`);
+                    
+                    // Note: currentPrompt remains the same, but since we are in a resumed session,
+                    // the LLM will see its previous tool calls and results.
+                    continue;
                 } catch (innerErr) {
                     const innerErrMsg = (innerErr as Error).message ?? '';
 
