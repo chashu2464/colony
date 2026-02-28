@@ -480,10 +480,10 @@ body {
 }
 
 .send-btn:disabled {
-  background: #e2e8f0;
-  color: #94a3b8;
-  border: 1px solid #cbd5e1;
-  opacity: 0.6;
+  background: #cbd5e1;
+  color: #64748b;
+  border: 1px solid #94a3b8;
+  opacity: 0.4;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -765,10 +765,10 @@ body {
 }
 
 .modal-btn:disabled {
-  background: #e2e8f0;
-  color: #94a3b8;
-  border: 1px solid #cbd5e1;
-  opacity: 0.6;
+  background: #cbd5e1;
+  color: #64748b;
+  border: 1px solid #94a3b8;
+  opacity: 0.4;
   cursor: not-allowed;
   transform: none;
 }

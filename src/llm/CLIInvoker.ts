@@ -418,6 +418,7 @@ export async function invoke(
                 if (childExitCode === null || !rlClosed) return;
 
                 if (childExitCode !== 0) {
+                    log.warn(`${cli} finished with exit code ${childExitCode}`);
                     settle(
                         'reject',
                         new InvokeError(
@@ -433,6 +434,7 @@ export async function invoke(
                     saveSession(options.sessionName, finalSessionId, cli);
                 }
 
+                log.info(`${cli} finished successfully (${textChunks.join('').length} chars, ${toolCalls.length} tools)`);
                 settle('resolve', {
                     text: textChunks.join(''),
                     sessionId: finalSessionId,
