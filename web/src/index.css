@@ -480,11 +480,14 @@ body {
 }
 
 .send-btn:disabled {
-  opacity: 0.4;
-  filter: grayscale(0.8);
+  background: #e2e8f0;
+  color: #94a3b8;
+  border: 1px solid #cbd5e1;
+  opacity: 0.35;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+  filter: none;
 }
 
 /* ── Mention Dropdown ──────────────────────────────────── */
@@ -763,8 +766,10 @@ body {
 }
 
 .modal-btn:disabled {
-  opacity: 0.4;
-  filter: grayscale(0.8);
+  background: #e2e8f0;
+  color: #94a3b8;
+  border: 1px solid #cbd5e1;
+  opacity: 0.35;
   cursor: not-allowed;
   transform: none;
 }
