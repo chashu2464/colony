@@ -258,11 +258,14 @@ export class ChatRoom {
         const senderId = message.sender.id;
         const senderIsAgent = this.agents.has(senderId);
 
-        // Re-resolve mentions from content (agent messages may contain @name)
+        // Agent messages: only use explicit mentions array (from send-message skill param)
+        // Human messages: also parse inline @name from message content
         let mentionIds = [...message.mentions];
-        const parsedFromContent = this.parseMentionsFromContent(message.content);
-        for (const id of parsedFromContent) {
-            if (!mentionIds.includes(id)) mentionIds.push(id);
+        if (!senderIsAgent) {
+            const parsedFromContent = this.parseMentionsFromContent(message.content);
+            for (const id of parsedFromContent) {
+                if (!mentionIds.includes(id)) mentionIds.push(id);
+            }
         }
 
         if (mentionIds.length > 0) {

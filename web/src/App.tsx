@@ -177,7 +177,9 @@ export default function App() {
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.nativeEvent.isComposing) return;
+    // Block Enter during IME composition (e.g. Chinese input confirming English with Enter)
+    // keyCode 229 = IME processing marker, covers edge cases where isComposing is unreliable
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
 
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();

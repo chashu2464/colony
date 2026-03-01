@@ -250,13 +250,31 @@ export class Agent {
                     // Check if CLI executed any tools
                     const toolCalls = result.toolCalls || [];
                     const hasSendMessage = toolCalls.some(t => {
-                        const name = t.name.toLowerCase();
-                        // Direct match
+                        const name = t.name?.toLowerCase() ?? '';
+                        const input = t.input ?? {};
+                        // 1. Direct name match
                         if (name === 'send-message' || name === 'send_message') return true;
-                        // Gemini CLI 'Skill' wrapper match
-                        if (name === 'skill' && (t.input.name === 'send-message' || t.input.name === 'send_message')) return true;
+                        // 2. CLI 'Skill' wrapper — check known input field variants
+                        if (name === 'skill' || name === 'activate_skill') {
+                            const skillName = (input.name ?? input.skill ?? input.skill_name ?? '') as string;
+                            if (skillName.includes('send-message') || skillName.includes('send_message')) return true;
+                        }
+                        // 3. Bash/shell tool executing handler.sh
+                        if (name === 'bash' || name === 'shell' || name === 'run_shell_command') {
+                            const cmd = (input.command ?? input.cmd ?? input.script ?? '') as string;
+                            if (cmd.includes('send-message') || cmd.includes('handler.sh')) return true;
+                        }
+                        // 4. Fallback: deep search the entire input JSON for send-message
+                        try {
+                            const inputStr = JSON.stringify(input).toLowerCase();
+                            if (inputStr.includes('send-message') || inputStr.includes('send_message')) return true;
+                        } catch { /* ignore */ }
                         return false;
                     });
+
+                    if (!hasSendMessage && toolCalls.length > 0) {
+                        log.debug(`[${this.name}] Tool call details: ${JSON.stringify(toolCalls.map(t => ({ name: t.name, input: t.input })))}`);
+                    }
 
                     if (hasSendMessage) {
                         // Agent has spoken - done with this message
@@ -275,9 +293,9 @@ export class Agent {
                     // Tools were called but no send-message. 
                     // Continue to next round to let LLM see tool outputs and potentially speak.
                     log.info(`[${this.name}] Tools called (${toolCalls.map(t => t.name).join(', ')}), continuing to round ${round + 1}...`);
-                    
-                    // Note: currentPrompt remains the same, but since we are in a resumed session,
-                    // the LLM will see its previous tool calls and results.
+
+                    // Tell the agent why it's being re-invoked
+                    currentPrompt = `[系统提示] 你在上一轮执行了以下工具：${toolCalls.map(t => t.name).join(', ')}，但没有调用 send-message 发送回复。用户看不到你的内心独白，你必须调用 send-message 工具将你的分析结果或回复发送出去。请现在就调用 send-message。`;
                     continue;
                 } catch (innerErr) {
                     const innerErrMsg = (innerErr as Error).message ?? '';
