@@ -99,6 +99,14 @@ export default function App() {
           next.delete(event.agentId!);
           return next;
         });
+        // Safety net: clear any stale isPending messages for this agent
+        setMessages(prev =>
+          prev.map(m =>
+            m.metadata?.isPending && m.sender.id === event.agentId
+              ? { ...m, metadata: { ...m.metadata, isPending: false }, content: m.content || '(已完成)' }
+              : m
+          )
+        );
       }
     }
   }, [activeSession]);
@@ -169,6 +177,8 @@ export default function App() {
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.nativeEvent.isComposing) return;
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();

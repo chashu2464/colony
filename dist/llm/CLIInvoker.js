@@ -405,6 +405,7 @@ async function invoke(cli, prompt, options = {}) {
                 if (childExitCode === null || !rlClosed)
                     return;
                 if (childExitCode !== 0) {
+                    log.warn(`${cli} finished with exit code ${childExitCode}`);
                     settle('reject', new InvokeError(`${cli} exited with code ${childExitCode}${stderr ? ': ' + stderr.trim() : ''}`, { type: 'exit_error', cli, code: childExitCode, stderr }));
                     return;
                 }
@@ -412,6 +413,7 @@ async function invoke(cli, prompt, options = {}) {
                 if (options.sessionName && finalSessionId) {
                     saveSession(options.sessionName, finalSessionId, cli);
                 }
+                log.info(`${cli} finished successfully (${textChunks.join('').length} chars, ${toolCalls.length} tools)`);
                 settle('resolve', {
                     text: textChunks.join(''),
                     sessionId: finalSessionId,

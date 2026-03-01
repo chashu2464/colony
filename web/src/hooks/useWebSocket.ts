@@ -15,7 +15,7 @@ export interface WSEvent {
 
 export function useWebSocket(url: string, onEvent: (event: WSEvent) => void) {
     const wsRef = useRef<WebSocket | null>(null);
-    const reconnectTimer = useRef<number>();
+    const reconnectTimer = useRef<number>(undefined);
 
     const connect = useCallback(() => {
         const ws = new WebSocket(url);
