@@ -322,6 +322,7 @@ export class ChatRoom {
                 type: 'agent' as const,
                 name: a.name,
                 description: a.config.description,
+                sessionHealth: a.getSessionHealth(this.id),
             })),
             ...Array.from(this.humanParticipants.values()),
         ];

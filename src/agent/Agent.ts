@@ -13,7 +13,7 @@ import { ShortTermMemory } from '../memory/ShortTermMemory.js';
 import { ChatRoomManager } from '../conversation/ChatRoomManager.js';
 import { SessionStore } from '../session/SessionRecord.js';
 import { TranscriptWriter } from '../session/TranscriptWriter.js';
-import { logHealth } from '../session/ContextHealthBar.js';
+import { logHealth, getHealthStatus } from '../session/ContextHealthBar.js';
 import { SessionSealer, DEFAULT_SEAL_CONFIG } from '../session/SessionSealer.js';
 import { DigestGenerator } from '../session/DigestGenerator.js';
 import { SessionBootstrap } from '../session/SessionBootstrap.js';
@@ -126,6 +126,16 @@ export class Agent {
 
         this.messageQueue.push(message);
         await this.processQueue();
+    }
+
+    /**
+     * Get the session health status for a specific room.
+     * Returns undefined if there is no active session.
+     */
+    getSessionHealth(roomId: string) {
+        const activeSession = this.sessionStore.getActive(this.id, roomId);
+        if (!activeSession) return undefined;
+        return getHealthStatus(activeSession);
     }
 
     /**
