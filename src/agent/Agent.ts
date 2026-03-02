@@ -11,6 +11,9 @@ import { ModelRouter } from '../llm/ModelRouter.js';
 import { ContextAssembler } from '../memory/ContextAssembler.js';
 import { ShortTermMemory } from '../memory/ShortTermMemory.js';
 import { ChatRoomManager } from '../conversation/ChatRoomManager.js';
+import { SessionStore } from '../session/SessionRecord.js';
+import { TranscriptWriter } from '../session/TranscriptWriter.js';
+import { logHealth } from '../session/ContextHealthBar.js';
 import type {
     AgentConfig,
     AgentStatus,
@@ -36,8 +39,9 @@ export class Agent {
     private processing = false;
     private lastProcessedTime = 0;
 
-    // Per-room session IDs for conversation isolation
-    private roomSessions = new Map<string, string>();
+    // Session management
+    private sessionStore: SessionStore;
+    private transcriptWriter: TranscriptWriter;
 
     // Memory system
     private contextAssembler: ContextAssembler;
@@ -61,6 +65,8 @@ export class Agent {
         this.contextAssembler = contextAssembler;
         this.shortTermMemory = shortTermMemory;
         this.chatRoomManager = chatRoomManager;
+        this.sessionStore = new SessionStore();
+        this.transcriptWriter = new TranscriptWriter();
 
         // Register this agent with the context assembler
         // Note: SkillManager is still used for context assembly (skill descriptions)
@@ -111,7 +117,16 @@ export class Agent {
      * Set the session ID for a specific room.
      */
     setRoomSession(roomId: string, sessionId: string): void {
-        this.roomSessions.set(roomId, sessionId);
+        // Create or update the session record in SessionStore
+        const existing = this.sessionStore.getActive(this.id, roomId);
+        if (!existing) {
+            this.sessionStore.create({
+                id: sessionId,
+                agentId: this.id,
+                roomId,
+                cli: this.config.model.primary,
+            });
+        }
     }
 
     // ── Internal Processing ──────────────────────────────
@@ -185,7 +200,8 @@ export class Agent {
 
             while (round < Agent.MAX_FOLLOW_UP_ROUNDS) {
                 round++;
-                const existingSession = this.roomSessions.get(message.roomId);
+                const activeSession = this.sessionStore.getActive(this.id, message.roomId);
+                const existingSession = activeSession?.id ?? undefined;
 
                 log.info(`[${this.name}] Invoking LLM (round ${round}) for message from ${message.sender.name}...`);
 
@@ -230,9 +246,35 @@ export class Agent {
                     log.info(`[${this.name}] ${result.text}`);
                     log.info(`[${this.name}] ── End Response ──`);
 
-                    // Save session ID for this room
+                    // Save session ID to SessionStore
                     if (result.sessionId) {
-                        this.roomSessions.set(message.roomId, result.sessionId);
+                        const existing = this.sessionStore.getActive(this.id, message.roomId);
+                        if (!existing) {
+                            this.sessionStore.create({
+                                id: result.sessionId,
+                                agentId: this.id,
+                                roomId: message.roomId,
+                                cli: this.config.model.primary,
+                            });
+                        }
+
+                        // Record transcript entry
+                        this.transcriptWriter.append(this.id, message.roomId, result.sessionId, {
+                            invocationIndex: (existing?.invocationCount ?? 0) + 1,
+                            timestamp: new Date().toISOString(),
+                            prompt: currentPrompt.substring(0, 2000),
+                            response: result.text,
+                            toolCalls: result.toolCalls,
+                            tokenUsage: result.tokenUsage,
+                        });
+
+                        // Update token usage and log context health
+                        if (result.tokenUsage) {
+                            const updated = this.sessionStore.updateUsage(this.id, message.roomId, result.tokenUsage);
+                            if (updated) {
+                                logHealth(this.name, updated);
+                            }
+                        }
                     }
 
                     // Update pending message with actual response content
@@ -304,7 +346,7 @@ export class Agent {
                     // false positives from CLI errors that contain the word 'aborted'.
                     if (controller.signal.aborted) {
                         // Clear stale session so next message starts fresh
-                        this.roomSessions.delete(message.roomId);
+                        // Session aborted — don't delete, let it resume next time
                         chatRoom.updateMessage(pendingId, `⏹️ 已停止执行`, { isMonologue: true, isPending: false });
                         this.setStatus('idle');
                         return;
