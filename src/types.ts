@@ -17,6 +17,14 @@ export interface AgentConfig {
     rules?: string[];
     /** If true, this agent receives messages when nobody is explicitly @mentioned. */
     isDefault?: boolean;
+    /** Session management strategy config. */
+    session?: {
+        strategy?: 'handoff' | 'compress';
+        thresholds?: {
+            warn?: number;
+            seal?: number;
+        };
+    };
 }
 
 export type SupportedCLI = 'claude' | 'gemini' | 'codex';

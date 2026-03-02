@@ -14,6 +14,9 @@ import { ChatRoomManager } from '../conversation/ChatRoomManager.js';
 import { SessionStore } from '../session/SessionRecord.js';
 import { TranscriptWriter } from '../session/TranscriptWriter.js';
 import { logHealth } from '../session/ContextHealthBar.js';
+import { SessionSealer, DEFAULT_SEAL_CONFIG } from '../session/SessionSealer.js';
+import { DigestGenerator } from '../session/DigestGenerator.js';
+import { SessionBootstrap } from '../session/SessionBootstrap.js';
 import type {
     AgentConfig,
     AgentStatus,
@@ -42,6 +45,9 @@ export class Agent {
     // Session management
     private sessionStore: SessionStore;
     private transcriptWriter: TranscriptWriter;
+    private sessionSealer: SessionSealer;
+    private digestGenerator: DigestGenerator;
+    private sessionBootstrap: SessionBootstrap;
 
     // Memory system
     private contextAssembler: ContextAssembler;
@@ -67,6 +73,15 @@ export class Agent {
         this.chatRoomManager = chatRoomManager;
         this.sessionStore = new SessionStore();
         this.transcriptWriter = new TranscriptWriter();
+        this.sessionSealer = new SessionSealer({
+            strategy: config.session?.strategy,
+            thresholds: config.session?.thresholds ? {
+                warn: config.session.thresholds.warn ?? DEFAULT_SEAL_CONFIG.thresholds.warn,
+                seal: config.session.thresholds.seal ?? DEFAULT_SEAL_CONFIG.thresholds.seal,
+            } : undefined,
+        });
+        this.digestGenerator = new DigestGenerator(this.transcriptWriter);
+        this.sessionBootstrap = new SessionBootstrap();
 
         // Register this agent with the context assembler
         // Note: SkillManager is still used for context assembly (skill descriptions)
@@ -201,7 +216,42 @@ export class Agent {
             while (round < Agent.MAX_FOLLOW_UP_ROUNDS) {
                 round++;
                 const activeSession = this.sessionStore.getActive(this.id, message.roomId);
-                const existingSession = activeSession?.id ?? undefined;
+
+                // ── Phase 2: Check if session needs sealing ──
+                let promptForThisRound = currentPrompt;
+                if (activeSession) {
+                    const action = this.sessionSealer.shouldTakeAction(activeSession);
+                    if (action.type === 'seal') {
+                        log.info(`[${this.name}] Sealing session ${activeSession.id} (${(action.fillRatio * 100).toFixed(1)}%)`);
+                        const sealed = this.sessionStore.seal(this.id, message.roomId);
+                        if (sealed) {
+                            // Generate digest asynchronously (don't block the current invoke)
+                            this.digestGenerator.generate(sealed).then(digest => {
+                                this.sessionStore.setDigest(this.id, message.roomId, sealed.id, digest);
+                                log.info(`[${this.name}] Digest stored for session ${sealed.id}`);
+                            }).catch(err => {
+                                log.error(`[${this.name}] Failed to generate digest:`, err);
+                            });
+
+                            // Inject bootstrap preamble: new session starts fresh (no --resume)
+                            // Create a placeholder new record — it will get real ID after first invoke
+                            promptForThisRound = this.sessionBootstrap.injectInto(currentPrompt, {
+                                ...activeSession,
+                                chainIndex: activeSession.chainIndex + 1,
+                                id: 'pending',
+                                status: 'active',
+                                tokenUsage: { input: 0, output: 0, cumulative: 0 },
+                                invocationCount: 0,
+                                createdAt: new Date().toISOString(),
+                                previousSessionId: activeSession.id,
+                            }, sealed);
+                        }
+                    } else if (action.type === 'warn') {
+                        log.warn(`[${this.name}] Context at ${(action.fillRatio * 100).toFixed(1)}% — approaching seal threshold`);
+                    }
+                }
+
+                const existingSession = activeSession?.status === 'active' ? activeSession.id : undefined;
 
                 log.info(`[${this.name}] Invoking LLM (round ${round}) for message from ${message.sender.name}...`);
 
@@ -218,7 +268,7 @@ export class Agent {
                 try {
                     const result = await this.modelRouter.invoke(
                         this.config.model.primary,
-                        currentPrompt,
+                        promptForThisRound,
                         {
                             sessionName,
                             sessionId: existingSession ?? undefined,
