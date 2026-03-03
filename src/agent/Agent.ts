@@ -241,7 +241,7 @@ export class Agent {
                     const action = this.sessionSealer.shouldTakeAction(activeSession);
                     if (action.type === 'seal') {
                         log.info(`[${this.name}] Sealing session ${activeSession.id} (${(action.fillRatio * 100).toFixed(1)}%)`);
-                        const sealed = this.sessionStore.seal(this.id, message.roomId);
+                        const sealed = this.sessionStore.seal(this.id, message.roomId, activeSession.id);
                         if (sealed) {
                             // Generate digest asynchronously (don't block the current invoke)
                             this.digestGenerator.generate(sealed).then(digest => {
@@ -316,13 +316,16 @@ export class Agent {
 
                     // Save session ID to SessionStore
                     if (result.sessionId) {
-                        const existing = this.sessionStore.getActive(this.id, message.roomId);
+                        const actualCli = result.actualModel ?? this.config.model.primary;
+                        // Look up by exact session ID first, then fall back to any active
+                        let existing = this.sessionStore.getBySessionId(this.id, message.roomId, result.sessionId);
                         if (!existing) {
-                            this.sessionStore.create({
+                            // New session ID (either first invocation or fallback model created one)
+                            existing = this.sessionStore.create({
                                 id: result.sessionId,
                                 agentId: this.id,
                                 roomId: message.roomId,
-                                cli: this.config.model.primary,
+                                cli: actualCli,
                             });
                         }
 
@@ -336,9 +339,9 @@ export class Agent {
                             tokenUsage: result.tokenUsage,
                         });
 
-                        // Update token usage and log context health
+                        // Update token usage for this specific session and log context health
                         if (result.tokenUsage) {
-                            const updated = this.sessionStore.updateUsage(this.id, message.roomId, result.tokenUsage);
+                            const updated = this.sessionStore.updateUsage(this.id, message.roomId, result.tokenUsage, result.sessionId);
                             if (updated) {
                                 logHealth(this.name, updated);
                             }

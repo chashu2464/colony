@@ -40,6 +40,8 @@ export interface SessionRecord {
     /** Timestamps */
     createdAt: string;
     sealedAt?: string;
+    /** Last time this session was used for an invocation */
+    lastUsedAt?: string;
     /** Link to previous session in the chain */
     previousSessionId?: string;
     /** Digest summary (populated after seal) */
@@ -95,11 +97,26 @@ export class SessionStore {
     }
 
     /**
-     * Get the currently active session for an agent in a room.
+     * Get the most recently used active session for an agent in a room.
      */
     getActive(agentId: string, roomId: string): SessionRecord | null {
         const chain = this.getChain(agentId, roomId);
-        return chain.find(s => s.status === 'active') ?? null;
+        const actives = chain.filter(s => s.status === 'active');
+        if (actives.length === 0) return null;
+        // Return the most recently used active session
+        return actives.sort((a, b) => {
+            const tA = a.lastUsedAt ?? a.createdAt;
+            const tB = b.lastUsedAt ?? b.createdAt;
+            return tB.localeCompare(tA);
+        })[0];
+    }
+
+    /**
+     * Get a specific active session by its session ID.
+     */
+    getBySessionId(agentId: string, roomId: string, sessionId: string): SessionRecord | null {
+        const chain = this.getChain(agentId, roomId);
+        return chain.find(s => s.id === sessionId && s.status === 'active') ?? null;
     }
 
     /**
@@ -147,28 +164,44 @@ export class SessionStore {
     }
 
     /**
-     * Update token usage for the active session after an invocation.
+     * Update token usage for a specific session (by session ID) after an invocation.
      */
-    updateUsage(agentId: string, roomId: string, usage: { input: number; output: number }): SessionRecord | null {
+    updateUsage(agentId: string, roomId: string, usage: { input: number; output: number }, sessionId?: string): SessionRecord | null {
         const chain = this.getChain(agentId, roomId);
-        const active = chain.find(s => s.status === 'active');
-        if (!active) return null;
+        let target: SessionRecord | undefined;
+        if (sessionId) {
+            target = chain.find(s => s.id === sessionId);
+        }
+        if (!target) {
+            target = chain.filter(s => s.status === 'active')
+                .sort((a, b) => (b.lastUsedAt ?? b.createdAt).localeCompare(a.lastUsedAt ?? a.createdAt))[0];
+        }
+        if (!target) return null;
 
-        active.tokenUsage.input += usage.input;
-        active.tokenUsage.output += usage.output;
-        active.tokenUsage.cumulative += usage.input + usage.output;
-        active.invocationCount += 1;
+        target.tokenUsage.input += usage.input;
+        target.tokenUsage.output += usage.output;
+        target.tokenUsage.cumulative += usage.input + usage.output;
+        target.invocationCount += 1;
+        target.lastUsedAt = new Date().toISOString();
 
         this.saveChain(agentId, roomId, chain);
-        return active;
+        return target;
     }
 
     /**
-     * Seal the active session (mark as sealed, stop resuming it).
+     * Seal a session (mark as sealed, stop resuming it).
+     * If sessionId is provided, seal that specific session. Otherwise seal the most recent active.
      */
-    seal(agentId: string, roomId: string): SessionRecord | null {
+    seal(agentId: string, roomId: string, sessionId?: string): SessionRecord | null {
         const chain = this.getChain(agentId, roomId);
-        const active = chain.find(s => s.status === 'active');
+        let active: SessionRecord | undefined;
+        if (sessionId) {
+            active = chain.find(s => s.id === sessionId && s.status === 'active');
+        }
+        if (!active) {
+            active = chain.filter(s => s.status === 'active')
+                .sort((a, b) => (b.lastUsedAt ?? b.createdAt).localeCompare(a.lastUsedAt ?? a.createdAt))[0];
+        }
         if (!active) return null;
 
         active.status = 'sealed';
