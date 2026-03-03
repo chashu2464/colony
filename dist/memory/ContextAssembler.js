@@ -37,6 +37,7 @@ var __importStar = (this && this.__importStar) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContextAssembler = void 0;
 const fs = __importStar(require("fs/promises"));
+const fs_1 = require("fs");
 const path = __importStar(require("path"));
 const Logger_js_1 = require("../utils/Logger.js");
 const log = new Logger_js_1.Logger('ContextAssembler');
@@ -286,32 +287,111 @@ class ContextAssembler {
         try {
             const workflowDir = path.join(process.cwd(), '.data/workflows');
             const workflowFile = path.join(workflowDir, `${roomId}.json`);
+            // Use existsSync to avoid throwing error for non-existent file
+            if (!(0, fs_1.existsSync)(workflowFile)) {
+                return '';
+            }
             const data = await fs.readFile(workflowFile, 'utf8');
             const workflow = JSON.parse(data);
             const lines = ['## 当前工作流阶段'];
-            lines.push(`- **任务**: ${workflow.task_name}`);
-            lines.push(`- **当前阶段**: ${workflow.stage_name} (Stage ${workflow.current_stage})`);
-            // Find agent's role
-            let role = 'observer';
+            lines.push(`**任务**: ${workflow.task_name} (ID: ${workflow.task_id})`);
+            lines.push(`**阶段**: Stage ${workflow.current_stage} - ${workflow.stage_name}`);
+            lines.push(`**状态**: ${workflow.status}`);
+            lines.push('');
+            // Role perception
+            lines.push('**角色分配**：');
+            let myRole = 'observer';
             if (workflow.assignments) {
-                for (const [r, id] of Object.entries(workflow.assignments)) {
+                for (const [role, id] of Object.entries(workflow.assignments)) {
+                    lines.push(`- ${role}: @${id}`);
                     if (id === agentId) {
-                        role = r;
-                        break;
+                        myRole = role;
                     }
                 }
             }
-            lines.push(`- **你的角色**: ${role}`);
-            lines.push(`- **状态**: ${workflow.status}`);
+            lines.push(`- **你的角色**: ${myRole}`);
+            lines.push('');
             if (workflow.description) {
-                lines.push(`\n**任务描述**: ${workflow.description}`);
+                lines.push(`**任务描述**: ${workflow.description}\n`);
             }
+            // Stage guidance
+            lines.push('**当前阶段指引**：');
+            lines.push(this.getStageGuidanceForAgent(workflow.current_stage, agentId, workflow.assignments));
             return lines.join('\n');
         }
         catch (error) {
-            // Silently fail if workflow file doesn't exist or is invalid
+            log.warn(`Failed to load workflow stage for room ${roomId}:`, error);
             return '';
         }
+    }
+    getStageGuidanceForAgent(stage, agentId, assignments) {
+        // 1. Determine agent's role
+        let role = 'observer';
+        for (const [r, id] of Object.entries(assignments)) {
+            if (id === agentId) {
+                role = r;
+                break;
+            }
+        }
+        // 2. Guidance mapping (will be moved to SKILL.md in P2)
+        const guidanceMap = {
+            0: {
+                architect: '你是本阶段的主导者。组织团队讨论任务方向，明确目标和范围。',
+                developer: '参与讨论，从实现角度提供技术可行性建议。',
+                qa_lead: '参与讨论，从测试角度提出质量关注点。',
+            },
+            1: {
+                architect: '你是本阶段的主要负责人。起草需求文档，进行五方评审。',
+                tech_lead: '技术负责人审查可行性，参与需求评审。',
+            },
+            2: {
+                architect: '你是本阶段的主要负责人。完成系统设计和架构方案，输出设计文档。',
+                developer: '等待架构师完成设计文档。',
+                qa_lead: '等待架构师完成设计文档。',
+            },
+            3: {
+                developer: '你是本阶段的主要负责人。向 QA 解释设计意图，确保 QA 理解实现方案。',
+                qa_lead: '听取开发者解释设计，确保理解实现方案。',
+            },
+            4: {
+                qa_lead: '你是本阶段的主要负责人。向开发者复述设计，验证理解一致性。',
+                developer: '听取 QA 复述设计，验证理解是否一致。',
+            },
+            5: {
+                qa_lead: '你是本阶段的主要负责人。编写测试用例，覆盖功能和边界场景。',
+                developer: '等待 QA 编写测试用例。',
+            },
+            6: {
+                developer: '你是本阶段的主要负责人。根据 Stage 2 的设计文档和 Stage 5 的测试用例实现功能。',
+                architect: '开发者正在实现功能，如有架构问题可提供咨询。',
+                qa_lead: '开发者正在实现功能，准备 Stage 7 的集成测试。',
+            },
+            7: {
+                qa_lead: '你是本阶段的主要负责人。执行集成测试，记录发现的问题。',
+                developer: '协助 QA 进行集成测试，并修复发现的问题。',
+            },
+            8: {
+                tech_lead: '你是本阶段的主要负责人。组织四方最终评审，确认交付质量。',
+                architect: '参与最终评审，确认交付质量。',
+                developer: '参与最终评审，确认交付质量。',
+                qa_lead: '参与最终评审，确认交付质量。',
+            },
+        };
+        return guidanceMap[stage]?.[role] || '观察当前阶段进展。';
+    }
+    getStageGuidance(stage) {
+        const guidance = {
+            0: '讨论任务方向和目标定义',
+            1: '起草需求文档并进行五方评审',
+            2: '完成系统/架构设计并输出设计文档',
+            3: '开发者向 QA 解释设计（Forward Briefing）',
+            4: 'QA 向开发者复述设计（Reverse Briefing）',
+            5: 'QA 编写测试用例',
+            6: '开发者根据设计和测试用例实现功能',
+            7: 'QA 执行集成测试，开发者修复问题',
+            8: '进行四方确认并交付',
+        };
+        return guidance[stage] || '未知阶段';
     }
     // ── Token Budget Management ──────────────────────────
     /**

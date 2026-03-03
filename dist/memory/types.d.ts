@@ -109,6 +109,37 @@ export interface PromptSection {
     priority: number;
     tokenCount: number;
 }
+export interface WorkflowState {
+    task_id: string;
+    task_name: string;
+    description: string;
+    current_stage: number;
+    stage_name: string;
+    status: 'active' | 'completed' | 'paused' | 'blocked';
+    assignments: Record<string, string>;
+    artifacts: Array<{
+        stage: number;
+        path: string;
+        description: string;
+        created_at: string;
+    }>;
+    reviews: Array<{
+        stage: number;
+        reviewer: string;
+        status: 'approved' | 'rejected';
+        comments: string;
+        timestamp: string;
+    }>;
+    history: Array<{
+        from_stage: number | null;
+        to_stage: number;
+        action: string;
+        actor: string;
+        notes: string;
+        git_commit_hash: string;
+        timestamp: string;
+    }>;
+}
 export interface ContextScheduler {
     setPolicy(roomId: string, policy: SharingPolicy): void;
     getPolicy(roomId: string): SharingPolicy;

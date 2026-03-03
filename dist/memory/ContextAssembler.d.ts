@@ -25,6 +25,8 @@ export declare class ContextAssembler implements IContextAssembler {
     private buildCurrentMessageSection;
     private buildLongTermSection;
     private buildWorkflowStageSection;
+    private getStageGuidanceForAgent;
+    private getStageGuidance;
     /**
      * Apply token budget constraints to sections.
      * Strategy:

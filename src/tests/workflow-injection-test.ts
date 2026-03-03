@@ -103,10 +103,16 @@ async function testWorkflowInjection() {
             console.error('✗ Stage name NOT found!');
         }
 
-        if (prompt.includes('你的角色**: developer')) {
+        if (prompt.includes('**你的角色**:')) {
             console.log('✓ Agent role found!');
         } else {
             console.error('✗ Agent role NOT found!');
+        }
+
+        if (prompt.includes('**当前阶段指引**：')) {
+            console.log('✓ Stage guidance section found!');
+        } else {
+            console.error('✗ Stage guidance section NOT found!');
         }
 
     } catch (error) {
