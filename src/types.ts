@@ -24,6 +24,7 @@ export interface AgentConfig {
             warn?: number;
             seal?: number;
         };
+        contextLimit?: number;
     };
 }
 

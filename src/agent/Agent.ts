@@ -11,7 +11,7 @@ import { ModelRouter } from '../llm/ModelRouter.js';
 import { ContextAssembler } from '../memory/ContextAssembler.js';
 import { ShortTermMemory } from '../memory/ShortTermMemory.js';
 import { ChatRoomManager } from '../conversation/ChatRoomManager.js';
-import { SessionStore } from '../session/SessionRecord.js';
+import { SessionStore, getContextLimit } from '../session/SessionRecord.js';
 import { TranscriptWriter } from '../session/TranscriptWriter.js';
 import { logHealth, getHealthStatus } from '../session/ContextHealthBar.js';
 import { SessionSealer, DEFAULT_SEAL_CONFIG } from '../session/SessionSealer.js';
@@ -130,11 +130,19 @@ export class Agent {
 
     /**
      * Get the session health status for a specific room.
-     * Returns undefined if there is no active session.
+     * Returns a default empty health object if there is no active session.
      */
     getSessionHealth(roomId: string) {
         const activeSession = this.sessionStore.getActive(this.id, roomId);
-        if (!activeSession) return undefined;
+        if (!activeSession) {
+            return {
+                fillRatio: 0,
+                tokensUsed: 0,
+                contextLimit: getContextLimit(this.config.model.primary, this.config.session?.contextLimit),
+                invocationCount: 0,
+                label: '🟢 healthy',
+            };
+        }
         return getHealthStatus(activeSession);
     }
 
