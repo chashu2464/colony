@@ -1,6 +1,8 @@
 // ── Colony: Context Assembler ────────────────────────────
 // Assembles complete context from multiple sources for LLM prompts.
 
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import { Logger } from '../utils/Logger.js';
 import type { AgentConfig, Message, Participant } from '../types.js';
 import type { ShortTermMemory } from './ShortTermMemory.js';
@@ -83,6 +85,19 @@ export class ContextAssembler implements IContextAssembler {
                     name: 'skills',
                     content: skillBlock,
                     priority: 85,
+                    tokenCount: 0,
+                });
+            }
+        }
+
+        // 3.2. Workflow Stage (high priority, if enabled)
+        if (options.includeWorkflow !== false) {
+            const workflowContent = await this.buildWorkflowStageSection(options.roomId, options.agentId);
+            if (workflowContent) {
+                sections.push({
+                    name: 'workflow_stage',
+                    content: workflowContent,
+                    priority: 88,
                     tokenCount: 0,
                 });
             }
@@ -204,6 +219,7 @@ export class ContextAssembler implements IContextAssembler {
 7. **提问即交权**：同一轮消息禁止"提问 + 执行"并存，提问后只能等待回答，不得同时推进任务。
 8. **工具熔断**：同一工具连续失败 2 次相同错误，必须换思路，不得重复尝试。
 9. **防丢失原则**：对话是临时的，文件是持久的。重要决策、发现的问题必须写入文件，不做口头承诺。
+10. **Session 回溯**：不确定之前做过什么时，使用 \`get-session-history\` 技能搜索旧 session 记录——不要猜。
 
 ### 工作流程
 1. 理解当前消息
@@ -291,6 +307,42 @@ export class ContextAssembler implements IContextAssembler {
         }
     }
 
+    private async buildWorkflowStageSection(roomId: string, agentId: string): Promise<string> {
+        try {
+            const workflowDir = path.join(process.cwd(), '.data/workflows');
+            const workflowFile = path.join(workflowDir, `${roomId}.json`);
+
+            const data = await fs.readFile(workflowFile, 'utf8');
+            const workflow = JSON.parse(data);
+
+            const lines = ['## 当前工作流阶段'];
+            lines.push(`- **任务**: ${workflow.task_name}`);
+            lines.push(`- **当前阶段**: ${workflow.stage_name} (Stage ${workflow.current_stage})`);
+            
+            // Find agent's role
+            let role = 'observer';
+            if (workflow.assignments) {
+                for (const [r, id] of Object.entries(workflow.assignments)) {
+                    if (id === agentId) {
+                        role = r;
+                        break;
+                    }
+                }
+            }
+            lines.push(`- **你的角色**: ${role}`);
+            lines.push(`- **状态**: ${workflow.status}`);
+
+            if (workflow.description) {
+                lines.push(`\n**任务描述**: ${workflow.description}`);
+            }
+
+            return lines.join('\n');
+        } catch (error) {
+            // Silently fail if workflow file doesn't exist or is invalid
+            return '';
+        }
+    }
+
     // ── Token Budget Management ──────────────────────────
 
     /**
@@ -331,8 +383,8 @@ export class ContextAssembler implements IContextAssembler {
             }
         }
 
-        // Sort result back to logical order (identity → rules → skills → participants → guidelines → history → long-term → current)
-        const order = ['identity', 'rules', 'skills', 'participants', 'guidelines', 'history', 'long-term', 'current'];
+        // Sort result back to logical order (identity → rules → workflow → skills → participants → guidelines → history → long-term → current)
+        const order = ['identity', 'rules', 'workflow_stage', 'skills', 'participants', 'guidelines', 'history', 'long-term', 'current'];
         result.sort((a, b) => {
             const aIdx = order.indexOf(a.name);
             const bIdx = order.indexOf(b.name);

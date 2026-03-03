@@ -122,6 +122,7 @@ export interface AssembleOptions {
     tokenBudget: number;
     includeHistory?: boolean;
     includeLongTerm?: boolean;
+    includeWorkflow?: boolean;
     chatRoom: any; // ChatRoom instance for participant awareness
 }
 

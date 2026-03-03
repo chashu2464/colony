@@ -265,7 +265,13 @@ class DiscordBot {
             return;
         }
         const info = room.getInfo();
-        const agents = info.participants.filter(p => p.type === 'agent').map(p => p.name).join(', ');
+        const agents = info.participants
+            .filter(p => p.type === 'agent')
+            .map(p => {
+            const healthStr = p.sessionHealth ? ` (${p.sessionHealth.label}, ${(p.sessionHealth.fillRatio * 100).toFixed(0)}%)` : '';
+            return `${p.name}${healthStr}`;
+        })
+            .join(', ');
         await message.reply(`📍 Current Session\n\n` +
             `Name: **${info.name}**\n` +
             `ID: \`${info.id}\`\n` +
@@ -313,10 +319,19 @@ class DiscordBot {
         const status = this.colony.getStatus();
         const rooms = status.rooms;
         const agents = status.agents;
+        // Build a mapping of agent health from active rooms
+        const healthMap = new Map();
+        for (const room of rooms) {
+            for (const p of room.participants) {
+                if (p.type === 'agent' && p.sessionHealth) {
+                    healthMap.set(p.id, ` (${p.sessionHealth.label}, ${(p.sessionHealth.fillRatio * 100).toFixed(0)}%) in ${room.name}`);
+                }
+            }
+        }
         await message.reply(`📊 Colony Status\n\n` +
             `**Active Sessions:** ${rooms.length}\n` +
             `**Online Agents:** ${agents.filter(a => a.status === 'idle').length}/${agents.length}\n\n` +
-            `**Agents:**\n${agents.map(a => `• ${a.name}: ${a.status}`).join('\n')}`);
+            `**Agents:**\n${agents.map(a => `• ${a.name}: ${a.status}${healthMap.get(a.id) || ''}`).join('\n')}`);
     }
     /**
      * Command: List all agents.

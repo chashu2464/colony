@@ -1,8 +1,43 @@
 "use strict";
 // ── Colony: Context Assembler ────────────────────────────
 // Assembles complete context from multiple sources for LLM prompts.
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContextAssembler = void 0;
+const fs = __importStar(require("fs/promises"));
+const path = __importStar(require("path"));
 const Logger_js_1 = require("../utils/Logger.js");
 const log = new Logger_js_1.Logger('ContextAssembler');
 /**
@@ -63,6 +98,18 @@ class ContextAssembler {
                     name: 'skills',
                     content: skillBlock,
                     priority: 85,
+                    tokenCount: 0,
+                });
+            }
+        }
+        // 3.2. Workflow Stage (high priority, if enabled)
+        if (options.includeWorkflow !== false) {
+            const workflowContent = await this.buildWorkflowStageSection(options.roomId, options.agentId);
+            if (workflowContent) {
+                sections.push({
+                    name: 'workflow_stage',
+                    content: workflowContent,
+                    priority: 88,
                     tokenCount: 0,
                 });
             }
@@ -165,6 +212,7 @@ class ContextAssembler {
 7. **提问即交权**：同一轮消息禁止"提问 + 执行"并存，提问后只能等待回答，不得同时推进任务。
 8. **工具熔断**：同一工具连续失败 2 次相同错误，必须换思路，不得重复尝试。
 9. **防丢失原则**：对话是临时的，文件是持久的。重要决策、发现的问题必须写入文件，不做口头承诺。
+10. **Session 回溯**：不确定之前做过什么时，使用 \`get-session-history\` 技能搜索旧 session 记录——不要猜。
 
 ### 工作流程
 1. 理解当前消息
@@ -234,6 +282,37 @@ class ContextAssembler {
             return '';
         }
     }
+    async buildWorkflowStageSection(roomId, agentId) {
+        try {
+            const workflowDir = path.join(process.cwd(), '.data/workflows');
+            const workflowFile = path.join(workflowDir, `${roomId}.json`);
+            const data = await fs.readFile(workflowFile, 'utf8');
+            const workflow = JSON.parse(data);
+            const lines = ['## 当前工作流阶段'];
+            lines.push(`- **任务**: ${workflow.task_name}`);
+            lines.push(`- **当前阶段**: ${workflow.stage_name} (Stage ${workflow.current_stage})`);
+            // Find agent's role
+            let role = 'observer';
+            if (workflow.assignments) {
+                for (const [r, id] of Object.entries(workflow.assignments)) {
+                    if (id === agentId) {
+                        role = r;
+                        break;
+                    }
+                }
+            }
+            lines.push(`- **你的角色**: ${role}`);
+            lines.push(`- **状态**: ${workflow.status}`);
+            if (workflow.description) {
+                lines.push(`\n**任务描述**: ${workflow.description}`);
+            }
+            return lines.join('\n');
+        }
+        catch (error) {
+            // Silently fail if workflow file doesn't exist or is invalid
+            return '';
+        }
+    }
     // ── Token Budget Management ──────────────────────────
     /**
      * Apply token budget constraints to sections.
@@ -273,8 +352,8 @@ class ContextAssembler {
                 }
             }
         }
-        // Sort result back to logical order (identity → rules → skills → participants → guidelines → history → long-term → current)
-        const order = ['identity', 'rules', 'skills', 'participants', 'guidelines', 'history', 'long-term', 'current'];
+        // Sort result back to logical order (identity → rules → workflow → skills → participants → guidelines → history → long-term → current)
+        const order = ['identity', 'rules', 'workflow_stage', 'skills', 'participants', 'guidelines', 'history', 'long-term', 'current'];
         result.sort((a, b) => {
             const aIdx = order.indexOf(a.name);
             const bIdx = order.indexOf(b.name);

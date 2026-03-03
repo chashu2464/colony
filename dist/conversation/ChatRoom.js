@@ -290,6 +290,7 @@ class ChatRoom {
                 type: 'agent',
                 name: a.name,
                 description: a.config.description,
+                sessionHealth: a.getSessionHealth(this.id),
             })),
             ...Array.from(this.humanParticipants.values()),
         ];

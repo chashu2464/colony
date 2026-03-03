@@ -470,30 +470,56 @@ export default function App() {
           <div className="agent-panel-title">Agents</div>
           {agents
             .filter(agent => activeSessionData?.participants.some(p => p.id === agent.id))
-            .map(agent => (
-              <div key={agent.id} className="agent-card">
-                <div className="agent-card-header">
-                  <div className={`message-avatar ${getAgentColor(agent.id)}`} style={{ width: 24, height: 24, fontSize: 11 }}>
-                    {getInitial(agent.name)}
+            .map(agent => {
+              const participant = activeSessionData?.participants.find(p => p.id === agent.id);
+              const health = participant?.sessionHealth;
+              return (
+                <div key={agent.id} className="agent-card">
+                  <div className="agent-card-header">
+                    <div className={`message-avatar ${getAgentColor(agent.id)}`} style={{ width: 24, height: 24, fontSize: 11 }}>
+                      {getInitial(agent.name)}
+                    </div>
+                    <span className="agent-card-name">{agent.name}</span>
+                    <span className="agent-card-model">{agent.model}</span>
                   </div>
-                  <span className="agent-card-name">{agent.name}</span>
-                  <span className="agent-card-model">{agent.model}</span>
-                </div>
-                <div className="agent-card-status">
-                  <span className={`status-dot ${agent.status}`} />
-                  {agent.status === 'idle' && '空闲'}
-                  {agent.status === 'thinking' && '思考中...'}
-                  {agent.status === 'executing_skill' && '执行技能...'}
-                  {agent.status === 'rate_limited' && '额度受限'}
-                  {agent.status === 'error' && '错误'}
-                </div>
-                {agent.description && (
-                  <div className="agent-card-description">
-                    {agent.description}
+                  <div className="agent-card-status">
+                    <span className={`status-dot ${agent.status}`} />
+                    {agent.status === 'idle' && '空闲'}
+                    {agent.status === 'thinking' && '思考中...'}
+                    {agent.status === 'executing_skill' && '执行技能...'}
+                    {agent.status === 'rate_limited' && '额度受限'}
+                    {agent.status === 'error' && '错误'}
                   </div>
-                )}
-              </div>
-            ))}
+
+                  {health && (
+                    <div className="agent-card-health" style={{ marginTop: 8, fontSize: 11, color: '#888' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span>Session Health</span>
+                        <span title={`${health.tokensUsed} / ${health.contextLimit} tokens`}>
+                          {health.label} ({(health.fillRatio * 100).toFixed(0)}%)
+                        </span>
+                      </div>
+                      <div style={{ width: '100%', height: 4, background: '#333', borderRadius: 2, overflow: 'hidden' }}>
+                        <div
+                          style={{
+                            width: `${Math.min(100, health.fillRatio * 100)}%`,
+                            height: '100%',
+                            background: health.fillRatio > 0.88 ? '#e74c3c' : health.fillRatio > 0.75 ? '#f39c12' : '#2ecc71',
+                            transition: 'width 0.3s ease'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {agent.description && (
+                    <div className="agent-card-description">
+                      {agent.description}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
         </div>
       )}
 

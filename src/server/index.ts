@@ -10,6 +10,8 @@ import path from 'path';
 import { Logger } from '../utils/Logger.js';
 import { Colony } from '../Colony.js';
 import type { ColonyEvent, Message, Participant } from '../types.js';
+import { SessionStore } from '../session/SessionRecord.js';
+import { TranscriptWriter } from '../session/TranscriptWriter.js';
 
 const log = new Logger('Server');
 
@@ -169,6 +171,62 @@ export function createColonyServer(options: ServerOptions) {
         } catch (err) {
             res.status(400).json({ error: (err as Error).message });
         }
+    });
+
+    // ── Session History API (used by get-session-history skill) ──────────
+
+    const sessionStore = new SessionStore();
+    const transcriptWriter = new TranscriptWriter();
+
+    // GET /api/sessions/:id/agents/:agentId/history — list all sessions
+    app.get('/api/sessions/:id/agents/:agentId/history', (req, res) => {
+        const { id: roomId, agentId } = req.params;
+        const chain = sessionStore.getChain(agentId, roomId);
+        res.json({
+            agentId,
+            roomId,
+            sessions: chain.map(s => ({
+                id: s.id,
+                chainIndex: s.chainIndex,
+                status: s.status,
+                invocationCount: s.invocationCount,
+                tokenUsage: s.tokenUsage,
+                contextLimit: s.contextLimit,
+                fillRatio: s.contextLimit > 0 ? s.tokenUsage.cumulative / s.contextLimit : 0,
+                createdAt: s.createdAt,
+                sealedAt: s.sealedAt,
+                digest: s.digest,
+            })),
+        });
+    });
+
+    // GET /api/sessions/:id/agents/:agentId/history/search?q=... — search transcripts
+    app.get('/api/sessions/:id/agents/:agentId/history/search', (req, res) => {
+        const { id: roomId, agentId } = req.params;
+        const query = req.query.q as string;
+        if (!query) {
+            res.status(400).json({ error: 'q parameter is required' });
+            return;
+        }
+        const results = transcriptWriter.search(agentId, roomId, query);
+        res.json({ query, results });
+    });
+
+    // GET /api/sessions/:id/agents/:agentId/history/:sessionId?page=N — read transcript
+    app.get('/api/sessions/:id/agents/:agentId/history/:sessionId', (req, res) => {
+        const { id: roomId, agentId, sessionId } = req.params;
+        const page = parseInt(req.query.page as string ?? '0', 10);
+        const pageSize = 20;
+        const entries = transcriptWriter.read(agentId, roomId, sessionId);
+        const slice = entries.slice(page * pageSize, (page + 1) * pageSize);
+        res.json({
+            sessionId,
+            page,
+            pageSize,
+            total: entries.length,
+            hasMore: (page + 1) * pageSize < entries.length,
+            entries: slice,
+        });
     });
 
     // Join a room as a human

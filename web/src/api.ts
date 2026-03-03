@@ -16,6 +16,12 @@ export interface Participant {
     type: 'agent' | 'human';
     name: string;
     description?: string;
+    sessionHealth?: {
+        fillRatio: number;
+        tokensUsed: number;
+        contextLimit: number;
+        label: string;
+    };
 }
 
 export interface Message {

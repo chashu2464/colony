@@ -42,6 +42,12 @@ const path = __importStar(require("path"));
 const Logger_js_1 = require("../utils/Logger.js");
 const EventBus_js_1 = require("../utils/EventBus.js");
 const SkillManager_js_1 = require("./skills/SkillManager.js");
+const SessionRecord_js_1 = require("../session/SessionRecord.js");
+const TranscriptWriter_js_1 = require("../session/TranscriptWriter.js");
+const ContextHealthBar_js_1 = require("../session/ContextHealthBar.js");
+const SessionSealer_js_1 = require("../session/SessionSealer.js");
+const DigestGenerator_js_1 = require("../session/DigestGenerator.js");
+const SessionBootstrap_js_1 = require("../session/SessionBootstrap.js");
 const log = new Logger_js_1.Logger('Agent');
 class Agent {
     id;
@@ -53,8 +59,12 @@ class Agent {
     messageQueue = [];
     processing = false;
     lastProcessedTime = 0;
-    // Per-room session IDs for conversation isolation
-    roomSessions = new Map();
+    // Session management
+    sessionStore;
+    transcriptWriter;
+    sessionSealer;
+    digestGenerator;
+    sessionBootstrap;
     // Memory system
     contextAssembler;
     shortTermMemory;
@@ -69,6 +79,17 @@ class Agent {
         this.contextAssembler = contextAssembler;
         this.shortTermMemory = shortTermMemory;
         this.chatRoomManager = chatRoomManager;
+        this.sessionStore = new SessionRecord_js_1.SessionStore();
+        this.transcriptWriter = new TranscriptWriter_js_1.TranscriptWriter();
+        this.sessionSealer = new SessionSealer_js_1.SessionSealer({
+            strategy: config.session?.strategy,
+            thresholds: config.session?.thresholds ? {
+                warn: config.session.thresholds.warn ?? SessionSealer_js_1.DEFAULT_SEAL_CONFIG.thresholds.warn,
+                seal: config.session.thresholds.seal ?? SessionSealer_js_1.DEFAULT_SEAL_CONFIG.thresholds.seal,
+            } : undefined,
+        });
+        this.digestGenerator = new DigestGenerator_js_1.DigestGenerator(this.transcriptWriter);
+        this.sessionBootstrap = new SessionBootstrap_js_1.SessionBootstrap();
         // Register this agent with the context assembler
         // Note: SkillManager is still used for context assembly (skill descriptions)
         // but actual skill execution is handled by CLI
@@ -108,10 +129,36 @@ class Agent {
         await this.processQueue();
     }
     /**
+     * Get the session health status for a specific room.
+     * Returns a default empty health object if there is no active session.
+     */
+    getSessionHealth(roomId) {
+        const activeSession = this.sessionStore.getActive(this.id, roomId);
+        if (!activeSession) {
+            return {
+                fillRatio: 0,
+                tokensUsed: 0,
+                contextLimit: (0, SessionRecord_js_1.getContextLimit)(this.config.model.primary, this.config.session?.contextLimit),
+                invocationCount: 0,
+                label: '🟢 healthy',
+            };
+        }
+        return (0, ContextHealthBar_js_1.getHealthStatus)(activeSession);
+    }
+    /**
      * Set the session ID for a specific room.
      */
     setRoomSession(roomId, sessionId) {
-        this.roomSessions.set(roomId, sessionId);
+        // Create or update the session record in SessionStore
+        const existing = this.sessionStore.getActive(this.id, roomId);
+        if (!existing) {
+            this.sessionStore.create({
+                id: sessionId,
+                agentId: this.id,
+                roomId,
+                cli: this.config.model.primary,
+            });
+        }
     }
     // ── Internal Processing ──────────────────────────────
     async processQueue() {
@@ -178,7 +225,41 @@ class Agent {
             });
             while (round < Agent.MAX_FOLLOW_UP_ROUNDS) {
                 round++;
-                const existingSession = this.roomSessions.get(message.roomId);
+                const activeSession = this.sessionStore.getActive(this.id, message.roomId);
+                // ── Phase 2: Check if session needs sealing ──
+                let promptForThisRound = currentPrompt;
+                if (activeSession) {
+                    const action = this.sessionSealer.shouldTakeAction(activeSession);
+                    if (action.type === 'seal') {
+                        log.info(`[${this.name}] Sealing session ${activeSession.id} (${(action.fillRatio * 100).toFixed(1)}%)`);
+                        const sealed = this.sessionStore.seal(this.id, message.roomId, activeSession.id);
+                        if (sealed) {
+                            // Generate digest asynchronously (don't block the current invoke)
+                            this.digestGenerator.generate(sealed).then(digest => {
+                                this.sessionStore.setDigest(this.id, message.roomId, sealed.id, digest);
+                                log.info(`[${this.name}] Digest stored for session ${sealed.id}`);
+                            }).catch(err => {
+                                log.error(`[${this.name}] Failed to generate digest:`, err);
+                            });
+                            // Inject bootstrap preamble: new session starts fresh (no --resume)
+                            // Create a placeholder new record — it will get real ID after first invoke
+                            promptForThisRound = this.sessionBootstrap.injectInto(currentPrompt, {
+                                ...activeSession,
+                                chainIndex: activeSession.chainIndex + 1,
+                                id: 'pending',
+                                status: 'active',
+                                tokenUsage: { input: 0, output: 0, cumulative: 0 },
+                                invocationCount: 0,
+                                createdAt: new Date().toISOString(),
+                                previousSessionId: activeSession.id,
+                            }, sealed);
+                        }
+                    }
+                    else if (action.type === 'warn') {
+                        log.warn(`[${this.name}] Context at ${(action.fillRatio * 100).toFixed(1)}% — approaching seal threshold`);
+                    }
+                }
+                const existingSession = activeSession?.status === 'active' ? activeSession.id : undefined;
                 log.info(`[${this.name}] Invoking LLM (round ${round}) for message from ${message.sender.name}...`);
                 // Send a pending placeholder message — will be updated in-place
                 const pendingMsg = chatRoom.sendAgentMessage(this.id, `正在思考...`, [], {
@@ -189,7 +270,7 @@ class Agent {
                 const controller = new AbortController();
                 this.activeInvocations.set(message.roomId, controller);
                 try {
-                    const result = await this.modelRouter.invoke(this.config.model.primary, currentPrompt, {
+                    const result = await this.modelRouter.invoke(this.config.model.primary, promptForThisRound, {
                         sessionName,
                         sessionId: existingSession ?? undefined,
                         cwd: workingDir, // Set working directory for CLI
@@ -211,9 +292,36 @@ class Agent {
                     log.info(`[${this.name}] ── LLM Response round ${round} (${result.text.length} chars) ──`);
                     log.info(`[${this.name}] ${result.text}`);
                     log.info(`[${this.name}] ── End Response ──`);
-                    // Save session ID for this room
+                    // Save session ID to SessionStore
                     if (result.sessionId) {
-                        this.roomSessions.set(message.roomId, result.sessionId);
+                        const actualCli = result.actualModel ?? this.config.model.primary;
+                        // Look up by exact session ID first, then fall back to any active
+                        let existing = this.sessionStore.getBySessionId(this.id, message.roomId, result.sessionId);
+                        if (!existing) {
+                            // New session ID (either first invocation or fallback model created one)
+                            existing = this.sessionStore.create({
+                                id: result.sessionId,
+                                agentId: this.id,
+                                roomId: message.roomId,
+                                cli: actualCli,
+                            });
+                        }
+                        // Record transcript entry
+                        this.transcriptWriter.append(this.id, message.roomId, result.sessionId, {
+                            invocationIndex: (existing?.invocationCount ?? 0) + 1,
+                            timestamp: new Date().toISOString(),
+                            prompt: currentPrompt.substring(0, 2000),
+                            response: result.text,
+                            toolCalls: result.toolCalls,
+                            tokenUsage: result.tokenUsage,
+                        });
+                        // Update token usage for this specific session and log context health
+                        if (result.tokenUsage) {
+                            const updated = this.sessionStore.updateUsage(this.id, message.roomId, result.tokenUsage, result.sessionId);
+                            if (updated) {
+                                (0, ContextHealthBar_js_1.logHealth)(this.name, updated);
+                            }
+                        }
                     }
                     // Update pending message with actual response content
                     if (result.text || (result.toolCalls && result.toolCalls.length > 0)) {
@@ -284,7 +392,7 @@ class Agent {
                     // false positives from CLI errors that contain the word 'aborted'.
                     if (controller.signal.aborted) {
                         // Clear stale session so next message starts fresh
-                        this.roomSessions.delete(message.roomId);
+                        // Session aborted — don't delete, let it resume next time
                         chatRoom.updateMessage(pendingId, `⏹️ 已停止执行`, { isMonologue: true, isPending: false });
                         this.setStatus('idle');
                         return;

@@ -21,7 +21,11 @@ export declare class Agent {
     private messageQueue;
     private processing;
     private lastProcessedTime;
-    private roomSessions;
+    private sessionStore;
+    private transcriptWriter;
+    private sessionSealer;
+    private digestGenerator;
+    private sessionBootstrap;
     private contextAssembler;
     private shortTermMemory;
     private chatRoomManager;
@@ -38,6 +42,11 @@ export declare class Agent {
      * (via @mention or default agent fallback).
      */
     receiveMessage(message: Message): Promise<void>;
+    /**
+     * Get the session health status for a specific room.
+     * Returns a default empty health object if there is no active session.
+     */
+    getSessionHealth(roomId: string): import("../session/ContextHealthBar.js").HealthStatus;
     /**
      * Set the session ID for a specific room.
      */
