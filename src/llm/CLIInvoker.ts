@@ -441,6 +441,15 @@ export async function invoke(
                 const sid = config.extractSessionId(event);
                 if (sid) capturedSessionId = sid;
 
+                // ── Extract errors from stdout JSON events ──────
+                // Some CLIs (notably Claude) report errors as JSON on stdout
+                // (e.g. type=result with is_error=true) instead of writing to stderr.
+                // Capture these so the InvokeError message includes the real error text.
+                if (event.is_error === true && Array.isArray(event.errors)) {
+                    const errTexts = (event.errors as string[]).join('; ');
+                    stderr += (stderr ? '\n' : '') + errTexts;
+                }
+
                 const text = config.extractText(event);
                 if (text) {
                     textChunks.push(text);
