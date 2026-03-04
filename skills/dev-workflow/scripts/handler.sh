@@ -328,6 +328,12 @@ EOF
 
     REASON=$(echo "$INPUT" | jq -r '.reason // "Backtrack to previous stage requested"')
     CURRENT=$(jq -r '.current_stage' "$WORKFLOW_FILE")
+    STATUS=$(jq -r '.status' "$WORKFLOW_FILE")
+
+    if [ "$STATUS" == "completed" ]; then
+       echo '{"error": "Workflow is already completed. Cannot backtrack."}'
+       exit 1
+    fi
     
     if [ "$CURRENT" -eq 0 ]; then
        echo '{"error": "Already at Stage 0. Cannot go back further."}'
@@ -366,6 +372,12 @@ EOF
     TARGET=$(echo "$INPUT" | jq -r '.target_stage // empty')
     REASON=$(echo "$INPUT" | jq -r '.reason // "Backtrack requested"')
     CURRENT=$(jq -r '.current_stage' "$WORKFLOW_FILE")
+    STATUS=$(jq -r '.status' "$WORKFLOW_FILE")
+
+    if [ "$STATUS" == "completed" ]; then
+       echo '{"error": "Workflow is already completed. Cannot backtrack."}'
+       exit 1
+    fi
     
     if [ -z "$TARGET" ] || [ "$TARGET" == "null" ]; then
        echo '{"error": "Missing target_stage for backtrack."}'

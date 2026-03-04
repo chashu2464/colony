@@ -67,7 +67,7 @@ echo "Submitting approval from TL..."
 echo '{"action": "submit-review", "status": "approved", "comments": "LGTM"}' | COLONY_AGENT_ID="tl_agent" $HANDLER > /dev/null
 echo "Attempting completion WITH TL approval..."
 OUT=$(echo '{"action": "next", "notes": "Completing", "evidence": "evidence.txt"}' | $HANDLER 2>&1)
-if echo "$OUT" | grep -q "Workflow already completed"; then
+if echo "$OUT" | grep -q "\"status\": \"completed\""; then
   echo "PASS: TC-6"
 else
   echo "FAIL: TC-6. Output: $OUT"
