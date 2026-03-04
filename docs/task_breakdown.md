@@ -17,7 +17,7 @@ This document breaks down the implementation of the Phase 6 `dev-workflow` skill
 - [x] Create `docs/phase6/QA_GATES.md` (formalizing the criteria).
 
 ### 3. Verification & Testing (0.5 day)
-- [ ] Perform a dry run of the workflow from Stage 0 to Stage 8.
+- [x] Perform a dry run of the workflow from Stage 0 to Stage 9.
 - [x] Verify rollback (`prev`) functionality.
 - [x] Verify evidence validation (fail case).
 

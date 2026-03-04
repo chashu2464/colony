@@ -278,12 +278,17 @@ EOF
     # Store history and update stage
     log_history "$CURRENT" "$NEXT" "next" "$COLONY_AGENT_ID" "$NOTES" "$CURRENT_HASH"
     
+<<<<<<< HEAD
     # Set status to completed if Stage 9
     FINAL_STATUS="active"
     if [ "$NEXT" -eq 9 ]; then FINAL_STATUS="completed"; fi
 
     jq --arg next "$NEXT" --arg next_name "${STAGES[$NEXT]}" --arg status "$FINAL_STATUS" \
       '.current_stage = ($next|tonumber) | .stage_name = $next_name | .status = $status' \
+=======
+    jq --arg next "$NEXT" --arg next_name "${STAGES[$NEXT]}" \
+      '.current_stage = ($next|tonumber) | .stage_name = $next_name | .status = "active"' \
+>>>>>>> feature/task-f81fc9a8
       "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
     
     # Notify next actor
@@ -328,12 +333,15 @@ EOF
 
     REASON=$(echo "$INPUT" | jq -r '.reason // "Backtrack to previous stage requested"')
     CURRENT=$(jq -r '.current_stage' "$WORKFLOW_FILE")
+<<<<<<< HEAD
     STATUS=$(jq -r '.status' "$WORKFLOW_FILE")
 
     if [ "$STATUS" == "completed" ]; then
        echo '{"error": "Workflow is already completed. Cannot backtrack."}'
        exit 1
     fi
+=======
+>>>>>>> feature/task-f81fc9a8
     
     if [ "$CURRENT" -eq 0 ]; then
        echo '{"error": "Already at Stage 0. Cannot go back further."}'
