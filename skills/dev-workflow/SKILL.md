@@ -51,10 +51,8 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 | 6 | Development Implementation | developer | - | 开发者根据设计和测试用例实现功能。 |
 | 7 | Integration Testing | qa_lead | developer | QA 执行集成测试，开发者修复发现的问题。 |
 | 8 | Go-Live Review | tech_lead | architect, developer, qa_lead | 四方最终评审，确认交付质量。必须由 Tech Lead 批准。 |
-<<<<<<< HEAD
 | 9 | Completed | - | - | 任务已完成并合并到主分支。 |
-=======
->>>>>>> feature/task-f81fc9a8
+
 
 ## Important Actions
 
