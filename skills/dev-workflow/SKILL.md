@@ -14,16 +14,16 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `action`  | string | ✅ | `init`, `next`, `submit-review`, `backtrack`, `status`, `update` |
+| `action`  | string | ✅ | `init`, `next`, `prev`, `backtrack`, `submit-review`, `status`, `update` |
 | `task_name` | string | ❌ | Name of the task (required for `init`) |
 | `description` | string | ❌ | Task description |
 | `notes` | string | ❌ | Progress notes for `next` stage |
-| `assignments` | object | ❌ | Map of roles to agent IDs: `{"architect": "", "tech_lead": "", "qa_lead": "", "developer": ""}` |
+| `assignments` | object | ❌ | Map of roles to agent IDs: `{"architect": "", "tech_lead": "", "qa_lead": "", "developer": ""}` (also accepts `roles` as alias) |
 | `evidence` | string | ❌ | Path to a file or document as proof of work for `next` |
 | `status` | string | ❌ | `approved` or `rejected` (required for `submit-review`) |
 | `comments` | string | ❌ | Optional feedback when using `submit-review` |
 | `target_stage` | number | ❌ | The integer stage to rollback to (required for `backtrack`) |
-| `reason` | string | ❌ | The reason for the rollback (required for `backtrack`) |
+| `reason` | string | ❌ | The reason for the rollback (required for `backtrack` or `prev`) |
 
 ### Stages (0-8)
 
@@ -49,28 +49,29 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 | 5 | Test Case Design | qa_lead | - | QA 编写测试用例，覆盖功能和边界场景。 |
 | 6 | Development Implementation | developer | - | 开发者根据设计和测试用例实现功能。 |
 | 7 | Integration Testing | qa_lead | developer | QA 执行集成测试，开发者修复发现的问题。 |
-| 8 | Go-Live Review | tech_lead | architect, developer, qa_lead | 四方最终评审，确认交付质量。 |
+| 8 | Go-Live Review | tech_lead | architect, developer, qa_lead | 四方最终评审，确认交付质量。必须由 Tech Lead 批准。 |
 
-## Important
+## Important Actions
 
-- Use `status` to check the current stage before proceeding.
-- **Stage 6 (Implementation)** can ONLY begin after **Stage 5 (Test Case Design)** is completed.
-- Always provide `notes` and `evidence` (file paths) when moving to the `next` stage.
-- **Automated Git Snapshots**: Pushing successful `next` stages will automatically execute a `git commit` to capture the project state. The `notes` you provide will form the commit message.
-  - **Branching Strategy**: Upon advancing to **Stage 6 (Implementation)**, the workflow will automatically create and check out a dedicated feature branch (`feature/task-<ID>`). All development commits will reside here.
-  - **Auto-Merging**: Upon successfully advancing to **Stage 8 (Go-Live Review)**, the workflow will automatically switch back to the main branch (`master` or `main`) and merge the feature branch in.
+### Advancing (next)
+Moves the workflow to the next stage.
+- **Evidence**: Mandatory for all stages beyond 0. Must be a valid file or directory path.
+- **Approvals**: Stages 2, 3, 4, 5, 7, and 8 require at least one approved review.
+- **Stage 8 Guardrail**: Completion (moving from 8 to completion) strictly requires an approval from the assigned **tech_lead**.
 
-## Advanced Actions
+### Backtracking (prev & backtrack)
+- **prev**: Backtracks exactly one stage.
+- **backtrack**: Backtracks to a specific `target_stage`.
+- **Note**: Both provide a `git reset --hard` hint if a commit hash for the target stage is found in history.
 
 ### Submitting a Review
-Certain critical stages (e.g. Stage 3, Stage 7) require explicit approval before the workflow can move `next`. A designated reviewer (e.g. Tech Lead or QA Lead) must call the skill to approve or reject the work:
+Used by reviewers to approve or reject a stage's work.
 ```bash
 echo '{"action": "submit-review", "status": "approved", "comments": "LGTM!"}' | bash scripts/handler.sh
 ```
 
-### Backtracking (Rollback)
-If a task is rejected during review or needs to revert to an earlier state (for example, failing Integration Testing and going back to Development), use the `backtrack` action:
-```bash
-echo '{"action": "backtrack", "target_stage": 6, "reason": "Failed integration tests, needs fix."}' | bash scripts/handler.sh
-```
-> **Safety Notice**: Backtracking merely updates the workflow metadata to unblock progress; it does NOT automatically execute `git reset --hard` to destroy your uncommitted code. Instead, the resulting JSON output will contain a `warning` property detailing the exact `git reset` terminal command you (or the Agent) should run manually to roll back the codebase cleanly to that target stage.
+## Automated Features
+
+- **Git Snapshots**: `next` action automatically commits changes (except when merging).
+- **Branching Strategy**: Upon advancing to **Stage 6 (Implementation)**, the workflow automatically creates/checks out `feature/task-<ID>`.
+- **Auto-Merging**: Advancing from **Stage 8** to completion automatically merges the feature branch into the main branch and deletes the feature branch.

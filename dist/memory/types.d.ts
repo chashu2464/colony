@@ -116,6 +116,11 @@ export interface WorkflowState {
     current_stage: number;
     stage_name: string;
     status: 'active' | 'completed' | 'paused' | 'blocked';
+    /**
+     * Role assignments mapping.
+     * @example { "architect": "architect", "developer": "developer" }
+     * @warning Values MUST be agent IDs (from config/*.yaml id field), NOT file paths.
+     */
     assignments: Record<string, string>;
     artifacts: Array<{
         stage: number;

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# dev-workflow v2.1 handler script
+# dev-workflow v2.2 handler script
 # Uses jq to manage session-specific workflow state according to docs/SKILL_DESIGN.md.
-# Enhanced with mandatory branching and squash merge.
+# Phase 6 upgrade: added prev action, robust evidence validation, tech_lead role enforcement, and jq input verification.
 
 WORKFLOW_DIR=".data/workflows"
 mkdir -p "$WORKFLOW_DIR"
@@ -20,6 +20,7 @@ STAGES=(
   "6. Development Implementation"
   "7. Integration Testing"
   "8. Go-Live Review"
+  "9. Completed"
 )
 
 # Notification Helper
@@ -34,19 +35,29 @@ function get_next_actor_role() {
   esac
 }
 
+function validate_assignments() {
+  local assignments="$1"
+  # Check if any value contains / or @ (heuristic for file paths or malformed IDs)
+  local invalid=$(echo "$assignments" | jq -r 'to_entries[] | select(.value != null) | select(.value | contains("/") or contains("@")) | .key')
+  if [ ! -z "$invalid" ]; then
+    echo "Error: Invalid agent ID for role(s): $invalid. Expected agent ID (e.g., 'developer'), got file path or malformed string." >&2
+    return 1
+  fi
+  return 0
+}
+
 function notify_server() {
   local from=$1
   local to=$2
   local role=$(get_next_actor_role $to)
+  # Check assignments (legacy support for roles is handled during state loading/saving)
   local actor=$(jq -r --arg role "$role" '.assignments[$role] // empty' "$WORKFLOW_FILE")
   
   if [ ! -z "$actor" ]; then
     # Use the port from environment or default to 3001
     local port="${PORT:-3001}"
     # Delay notification to let the current CLI invocation finish processing
-    # the skill response before a new agent is triggered. Without this delay,
-    # the server would spawn a new CLI process while the current one is still
-    # running, potentially causing OOM kills.
+    # the skill response before a new agent is triggered.
     (sleep 2 && curl -X POST "http://localhost:${port}/api/workflow/events" \
       -H "Content-Type: application/json" \
       -d "{
@@ -98,8 +109,34 @@ function ensure_feature_branch() {
   fi
 }
 
+# State Helper
+function log_history() {
+  local from=$1
+  local to=$2
+  local action=$3
+  local actor=$4
+  local notes=$5
+  local hash=$6
+  
+  # Ensure we have numeric values for from/to if not null
+  local from_val="null"
+  if [ ! -z "$from" ] && [ "$from" != "null" ]; then from_val=$from; fi
+  local to_val="null"
+  if [ ! -z "$to" ] && [ "$to" != "null" ]; then to_val=$to; fi
+
+  local history_entry=$(jq -n --argjson from "$from_val" --argjson to "$to_val" --arg action "$action" --arg actor "$actor" --arg notes "$notes" --arg hash "$hash" \
+    '{from_stage: $from, to_stage: $to, action: $action, actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'" }')
+  jq --argjson entry "$history_entry" '.history += [$entry]' "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
+}
+
 # Read input JSON
 INPUT=$(cat)
+
+# JSON validation
+if ! echo "$INPUT" | jq . >/dev/null 2>&1; then
+  echo '{"error": "Invalid JSON input. Please ensure your parameters are correctly formatted."}'
+  exit 1
+fi
 
 ACTION=$(echo "$INPUT" | jq -r '.action // empty')
 
@@ -112,8 +149,13 @@ case "$ACTION" in
   init)
     TASK_NAME=$(echo "$INPUT" | jq -r '.task_name // "Untitled Task"')
     DESCRIPTION=$(echo "$INPUT" | jq -r '.description // ""')
-    ASSIGNMENTS=$(echo "$INPUT" | jq -c '.assignments // {"architect":null,"tech_lead":null,"qa_lead":null,"developer":null}')
+    # Support both 'roles' and 'assignments' for input
+    ASSIGNMENTS=$(echo "$INPUT" | jq -c '.assignments // .roles // {"architect":null,"tech_lead":null,"qa_lead":null,"developer":null}')
     
+    if ! validate_assignments "$ASSIGNMENTS"; then
+      exit 1
+    fi
+
     TASK_ID="$(uuidgen 2>/dev/null | tr '[:upper:]' '[:lower:]' | cut -c1-8 || echo $RANDOM-$RANDOM)"
     
     # Create feature branch immediately
@@ -138,8 +180,7 @@ case "$ACTION" in
 EOF
     # Log init to history
     CURRENT_HASH=$(get_git_hash)
-    HISTORY_ENTRY=$(jq -n --arg actor "$COLONY_AGENT_ID" --arg notes "Workflow initialized and branch $BRANCH_NAME created" --arg hash "$CURRENT_HASH" '{from_stage: null, to_stage: 0, action: "init", actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'" }')
-    jq --argjson entry "$HISTORY_ENTRY" '.history += [$entry]' "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
+    log_history "null" 0 "init" "$COLONY_AGENT_ID" "Workflow initialized and branch $BRANCH_NAME created" "$CURRENT_HASH"
     
     cat "$WORKFLOW_FILE"
     ;;
@@ -151,18 +192,18 @@ EOF
     fi
     
     NOTES=$(echo "$INPUT" | jq -r '.notes // ""')
-    EVIDENCE=$(echo "$INPUT" | jq -r '.evidence // empty')
+    EVIDENCE=$(echo "$INPUT" | jq -r '.evidence // empty' | xargs)
     
     CURRENT=$(jq -r '.current_stage' "$WORKFLOW_FILE")
     NEXT=$((CURRENT + 1))
     
     if [ $NEXT -ge ${#STAGES[@]} ]; then
-      echo '{"error": "Workflow already completed. (Last stage: 8. Go-Live Review)"}'
+      echo "{\"error\": \"Workflow already completed. (Last stage: $(( ${#STAGES[@]} - 1 )). ${STAGES[$(( ${#STAGES[@]} - 1 ))]})\"}"
       exit 0
     fi
 
     # Evidence Validation
-    if [ ! -z "$EVIDENCE" ]; then
+    if [ ! -z "$EVIDENCE" ] && [ "$EVIDENCE" != "null" ]; then
       if [ ! -e "$EVIDENCE" ] && [ ! -d "$EVIDENCE" ]; then
          echo "{\"error\": \"Evidence path not found: $EVIDENCE\"}"
          exit 1
@@ -177,10 +218,23 @@ EOF
 
     # Guardrails for critical stages requiring approval
     case $CURRENT in
-      2|3|4|5|7|8)
+      2|3|4|5|7)
         APPROVED=$(jq --arg stage "$CURRENT" '.reviews | map(select(.stage == ($stage|tonumber) and .status == "approved")) | length' "$WORKFLOW_FILE")
         if [ "$APPROVED" -eq 0 ]; then
           echo "{\"error\": \"Stage $CURRENT (${STAGES[$CURRENT]}) requires an approved review before proceeding.\"}"
+          exit 1
+        fi
+        ;;
+      8)
+        # Stage 8 strictly requires approval from the assigned tech_lead
+        TL_ACTOR=$(jq -r '.assignments["tech_lead"] // .roles["tech_lead"] // empty' "$WORKFLOW_FILE")
+        if [ -z "$TL_ACTOR" ] || [ "$TL_ACTOR" == "null" ]; then
+           echo "{\"error\": \"Stage 8 (Go-Live Review) cannot proceed: No tech_lead is assigned to this task.\"}"
+           exit 1
+        fi
+        APPROVED=$(jq --arg stage "$CURRENT" --arg tl "$TL_ACTOR" '.reviews | map(select(.stage == ($stage|tonumber) and .status == "approved" and .reviewer == $tl)) | length' "$WORKFLOW_FILE")
+        if [ "$APPROVED" -eq 0 ]; then
+          echo "{\"error\": \"Stage 8 (Go-Live Review) requires an approved review from the assigned tech_lead ($TL_ACTOR) before completion.\"}"
           exit 1
         fi
         ;;
@@ -196,7 +250,7 @@ EOF
     fi
 
     # Handle completion and merge
-    if [ "$NEXT" -eq 8 ]; then
+    if [ "$NEXT" -eq 9 ]; then
       if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
         # Commit remaining work on feature branch
         do_git_commit "$CURRENT" "${STAGES[$CURRENT]}" "Final changes before merge"
@@ -221,11 +275,15 @@ EOF
 
     CURRENT_HASH=$(get_git_hash)
 
-    # Store history
-    HISTORY_ENTRY=$(jq -n --arg from "$CURRENT" --arg to "$NEXT" --arg actor "$COLONY_AGENT_ID" --arg notes "$NOTES" --arg hash "$CURRENT_HASH" '{from_stage: ($from|tonumber), to_stage: ($to|tonumber), action: "next", actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'" }')
+    # Store history and update stage
+    log_history "$CURRENT" "$NEXT" "next" "$COLONY_AGENT_ID" "$NOTES" "$CURRENT_HASH"
     
-    jq --arg next "$NEXT" --arg next_name "${STAGES[$NEXT]}" --argjson entry "$HISTORY_ENTRY" \
-      '.current_stage = ($next|tonumber) | .stage_name = $next_name | .status = "active" | .history += [$entry]' \
+    # Set status to completed if Stage 9
+    FINAL_STATUS="active"
+    if [ "$NEXT" -eq 9 ]; then FINAL_STATUS="completed"; fi
+
+    jq --arg next "$NEXT" --arg next_name "${STAGES[$NEXT]}" --arg status "$FINAL_STATUS" \
+      '.current_stage = ($next|tonumber) | .stage_name = $next_name | .status = $status' \
       "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
     
     # Notify next actor
@@ -262,6 +320,43 @@ EOF
     cat "$WORKFLOW_FILE"
     ;;
 
+  prev)
+    if [ ! -f "$WORKFLOW_FILE" ]; then
+      echo '{"error": "Workflow not initialized."}'
+      exit 1
+    fi
+
+    REASON=$(echo "$INPUT" | jq -r '.reason // "Backtrack to previous stage requested"')
+    CURRENT=$(jq -r '.current_stage' "$WORKFLOW_FILE")
+    
+    if [ "$CURRENT" -eq 0 ]; then
+       echo '{"error": "Already at Stage 0. Cannot go back further."}'
+       exit 1
+    fi
+    
+    TARGET=$((CURRENT - 1))
+    
+    # Retrieve the last known git hash for the target stage from history
+    TARGET_HASH=$(jq -r --arg target "$TARGET" '
+      .history | map(select(.to_stage == ($target|tonumber) and .git_commit_hash != null and .git_commit_hash != "")) | last | .git_commit_hash // empty
+    ' "$WORKFLOW_FILE")
+
+    CURRENT_HASH=$(get_git_hash)
+    log_history "$CURRENT" "$TARGET" "prev" "$COLONY_AGENT_ID" "$REASON" "$CURRENT_HASH"
+    
+    jq --arg target "$TARGET" --arg target_name "${STAGES[$TARGET]}" \
+      '.current_stage = ($target|tonumber) | .stage_name = $target_name | .status = "active"' \
+      "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
+      
+    if [ ! -z "$TARGET_HASH" ] && [ "$TARGET_HASH" != "null" ]; then
+      TASK_ID=$(jq -r '.task_id' "$WORKFLOW_FILE")
+      WARNING_MSG="Workflow rolled back to Stage $TARGET. To explicitly rollback workspace files, execute: git reset --hard $TARGET_HASH (WARNING: destructs uncommitted files)"
+      jq --arg msg "$WARNING_MSG" '.warning = $msg' "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
+    fi
+    
+    cat "$WORKFLOW_FILE"
+    ;;
+
   backtrack)
     if [ ! -f "$WORKFLOW_FILE" ]; then
       echo '{"error": "Workflow not initialized."}'
@@ -272,7 +367,7 @@ EOF
     REASON=$(echo "$INPUT" | jq -r '.reason // "Backtrack requested"')
     CURRENT=$(jq -r '.current_stage' "$WORKFLOW_FILE")
     
-    if [ -z "$TARGET" ]; then
+    if [ -z "$TARGET" ] || [ "$TARGET" == "null" ]; then
        echo '{"error": "Missing target_stage for backtrack."}'
        exit 1
     fi
@@ -288,20 +383,19 @@ EOF
     ' "$WORKFLOW_FILE")
 
     CURRENT_HASH=$(get_git_hash)
-    HISTORY_ENTRY=$(jq -n --arg from "$CURRENT" --arg to "$TARGET" --arg actor "$COLONY_AGENT_ID" --arg notes "$REASON" --arg hash "$CURRENT_HASH" \
-      '{from_stage: ($from|tonumber), to_stage: ($to|tonumber), action: "backtrack", actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'" }')
+    log_history "$CURRENT" "$TARGET" "backtrack" "$COLONY_AGENT_ID" "$REASON" "$CURRENT_HASH"
     
-    jq --arg target "$TARGET" --arg target_name "${STAGES[$TARGET]}" --argjson entry "$HISTORY_ENTRY" \
-      '.current_stage = ($target|tonumber) | .stage_name = $target_name | .status = "active" | .history += [$entry]' \
+    jq --arg target "$TARGET" --arg target_name "${STAGES[$TARGET]}" \
+      '.current_stage = ($target|tonumber) | .stage_name = $target_name | .status = "active"' \
       "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
       
-    if [ ! -z "$TARGET_HASH" ]; then
+    if [ ! -z "$TARGET_HASH" ] && [ "$TARGET_HASH" != "null" ]; then
       TASK_ID=$(jq -r '.task_id' "$WORKFLOW_FILE")
-      WARNING_MSG="Workflow backtracked. You should ensure you are on branch feature/task-${TASK_ID}. To explicitly rollback workspace files to Stage $TARGET, execute: git reset --hard $TARGET_HASH (WARNING: destructs uncommitted files)"
-      jq --arg msg "$WARNING_MSG" '.warning = $msg' "$WORKFLOW_FILE"
-    else
-      cat "$WORKFLOW_FILE"
+      WARNING_MSG="Workflow backtracked to Stage $TARGET. To explicitly rollback workspace files, execute: git reset --hard $TARGET_HASH (WARNING: destructs uncommitted files)"
+      jq --arg msg "$WARNING_MSG" '.warning = $msg' "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
     fi
+
+    cat "$WORKFLOW_FILE"
     ;;
 
   status)
@@ -317,13 +411,27 @@ EOF
       echo '{"error": "Workflow not initialized."}'
       exit 1
     fi
+
+    # Support both 'roles' and 'assignments'
+    NEW_ASSIGNMENTS=$(echo "$INPUT" | jq -c '.assignments // .roles // empty')
+    if [ ! -z "$NEW_ASSIGNMENTS" ] && [ "$NEW_ASSIGNMENTS" != "null" ]; then
+      if ! validate_assignments "$NEW_ASSIGNMENTS"; then
+        exit 1
+      fi
+      jq --argjson assignments "$NEW_ASSIGNMENTS" '.assignments = $assignments' "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
+    fi
     
-    jq --argjson input "$INPUT" \
-      'if $input.description then .description = $input.description else . end |
-       if $input.assignments then .assignments = (.assignments + $input.assignments) else . end |
-       if $input.task_name then .task_name = $input.task_name else . end' \
-      "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
-    
+    # Update other fields if provided
+    TASK_NAME=$(echo "$INPUT" | jq -r '.task_name // empty')
+    if [ ! -z "$TASK_NAME" ] && [ "$TASK_NAME" != "null" ]; then
+       jq --arg name "$TASK_NAME" '.task_name = $name' "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
+    fi
+
+    DESCRIPTION=$(echo "$INPUT" | jq -r '.description // empty')
+    if [ ! -z "$DESCRIPTION" ] && [ "$DESCRIPTION" != "null" ]; then
+       jq --arg desc "$DESCRIPTION" '.description = $desc' "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
+    fi
+
     cat "$WORKFLOW_FILE"
     ;;
 
