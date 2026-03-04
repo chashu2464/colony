@@ -30,7 +30,15 @@ function get_next_actor_role() {
     0|1|2) echo "architect" ;;
     3|6) echo "developer" ;;
     4|5|7) echo "qa_lead" ;;
-    8) echo "tech_lead" ;;
+    8) 
+      # Fallback to developer if tech_lead is not assigned
+      local tl=$(jq -r '.assignments["tech_lead"] // .roles["tech_lead"] // empty' "$WORKFLOW_FILE")
+      if [ -z "$tl" ] || [ "$tl" == "null" ]; then
+        echo "developer"
+      else
+        echo "tech_lead"
+      fi
+      ;;
     *) echo "developer" ;;
   esac
 }
@@ -133,8 +141,11 @@ function log_history() {
 INPUT=$(cat)
 
 # JSON validation
-if ! echo "$INPUT" | jq . >/dev/null 2>&1; then
-  echo '{"error": "Invalid JSON input. Please ensure your parameters are correctly formatted."}'
+JSON_ERROR=$(echo "$INPUT" | jq . 2>&1 >/dev/null)
+if [ $? -ne 0 ]; then
+  # Clean up the error message to be JSON-safe
+  CLEAN_ERROR=$(echo "$JSON_ERROR" | tr -d '\n' | tr '"' "'")
+  echo "{\"error\": \"Invalid JSON input: $CLEAN_ERROR\"}"
   exit 1
 fi
 
@@ -226,15 +237,20 @@ EOF
         fi
         ;;
       8)
-        # Stage 8 strictly requires approval from the assigned tech_lead
+        # Stage 8 requires approval from the assigned tech_lead, falling back to developer
         TL_ACTOR=$(jq -r '.assignments["tech_lead"] // .roles["tech_lead"] // empty' "$WORKFLOW_FILE")
         if [ -z "$TL_ACTOR" ] || [ "$TL_ACTOR" == "null" ]; then
-           echo "{\"error\": \"Stage 8 (Go-Live Review) cannot proceed: No tech_lead is assigned to this task.\"}"
+           # Fallback to developer
+           TL_ACTOR=$(jq -r '.assignments["developer"] // .roles["developer"] // empty' "$WORKFLOW_FILE")
+        fi
+        
+        if [ -z "$TL_ACTOR" ] || [ "$TL_ACTOR" == "null" ]; then
+           echo "{\"error\": \"Stage 8 (Go-Live Review) cannot proceed: No tech_lead or developer is assigned to this task.\"}"
            exit 1
         fi
         APPROVED=$(jq --arg stage "$CURRENT" --arg tl "$TL_ACTOR" '.reviews | map(select(.stage == ($stage|tonumber) and .status == "approved" and .reviewer == $tl)) | length' "$WORKFLOW_FILE")
         if [ "$APPROVED" -eq 0 ]; then
-          echo "{\"error\": \"Stage 8 (Go-Live Review) requires an approved review from the assigned tech_lead ($TL_ACTOR) before completion.\"}"
+          echo "{\"error\": \"Stage 8 (Go-Live Review) requires an approved review from the assigned leader ($TL_ACTOR) before completion.\"}"
           exit 1
         fi
         ;;
@@ -324,6 +340,14 @@ EOF
     if [ ! -f "$WORKFLOW_FILE" ]; then
       echo '{"error": "Workflow not initialized."}'
       exit 1
+    fi
+
+    # Safety check: ensure working directory is clean before rollback
+    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+      if [ ! -z "$(git status --porcelain)" ]; then
+        echo '{"error": "Working directory is dirty. Please commit or stash your changes before using prev action to prevent data loss."}'
+        exit 1
+      fi
     fi
 
     REASON=$(echo "$INPUT" | jq -r '.reason // "Backtrack to previous stage requested"')
