@@ -25,7 +25,7 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 | `target_stage` | number | ❌ | The integer stage to rollback to (required for `backtrack`) |
 | `reason` | string | ❌ | The reason for the rollback (required for `backtrack` or `prev`) |
 
-### Stages (0-8)
+### Stages (0-9)
 
 0. **Brainstorming**: Direction discussion and goal definition.
 1. **Initial Requirements (IR)**: Draft requirements and five-party review.
@@ -36,6 +36,7 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 6. **Development Implementation**: Coding based on design and test cases.
 7. **Integration Testing**: QA verification and developer fixes.
 8. **Go-Live Review**: Final four-party confirmation and delivery.
+9. **Completed**: Task successfully merged and closed.
 
 ## 阶段-角色映射表 (Stage-Role Mapping)
 
@@ -45,11 +46,12 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 | 1 | Initial Requirements | architect | tech_lead | 起草需求文档，进行五方评审。架构师负责文档化，技术负责人审查可行性。 |
 | 2 | System/Architectural Design | architect | - | 完成系统设计和架构方案，输出设计文档。架构师独立完成。 |
 | 3 | Forward Briefing | developer | qa_lead | 开发者向 QA 解释设计意图，确保 QA 理解实现方案。 |
-| 4 | Reverse Briefing | qa_lead | developer | QA 向开发者复述设计，验证理解一致性。 |
+| 4 | Reverse Briefing | qa_lead | developer | QA 向开发者复述设计，验证理解一致性. |
 | 5 | Test Case Design | qa_lead | - | QA 编写测试用例，覆盖功能和边界场景。 |
 | 6 | Development Implementation | developer | - | 开发者根据设计和测试用例实现功能。 |
 | 7 | Integration Testing | qa_lead | developer | QA 执行集成测试，开发者修复发现的问题。 |
 | 8 | Go-Live Review | tech_lead | architect, developer, qa_lead | 四方最终评审，确认交付质量。必须由 Tech Lead 批准。 |
+| 9 | Completed | - | - | 任务已完成并合并到主分支。 |
 
 ## Important Actions
 

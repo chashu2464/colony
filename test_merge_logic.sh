@@ -64,11 +64,21 @@ run_action '{"action": "next", "evidence": "evidence.txt"}' > /dev/null
 echo "Current Stage: $(run_action '{"action": "status"}' | jq -r .current_stage)"
 echo "Current Branch: $(git branch --show-current)"
 
-# Approve Stage 8
+# Approve Stage 8 (Go-Live Review)
 run_action '{"action": "submit-review", "status": "approved"}' > /dev/null
 
-echo "--- Attempting to complete Stage 8 ---"
+echo "--- Attempting to complete Stage 8 (Go to Stage 9) ---"
 run_action '{"action": "next", "evidence": "evidence.txt"}'
+
+echo "Current Stage: $(run_action '{"action": "status"}' | jq -r .current_stage)"
+echo "Current Status: $(run_action '{"action": "status"}' | jq -r .status)"
+echo "Current Branch: $(git branch --show-current)"
+
+echo "--- Attempting to go further than Stage 9 ---"
+run_action '{"action": "next", "evidence": "evidence.txt"}'
+
+echo "--- Attempting to rollback from completed ---"
+run_action '{"action": "prev", "reason": "Should fail"}'
 
 # Cleanup
 rm -rf "$TEST_DIR"
