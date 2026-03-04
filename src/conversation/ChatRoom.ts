@@ -215,6 +215,34 @@ export class ChatRoom {
     }
 
     /**
+     * Send a system notification message into this room.
+     */
+    sendSystemMessage(content: string, mentions?: string[]): Message {
+        let resolvedMentionIds: string[] = [];
+        if (mentions && mentions.length > 0) {
+            for (const m of mentions) {
+                const agent = this.resolveAgentMention(m);
+                if (agent) resolvedMentionIds.push(agent.id);
+            }
+        }
+
+        const message: Message = {
+            id: uuid(),
+            roomId: this.id,
+            sender: { id: 'system', type: 'human', name: 'System' },
+            content,
+            mentions: resolvedMentionIds,
+            timestamp: new Date(),
+            metadata: {
+                isSystem: true,
+            },
+        };
+
+        this.messageBus.publish(message);
+        return message;
+    }
+
+    /**
      * Update an existing message in-place (used for thinking → response replacement).
      */
     updateMessage(messageId: string, content: string, metadata?: Partial<Message['metadata']>): void {

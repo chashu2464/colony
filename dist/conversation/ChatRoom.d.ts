@@ -61,6 +61,10 @@ export declare class ChatRoom {
      */
     sendAgentMessage(agentId: string, content: string, mentions?: string[], metadata?: Message['metadata']): Message;
     /**
+     * Send a system notification message into this room.
+     */
+    sendSystemMessage(content: string, mentions?: string[]): Message;
+    /**
      * Update an existing message in-place (used for thinking → response replacement).
      */
     updateMessage(messageId: string, content: string, metadata?: Partial<Message['metadata']>): void;

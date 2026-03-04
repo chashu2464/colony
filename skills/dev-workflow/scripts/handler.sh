@@ -22,6 +22,44 @@ STAGES=(
   "8. Go-Live Review"
 )
 
+# Notification Helper
+function get_next_actor_role() {
+  local stage=$1
+  case $stage in
+    0|1|2) echo "architect" ;;
+    3|6) echo "developer" ;;
+    4|5|7) echo "qa_lead" ;;
+    8) echo "tech_lead" ;;
+    *) echo "developer" ;;
+  esac
+}
+
+function notify_server() {
+  local from=$1
+  local to=$2
+  local role=$(get_next_actor_role $to)
+  local actor=$(jq -r --arg role "$role" '.assignments[$role] // empty' "$WORKFLOW_FILE")
+  
+  if [ ! -z "$actor" ]; then
+    # Use the port from environment or default to 3001
+    local port="${PORT:-3001}"
+    # Delay notification to let the current CLI invocation finish processing
+    # the skill response before a new agent is triggered. Without this delay,
+    # the server would spawn a new CLI process while the current one is still
+    # running, potentially causing OOM kills.
+    (sleep 2 && curl -X POST "http://localhost:${port}/api/workflow/events" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"type\": \"WORKFLOW_STAGE_CHANGED\",
+        \"roomId\": \"$ROOM_ID\",
+        \"from_stage\": $from,
+        \"to_stage\": $to,
+        \"next_actor\": \"$actor\"
+      }" \
+      --silent --show-error > /dev/null 2>&1 || echo "Warning: Failed to send workflow event notification" >&2) &
+  fi
+}
+
 # Git Helpers
 function get_git_hash() {
   if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -190,6 +228,9 @@ EOF
       '.current_stage = ($next|tonumber) | .stage_name = $next_name | .status = "active" | .history += [$entry]' \
       "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
     
+    # Notify next actor
+    notify_server $CURRENT $NEXT
+
     cat "$WORKFLOW_FILE"
     ;;
 

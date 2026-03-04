@@ -76,6 +76,52 @@ export class InvokeError extends Error {
     }
 }
 
+// ── Global CLI Concurrency Limiter ───────────────────────
+// Prevents too many CLI processes from running simultaneously,
+// which could cause OOM kills (each gemini/claude CLI is heavy).
+
+const MAX_CONCURRENT_CLI = 2;
+let activeCLICount = 0;
+const cliWaiters: Array<{ resolve: () => void; reject: (err: Error) => void }> = [];
+
+async function acquireCLISlot(signal?: AbortSignal): Promise<void> {
+    if (signal?.aborted) {
+        throw new InvokeError('Invocation aborted while waiting for CLI slot', { type: 'exit_error', cli: 'gemini' });
+    }
+    if (activeCLICount < MAX_CONCURRENT_CLI) {
+        activeCLICount++;
+        log.debug(`CLI slot acquired (${activeCLICount}/${MAX_CONCURRENT_CLI} active)`);
+        return;
+    }
+    log.info(`CLI slot full (${activeCLICount}/${MAX_CONCURRENT_CLI}), queuing...`);
+    return new Promise<void>((resolve, reject) => {
+        const waiter = {
+            resolve: () => { activeCLICount++; log.debug(`CLI slot acquired from queue (${activeCLICount}/${MAX_CONCURRENT_CLI} active)`); resolve(); },
+            reject,
+        };
+        cliWaiters.push(waiter);
+
+        // If abort signal fires while waiting, reject and remove from queue
+        if (signal) {
+            const onAbort = () => {
+                const idx = cliWaiters.indexOf(waiter);
+                if (idx !== -1) {
+                    cliWaiters.splice(idx, 1);
+                    reject(new InvokeError('Invocation aborted while waiting for CLI slot', { type: 'exit_error', cli: 'gemini' }));
+                }
+            };
+            signal.addEventListener('abort', onAbort, { once: true });
+        }
+    });
+}
+
+function releaseCLISlot(): void {
+    activeCLICount--;
+    log.debug(`CLI slot released (${activeCLICount}/${MAX_CONCURRENT_CLI} active, ${cliWaiters.length} waiting)`);
+    const next = cliWaiters.shift();
+    if (next) next.resolve();
+}
+
 // ── Session Storage ──────────────────────────────────────
 
 const DATA_DIR = process.env.COLONY_DATA_DIR || path.join(process.cwd(), '.data');
@@ -294,6 +340,9 @@ export async function invoke(
 
     let tempFiles: string[] = [];
 
+    // Acquire a CLI slot before spawning (blocks if MAX_CONCURRENT_CLI reached)
+    await acquireCLISlot(options.signal);
+
     try {
         // Handle attachments
         if (options.attachments && options.attachments.length > 0) {
@@ -465,6 +514,7 @@ export async function invoke(
             });
         });
     } finally {
+        releaseCLISlot();
         if (tempFiles.length > 0) {
             cleanupTempFiles(tempFiles);
         }

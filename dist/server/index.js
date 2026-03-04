@@ -48,6 +48,7 @@ const path_1 = __importDefault(require("path"));
 const Logger_js_1 = require("../utils/Logger.js");
 const SessionRecord_js_1 = require("../session/SessionRecord.js");
 const TranscriptWriter_js_1 = require("../session/TranscriptWriter.js");
+const workflow_js_1 = require("./routes/workflow.js");
 const log = new Logger_js_1.Logger('Server');
 function createColonyServer(options) {
     const { colony, port = 3001 } = options;
@@ -56,6 +57,8 @@ function createColonyServer(options) {
     const wss = new ws_1.WebSocketServer({ server });
     app.use((0, cors_1.default)());
     app.use(express_1.default.json({ limit: '10mb' }));
+    // ── Workflow Events ───────────────────────────────
+    app.use('/api/workflow', (0, workflow_js_1.createWorkflowRouter)(colony.chatRoomManager));
     // Set of connected WebSocket clients
     const clients = new Set();
     // ── WebSocket ─────────────────────────────────────

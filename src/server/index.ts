@@ -12,6 +12,7 @@ import { Colony } from '../Colony.js';
 import type { ColonyEvent, Message, Participant } from '../types.js';
 import { SessionStore } from '../session/SessionRecord.js';
 import { TranscriptWriter } from '../session/TranscriptWriter.js';
+import { createWorkflowRouter } from './routes/workflow.js';
 
 const log = new Logger('Server');
 
@@ -28,6 +29,9 @@ export function createColonyServer(options: ServerOptions) {
 
     app.use(cors());
     app.use(express.json({ limit: '10mb' }));
+
+    // ── Workflow Events ───────────────────────────────
+    app.use('/api/workflow', createWorkflowRouter(colony.chatRoomManager));
 
     // Set of connected WebSocket clients
     const clients = new Set<WebSocket>();
