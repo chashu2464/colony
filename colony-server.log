@@ -1,0 +1,126 @@
+[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
+[36m[2026-03-04T05:21:37.287Z] [INFO] [Main][0m Starting Colony...
+[36m[2026-03-04T05:21:37.288Z] [INFO] [ShortTermMemory][0m ShortTermMemory initialized { windowSize: 50, maxTokens: 4000, compressionThreshold: 0.8 }
+[36m[2026-03-04T05:21:37.289Z] [INFO] [Colony][0m Loading Mem0 configuration...
+[36m[2026-03-04T05:21:37.293Z] [INFO] [Colony][0m Mem0 long-term memory created (will initialize on first use)
+[36m[2026-03-04T05:21:37.295Z] [INFO] [AgentConfig][0m Loaded agent config: architect (架构师)
+[36m[2026-03-04T05:21:37.296Z] [INFO] [AgentConfig][0m Loaded agent config: assistant (助手)
+[36m[2026-03-04T05:21:37.296Z] [INFO] [AgentConfig][0m Loaded agent config: critic (评审官)
+[36m[2026-03-04T05:21:37.297Z] [INFO] [AgentConfig][0m Loaded agent config: developer (开发者)
+[36m[2026-03-04T05:21:37.297Z] [INFO] [AgentConfig][0m Loaded agent config: qa-lead (QA负责人)
+[36m[2026-03-04T05:21:37.298Z] [INFO] [AgentConfig][0m Loaded agent config: researcher (研究员)
+[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentConfig][0m Loaded agent config: strategist (策略师)
+[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentConfig][0m Loaded agent config: writer (写手)
+[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentRegistry][0m Created agent: architect (架构师)
+[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentRegistry][0m Created agent: assistant (助手)
+[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentRegistry][0m Created agent: critic (评审官)
+[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentRegistry][0m Created agent: developer (开发者)
+[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentRegistry][0m Created agent: qa-lead (QA负责人)
+[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentRegistry][0m Created agent: researcher (研究员)
+[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentRegistry][0m Created agent: strategist (策略师)
+[36m[2026-03-04T05:21:37.300Z] [INFO] [AgentRegistry][0m Created agent: writer (写手)
+[36m[2026-03-04T05:21:37.300Z] [INFO] [Colony][0m Colony initialized with 8 agents
+[36m[2026-03-04T05:21:37.300Z] [INFO] [Colony][0m Initializing Discord integration...
+[36m[2026-03-04T05:21:37.311Z] [INFO] [DiscordBridge][0m Discord bridge initialized
+[36m[2026-03-04T05:21:37.311Z] [INFO] [DiscordManager][0m Discord manager initialized
+[36m[2026-03-04T05:21:37.311Z] [INFO] [Colony][0m Discord integration initialized
+[36m[2026-03-04T05:21:37.311Z] [INFO] [ChatRoomManager][0m Restoring 7 saved sessions...
+[90m[2026-03-04T05:21:37.317Z] [DEBUG] [MessageBus][0m New subscriber for room 59608dfc-292d-4b8c-9440-5eab01029a30 (total: 1)
+[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m ChatRoom created: "会话测试" (59608dfc-292d-4b8c-9440-5eab01029a30)
+[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Agent "架构师" joined room "会话测试"
+[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Default agent for room "会话测试": developer
+[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Agent "开发者" joined room "会话测试"
+[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Agent "QA负责人" joined room "会话测试"
+[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Human "用户" joined room "会话测试"
+[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Human "casu_00297" joined room "会话测试"
+[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Default agent for room "会话测试": developer
+[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Restored 299 messages to room "会话测试"
+[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoomManager][0m Restored 299 messages for room "会话测试"
+[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoomManager][0m Room restored: "会话测试" (59608dfc-292d-4b8c-9440-5eab01029a30)
+[90m[2026-03-04T05:21:37.317Z] [DEBUG] [MessageBus][0m New subscriber for room 73c3488e-1ac9-4c8c-bafd-bb483bd360a8 (total: 1)
+[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m ChatRoom created: "消息测试" (73c3488e-1ac9-4c8c-bafd-bb483bd360a8)
+[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Default agent for room "消息测试": assistant
+[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Agent "助手" joined room "消息测试"
+[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Agent "策略师" joined room "消息测试"
+[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Agent "研究员" joined room "消息测试"
+[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Agent "评审官" joined room "消息测试"
+[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Human "用户" joined room "消息测试"
+[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Default agent for room "消息测试": assistant
+[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Restored 3 messages to room "消息测试"
+[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoomManager][0m Restored 3 messages for room "消息测试"
+[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoomManager][0m Room restored: "消息测试" (73c3488e-1ac9-4c8c-bafd-bb483bd360a8)
+[90m[2026-03-04T05:21:37.318Z] [DEBUG] [MessageBus][0m New subscriber for room 3f4f8ff2-e2f5-424d-bb6d-adcc40ac0276 (total: 1)
+[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m ChatRoom created: "undefined" (3f4f8ff2-e2f5-424d-bb6d-adcc40ac0276)
+[31m[2026-03-04T05:21:37.318Z] [ERROR] [ChatRoomManager][0m Failed to restore session architect-f11a317b-e53c-43bb-9212-0fa9e5c8aee2: TypeError: roomData.agentIds is not iterable
+    at ChatRoomManager.restoreRoom (/Users/casu/Documents/Colony/dist/conversation/ChatRoomManager.js:101:40)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ChatRoomManager.restoreAllSessions (/Users/casu/Documents/Colony/dist/conversation/ChatRoomManager.js:139:17)
+    at async Colony.initialize (/Users/casu/Documents/Colony/dist/Colony.js:136:9)
+    at async main (/Users/casu/Documents/Colony/dist/main.js:56:5)
+[90m[2026-03-04T05:21:37.319Z] [DEBUG] [MessageBus][0m New subscriber for room 6a7b415a-16ce-4595-89e5-885a4eb83746 (total: 1)
+[36m[2026-03-04T05:21:37.319Z] [INFO] [ChatRoom][0m ChatRoom created: "undefined" (6a7b415a-16ce-4595-89e5-885a4eb83746)
+[31m[2026-03-04T05:21:37.319Z] [ERROR] [ChatRoomManager][0m Failed to restore session assistant-73c3488e-1ac9-4c8c-bafd-bb483bd360a8: TypeError: roomData.agentIds is not iterable
+    at ChatRoomManager.restoreRoom (/Users/casu/Documents/Colony/dist/conversation/ChatRoomManager.js:101:40)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ChatRoomManager.restoreAllSessions (/Users/casu/Documents/Colony/dist/conversation/ChatRoomManager.js:139:17)
+    at async Colony.initialize (/Users/casu/Documents/Colony/dist/Colony.js:136:9)
+    at async main (/Users/casu/Documents/Colony/dist/main.js:56:5)
+[90m[2026-03-04T05:21:37.319Z] [DEBUG] [MessageBus][0m New subscriber for room b2abb7be-4bf3-406d-ab68-97c8d5625dcc (total: 1)
+[36m[2026-03-04T05:21:37.319Z] [INFO] [ChatRoom][0m ChatRoom created: "头脑风暴" (b2abb7be-4bf3-406d-ab68-97c8d5625dcc)
+[36m[2026-03-04T05:21:37.319Z] [INFO] [ChatRoom][0m Agent "研究员" joined room "头脑风暴"
+[36m[2026-03-04T05:21:37.319Z] [INFO] [ChatRoom][0m Agent "策略师" joined room "头脑风暴"
+[36m[2026-03-04T05:21:37.319Z] [INFO] [ChatRoom][0m Agent "评审官" joined room "头脑风暴"
+[36m[2026-03-04T05:21:37.319Z] [INFO] [ChatRoom][0m Human "用户" joined room "头脑风暴"
+[36m[2026-03-04T05:21:37.320Z] [INFO] [ChatRoom][0m Human "casu_00297" joined room "头脑风暴"
+[36m[2026-03-04T05:21:37.320Z] [INFO] [ChatRoom][0m Restored 17 messages to room "头脑风暴"
+[36m[2026-03-04T05:21:37.320Z] [INFO] [ChatRoomManager][0m Restored 17 messages for room "头脑风暴"
+[36m[2026-03-04T05:21:37.320Z] [INFO] [ChatRoomManager][0m Room restored: "头脑风暴" (b2abb7be-4bf3-406d-ab68-97c8d5625dcc)
+[90m[2026-03-04T05:21:37.320Z] [DEBUG] [MessageBus][0m New subscriber for room 4f8a5a54-5149-4bd6-b689-4500437be503 (total: 1)
+[36m[2026-03-04T05:21:37.320Z] [INFO] [ChatRoom][0m ChatRoom created: "undefined" (4f8a5a54-5149-4bd6-b689-4500437be503)
+[31m[2026-03-04T05:21:37.320Z] [ERROR] [ChatRoomManager][0m Failed to restore session developer-f11a317b-e53c-43bb-9212-0fa9e5c8aee2: TypeError: roomData.agentIds is not iterable
+    at ChatRoomManager.restoreRoom (/Users/casu/Documents/Colony/dist/conversation/ChatRoomManager.js:101:40)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ChatRoomManager.restoreAllSessions (/Users/casu/Documents/Colony/dist/conversation/ChatRoomManager.js:139:17)
+    at async Colony.initialize (/Users/casu/Documents/Colony/dist/Colony.js:136:9)
+    at async main (/Users/casu/Documents/Colony/dist/main.js:56:5)
+[90m[2026-03-04T05:21:37.322Z] [DEBUG] [MessageBus][0m New subscriber for room f11a317b-e53c-43bb-9212-0fa9e5c8aee2 (total: 1)
+[36m[2026-03-04T05:21:37.322Z] [INFO] [ChatRoom][0m ChatRoom created: "项目自进化" (f11a317b-e53c-43bb-9212-0fa9e5c8aee2)
+[36m[2026-03-04T05:21:37.322Z] [INFO] [ChatRoom][0m Agent "架构师" joined room "项目自进化"
+[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoom][0m Default agent for room "项目自进化": developer
+[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoom][0m Agent "开发者" joined room "项目自进化"
+[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoom][0m Agent "QA负责人" joined room "项目自进化"
+[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoom][0m Human "用户" joined room "项目自进化"
+[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoom][0m Default agent for room "项目自进化": developer
+[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoom][0m Restored 75 messages to room "项目自进化"
+[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoomManager][0m Restored 75 messages for room "项目自进化"
+[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoomManager][0m Room restored: "项目自进化" (f11a317b-e53c-43bb-9212-0fa9e5c8aee2)
+[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoomManager][0m Restored 7 sessions
+[36m[2026-03-04T05:21:37.323Z] [INFO] [DiscordManager][0m Starting Discord integration...
+[36m[2026-03-04T05:21:37.323Z] [INFO] [DiscordBot][0m Starting Discord bot...
+[36m[2026-03-04T05:21:39.209Z] [INFO] [DiscordManager][0m Discord integration started
+[36m[2026-03-04T05:21:39.217Z] [INFO] [Server][0m Serving frontend from /Users/casu/Documents/Colony/web/dist
+node:events:486
+      throw er; // Unhandled 'error' event
+      ^
+
+Error: listen EADDRINUSE: address already in use :::3001
+    at Server.setupListenHandle [as _listen2] (node:net:2016:16)
+    at listenInCluster (node:net:2073:12)
+    at Server.listen (node:net:2178:7)
+    at /Users/casu/Documents/Colony/dist/server/index.js:323:20
+    at new Promise (<anonymous>)
+    at start (/Users/casu/Documents/Colony/dist/server/index.js:322:16)
+    at main (/Users/casu/Documents/Colony/dist/main.js:58:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+Emitted 'error' event on WebSocketServer instance at:
+    at Server.emit (node:events:508:20)
+    at emitErrorNT (node:net:2052:8)
+    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
+  code: 'EADDRINUSE',
+  errno: -48,
+  syscall: 'listen',
+  address: '::',
+  port: 3001
+}
+
+Node.js v25.6.1
