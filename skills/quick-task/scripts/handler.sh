@@ -61,7 +61,11 @@ EOF
 
     if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       # Commit any pending changes on feature branch before merge
-      git add . 2>/dev/null
+      # Use --update to only stage modified/deleted files already tracked
+      # And add untracked files while respecting .gitignore
+      git add --update 2>/dev/null
+      git add . 2>/dev/null 
+      
       if ! git diff-index --quiet HEAD -- 2>/dev/null; then
         git commit -m "feat: wip for quick task $TASK_ID" --no-verify >/dev/null 2>&1
       fi
