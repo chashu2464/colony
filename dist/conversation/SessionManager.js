@@ -73,12 +73,12 @@ class SessionManager {
         }
     }
     /**
-     * List all saved session IDs.
+     * List all saved session IDs (excludes agent-specific chain files).
      */
     async listSessions() {
         const files = fs.readdirSync(this.dataDir);
         return files
-            .filter(f => f.endsWith('.json'))
+            .filter(f => f.endsWith('.json') && !f.includes('-'))
             .map(f => path.basename(f, '.json'));
     }
     /**

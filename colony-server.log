@@ -1,126 +1,441 @@
-[dotenv@17.3.1] injecting env (0) from .env -- tip: ⚡️ secrets for agents: https://dotenvx.com/as2
-[36m[2026-03-04T05:21:37.287Z] [INFO] [Main][0m Starting Colony...
-[36m[2026-03-04T05:21:37.288Z] [INFO] [ShortTermMemory][0m ShortTermMemory initialized { windowSize: 50, maxTokens: 4000, compressionThreshold: 0.8 }
-[36m[2026-03-04T05:21:37.289Z] [INFO] [Colony][0m Loading Mem0 configuration...
-[36m[2026-03-04T05:21:37.293Z] [INFO] [Colony][0m Mem0 long-term memory created (will initialize on first use)
-[36m[2026-03-04T05:21:37.295Z] [INFO] [AgentConfig][0m Loaded agent config: architect (架构师)
-[36m[2026-03-04T05:21:37.296Z] [INFO] [AgentConfig][0m Loaded agent config: assistant (助手)
-[36m[2026-03-04T05:21:37.296Z] [INFO] [AgentConfig][0m Loaded agent config: critic (评审官)
-[36m[2026-03-04T05:21:37.297Z] [INFO] [AgentConfig][0m Loaded agent config: developer (开发者)
-[36m[2026-03-04T05:21:37.297Z] [INFO] [AgentConfig][0m Loaded agent config: qa-lead (QA负责人)
-[36m[2026-03-04T05:21:37.298Z] [INFO] [AgentConfig][0m Loaded agent config: researcher (研究员)
-[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentConfig][0m Loaded agent config: strategist (策略师)
-[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentConfig][0m Loaded agent config: writer (写手)
-[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentRegistry][0m Created agent: architect (架构师)
-[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentRegistry][0m Created agent: assistant (助手)
-[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentRegistry][0m Created agent: critic (评审官)
-[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentRegistry][0m Created agent: developer (开发者)
-[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentRegistry][0m Created agent: qa-lead (QA负责人)
-[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentRegistry][0m Created agent: researcher (研究员)
-[36m[2026-03-04T05:21:37.299Z] [INFO] [AgentRegistry][0m Created agent: strategist (策略师)
-[36m[2026-03-04T05:21:37.300Z] [INFO] [AgentRegistry][0m Created agent: writer (写手)
-[36m[2026-03-04T05:21:37.300Z] [INFO] [Colony][0m Colony initialized with 8 agents
-[36m[2026-03-04T05:21:37.300Z] [INFO] [Colony][0m Initializing Discord integration...
-[36m[2026-03-04T05:21:37.311Z] [INFO] [DiscordBridge][0m Discord bridge initialized
-[36m[2026-03-04T05:21:37.311Z] [INFO] [DiscordManager][0m Discord manager initialized
-[36m[2026-03-04T05:21:37.311Z] [INFO] [Colony][0m Discord integration initialized
-[36m[2026-03-04T05:21:37.311Z] [INFO] [ChatRoomManager][0m Restoring 7 saved sessions...
-[90m[2026-03-04T05:21:37.317Z] [DEBUG] [MessageBus][0m New subscriber for room 59608dfc-292d-4b8c-9440-5eab01029a30 (total: 1)
-[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m ChatRoom created: "会话测试" (59608dfc-292d-4b8c-9440-5eab01029a30)
-[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Agent "架构师" joined room "会话测试"
-[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Default agent for room "会话测试": developer
-[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Agent "开发者" joined room "会话测试"
-[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Agent "QA负责人" joined room "会话测试"
-[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Human "用户" joined room "会话测试"
-[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Human "casu_00297" joined room "会话测试"
-[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Default agent for room "会话测试": developer
-[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m Restored 299 messages to room "会话测试"
-[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoomManager][0m Restored 299 messages for room "会话测试"
-[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoomManager][0m Room restored: "会话测试" (59608dfc-292d-4b8c-9440-5eab01029a30)
-[90m[2026-03-04T05:21:37.317Z] [DEBUG] [MessageBus][0m New subscriber for room 73c3488e-1ac9-4c8c-bafd-bb483bd360a8 (total: 1)
-[36m[2026-03-04T05:21:37.317Z] [INFO] [ChatRoom][0m ChatRoom created: "消息测试" (73c3488e-1ac9-4c8c-bafd-bb483bd360a8)
-[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Default agent for room "消息测试": assistant
-[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Agent "助手" joined room "消息测试"
-[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Agent "策略师" joined room "消息测试"
-[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Agent "研究员" joined room "消息测试"
-[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Agent "评审官" joined room "消息测试"
-[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Human "用户" joined room "消息测试"
-[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Default agent for room "消息测试": assistant
-[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m Restored 3 messages to room "消息测试"
-[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoomManager][0m Restored 3 messages for room "消息测试"
-[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoomManager][0m Room restored: "消息测试" (73c3488e-1ac9-4c8c-bafd-bb483bd360a8)
-[90m[2026-03-04T05:21:37.318Z] [DEBUG] [MessageBus][0m New subscriber for room 3f4f8ff2-e2f5-424d-bb6d-adcc40ac0276 (total: 1)
-[36m[2026-03-04T05:21:37.318Z] [INFO] [ChatRoom][0m ChatRoom created: "undefined" (3f4f8ff2-e2f5-424d-bb6d-adcc40ac0276)
-[31m[2026-03-04T05:21:37.318Z] [ERROR] [ChatRoomManager][0m Failed to restore session architect-f11a317b-e53c-43bb-9212-0fa9e5c8aee2: TypeError: roomData.agentIds is not iterable
-    at ChatRoomManager.restoreRoom (/Users/casu/Documents/Colony/dist/conversation/ChatRoomManager.js:101:40)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async ChatRoomManager.restoreAllSessions (/Users/casu/Documents/Colony/dist/conversation/ChatRoomManager.js:139:17)
-    at async Colony.initialize (/Users/casu/Documents/Colony/dist/Colony.js:136:9)
-    at async main (/Users/casu/Documents/Colony/dist/main.js:56:5)
-[90m[2026-03-04T05:21:37.319Z] [DEBUG] [MessageBus][0m New subscriber for room 6a7b415a-16ce-4595-89e5-885a4eb83746 (total: 1)
-[36m[2026-03-04T05:21:37.319Z] [INFO] [ChatRoom][0m ChatRoom created: "undefined" (6a7b415a-16ce-4595-89e5-885a4eb83746)
-[31m[2026-03-04T05:21:37.319Z] [ERROR] [ChatRoomManager][0m Failed to restore session assistant-73c3488e-1ac9-4c8c-bafd-bb483bd360a8: TypeError: roomData.agentIds is not iterable
-    at ChatRoomManager.restoreRoom (/Users/casu/Documents/Colony/dist/conversation/ChatRoomManager.js:101:40)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async ChatRoomManager.restoreAllSessions (/Users/casu/Documents/Colony/dist/conversation/ChatRoomManager.js:139:17)
-    at async Colony.initialize (/Users/casu/Documents/Colony/dist/Colony.js:136:9)
-    at async main (/Users/casu/Documents/Colony/dist/main.js:56:5)
-[90m[2026-03-04T05:21:37.319Z] [DEBUG] [MessageBus][0m New subscriber for room b2abb7be-4bf3-406d-ab68-97c8d5625dcc (total: 1)
-[36m[2026-03-04T05:21:37.319Z] [INFO] [ChatRoom][0m ChatRoom created: "头脑风暴" (b2abb7be-4bf3-406d-ab68-97c8d5625dcc)
-[36m[2026-03-04T05:21:37.319Z] [INFO] [ChatRoom][0m Agent "研究员" joined room "头脑风暴"
-[36m[2026-03-04T05:21:37.319Z] [INFO] [ChatRoom][0m Agent "策略师" joined room "头脑风暴"
-[36m[2026-03-04T05:21:37.319Z] [INFO] [ChatRoom][0m Agent "评审官" joined room "头脑风暴"
-[36m[2026-03-04T05:21:37.319Z] [INFO] [ChatRoom][0m Human "用户" joined room "头脑风暴"
-[36m[2026-03-04T05:21:37.320Z] [INFO] [ChatRoom][0m Human "casu_00297" joined room "头脑风暴"
-[36m[2026-03-04T05:21:37.320Z] [INFO] [ChatRoom][0m Restored 17 messages to room "头脑风暴"
-[36m[2026-03-04T05:21:37.320Z] [INFO] [ChatRoomManager][0m Restored 17 messages for room "头脑风暴"
-[36m[2026-03-04T05:21:37.320Z] [INFO] [ChatRoomManager][0m Room restored: "头脑风暴" (b2abb7be-4bf3-406d-ab68-97c8d5625dcc)
-[90m[2026-03-04T05:21:37.320Z] [DEBUG] [MessageBus][0m New subscriber for room 4f8a5a54-5149-4bd6-b689-4500437be503 (total: 1)
-[36m[2026-03-04T05:21:37.320Z] [INFO] [ChatRoom][0m ChatRoom created: "undefined" (4f8a5a54-5149-4bd6-b689-4500437be503)
-[31m[2026-03-04T05:21:37.320Z] [ERROR] [ChatRoomManager][0m Failed to restore session developer-f11a317b-e53c-43bb-9212-0fa9e5c8aee2: TypeError: roomData.agentIds is not iterable
-    at ChatRoomManager.restoreRoom (/Users/casu/Documents/Colony/dist/conversation/ChatRoomManager.js:101:40)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async ChatRoomManager.restoreAllSessions (/Users/casu/Documents/Colony/dist/conversation/ChatRoomManager.js:139:17)
-    at async Colony.initialize (/Users/casu/Documents/Colony/dist/Colony.js:136:9)
-    at async main (/Users/casu/Documents/Colony/dist/main.js:56:5)
-[90m[2026-03-04T05:21:37.322Z] [DEBUG] [MessageBus][0m New subscriber for room f11a317b-e53c-43bb-9212-0fa9e5c8aee2 (total: 1)
-[36m[2026-03-04T05:21:37.322Z] [INFO] [ChatRoom][0m ChatRoom created: "项目自进化" (f11a317b-e53c-43bb-9212-0fa9e5c8aee2)
-[36m[2026-03-04T05:21:37.322Z] [INFO] [ChatRoom][0m Agent "架构师" joined room "项目自进化"
-[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoom][0m Default agent for room "项目自进化": developer
-[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoom][0m Agent "开发者" joined room "项目自进化"
-[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoom][0m Agent "QA负责人" joined room "项目自进化"
-[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoom][0m Human "用户" joined room "项目自进化"
-[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoom][0m Default agent for room "项目自进化": developer
-[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoom][0m Restored 75 messages to room "项目自进化"
-[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoomManager][0m Restored 75 messages for room "项目自进化"
-[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoomManager][0m Room restored: "项目自进化" (f11a317b-e53c-43bb-9212-0fa9e5c8aee2)
-[36m[2026-03-04T05:21:37.323Z] [INFO] [ChatRoomManager][0m Restored 7 sessions
-[36m[2026-03-04T05:21:37.323Z] [INFO] [DiscordManager][0m Starting Discord integration...
-[36m[2026-03-04T05:21:37.323Z] [INFO] [DiscordBot][0m Starting Discord bot...
-[36m[2026-03-04T05:21:39.209Z] [INFO] [DiscordManager][0m Discord integration started
-[36m[2026-03-04T05:21:39.217Z] [INFO] [Server][0m Serving frontend from /Users/casu/Documents/Colony/web/dist
-node:events:486
-      throw er; // Unhandled 'error' event
-      ^
 
-Error: listen EADDRINUSE: address already in use :::3001
-    at Server.setupListenHandle [as _listen2] (node:net:2016:16)
-    at listenInCluster (node:net:2073:12)
-    at Server.listen (node:net:2178:7)
-    at /Users/casu/Documents/Colony/dist/server/index.js:323:20
-    at new Promise (<anonymous>)
-    at start (/Users/casu/Documents/Colony/dist/server/index.js:322:16)
-    at main (/Users/casu/Documents/Colony/dist/main.js:58:11)
-    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-Emitted 'error' event on WebSocketServer instance at:
-    at Server.emit (node:events:508:20)
-    at emitErrorNT (node:net:2052:8)
-    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {
-  code: 'EADDRINUSE',
-  errno: -48,
-  syscall: 'listen',
-  address: '::',
-  port: 3001
+> colony@0.1.0 start
+> node dist/main.js
+
+[dotenv@17.3.1] injecting env (0) from .env -- tip: 🤖 agentic secret storage: https://dotenvx.com/as2
+[36m[2026-03-05T06:52:58.269Z] [INFO] [Main][0m Starting Colony...
+[36m[2026-03-05T06:52:58.270Z] [INFO] [ShortTermMemory][0m ShortTermMemory initialized { windowSize: 50, maxTokens: 4000, compressionThreshold: 0.8 }
+[36m[2026-03-05T06:52:58.271Z] [INFO] [Colony][0m Loading Mem0 configuration...
+[36m[2026-03-05T06:52:58.275Z] [INFO] [Colony][0m Mem0 long-term memory created (will initialize on first use)
+[36m[2026-03-05T06:52:58.277Z] [INFO] [AgentConfig][0m Loaded agent config: architect (架构师)
+[36m[2026-03-05T06:52:58.278Z] [INFO] [AgentConfig][0m Loaded agent config: assistant (助手)
+[36m[2026-03-05T06:52:58.278Z] [INFO] [AgentConfig][0m Loaded agent config: critic (评审官)
+[36m[2026-03-05T06:52:58.279Z] [INFO] [AgentConfig][0m Loaded agent config: developer (开发者)
+[36m[2026-03-05T06:52:58.280Z] [INFO] [AgentConfig][0m Loaded agent config: qa-lead (QA负责人)
+[36m[2026-03-05T06:52:58.281Z] [INFO] [AgentConfig][0m Loaded agent config: researcher (研究员)
+[36m[2026-03-05T06:52:58.281Z] [INFO] [AgentConfig][0m Loaded agent config: strategist (策略师)
+[36m[2026-03-05T06:52:58.282Z] [INFO] [AgentConfig][0m Loaded agent config: writer (写手)
+[36m[2026-03-05T06:52:58.282Z] [INFO] [AgentRegistry][0m Created agent: architect (架构师)
+[36m[2026-03-05T06:52:58.282Z] [INFO] [AgentRegistry][0m Created agent: assistant (助手)
+[36m[2026-03-05T06:52:58.282Z] [INFO] [AgentRegistry][0m Created agent: critic (评审官)
+[36m[2026-03-05T06:52:58.282Z] [INFO] [AgentRegistry][0m Created agent: developer (开发者)
+[36m[2026-03-05T06:52:58.282Z] [INFO] [AgentRegistry][0m Created agent: qa-lead (QA负责人)
+[36m[2026-03-05T06:52:58.282Z] [INFO] [AgentRegistry][0m Created agent: researcher (研究员)
+[36m[2026-03-05T06:52:58.282Z] [INFO] [AgentRegistry][0m Created agent: strategist (策略师)
+[36m[2026-03-05T06:52:58.282Z] [INFO] [AgentRegistry][0m Created agent: writer (写手)
+[36m[2026-03-05T06:52:58.282Z] [INFO] [Colony][0m Colony initialized with 8 agents
+[36m[2026-03-05T06:52:58.282Z] [INFO] [Colony][0m Initializing Discord integration...
+[36m[2026-03-05T06:52:58.294Z] [INFO] [DiscordBridge][0m Discord bridge initialized
+[36m[2026-03-05T06:52:58.295Z] [INFO] [DiscordManager][0m Discord manager initialized
+[36m[2026-03-05T06:52:58.295Z] [INFO] [Colony][0m Discord integration initialized
+[36m[2026-03-05T06:52:58.295Z] [INFO] [ChatRoomManager][0m Restoring 0 saved sessions...
+[36m[2026-03-05T06:52:58.295Z] [INFO] [ChatRoomManager][0m Restored 0 sessions
+[36m[2026-03-05T06:52:58.295Z] [INFO] [DiscordManager][0m Starting Discord integration...
+[36m[2026-03-05T06:52:58.295Z] [INFO] [DiscordBot][0m Starting Discord bot...
+[36m[2026-03-05T06:53:00.604Z] [INFO] [DiscordBot][0m Discord bot logged in as Eliza-bot#8690
+[36m[2026-03-05T06:53:00.606Z] [INFO] [DiscordManager][0m Discord integration started
+[36m[2026-03-05T06:53:00.612Z] [INFO] [Server][0m Serving frontend from /Users/casu/Documents/Colony/web/dist
+(node:20776) DeprecationWarning: The ready event has been renamed to clientReady to distinguish it from the gateway READY event and will only emit under that name in v15. Please use clientReady instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+[36m[2026-03-05T06:53:00.614Z] [INFO] [Server][0m Colony server running at http://localhost:3001
+[36m[2026-03-05T06:53:00.614Z] [INFO] [Server][0m WebSocket available at ws://localhost:3001
+[36m[2026-03-05T06:53:00.614Z] [INFO] [Main][0m Colony is ready.
+[36m[2026-03-05T06:53:00.615Z] [INFO] [Main][0m Dashboard: http://localhost:3001
+[36m[2026-03-05T06:53:00.615Z] [INFO] [Main][0m API:       http://localhost:3001/api
+[36m[2026-03-05T06:53:02.134Z] [INFO] [Server][0m WebSocket client connected (total: 1)
+[36m[2026-03-05T06:53:02.148Z] [INFO] [Server][0m WebSocket client connected (total: 2)
+[90m[2026-03-05T07:05:34.265Z] [DEBUG] [MessageBus][0m New subscriber for room 9035bbcb-4f1b-40d1-8658-0949e654f3ba (total: 1)
+[36m[2026-03-05T07:05:34.268Z] [INFO] [ChatRoom][0m ChatRoom created: "项目自进化" (9035bbcb-4f1b-40d1-8658-0949e654f3ba)
+[36m[2026-03-05T07:05:34.269Z] [INFO] [ChatRoomManager][0m Room created: "项目自进化" with 0 agents
+[36m[2026-03-05T07:05:48.877Z] [INFO] [ChatRoom][0m Human "casu_00297" joined room "项目自进化"
+[90m[2026-03-05T07:11:01.965Z] [DEBUG] [MessageBus][0m Publishing message in room 9035bbcb-4f1b-40d1-8658-0949e654f3ba from casu_00297
+[90m[2026-03-05T07:11:01.970Z] [DEBUG] [SessionManager][0m Session saved: 9035bbcb-4f1b-40d1-8658-0949e654f3ba
+[90m[2026-03-05T07:11:01.971Z] [DEBUG] [ChatRoom][0m No default agent set for room "项目自进化", message not routed
+[36m[2026-03-05T07:11:01.973Z] [INFO] [ChatRoomManager][0m Room saved: 9035bbcb-4f1b-40d1-8658-0949e654f3ba
+[90m[2026-03-05T07:23:55.405Z] [DEBUG] [MessageBus][0m Publishing message in room 9035bbcb-4f1b-40d1-8658-0949e654f3ba from casu_00297
+[90m[2026-03-05T07:23:55.408Z] [DEBUG] [SessionManager][0m Session saved: 9035bbcb-4f1b-40d1-8658-0949e654f3ba
+[90m[2026-03-05T07:23:55.409Z] [DEBUG] [ChatRoom][0m No default agent set for room "项目自进化", message not routed
+[36m[2026-03-05T07:23:55.411Z] [INFO] [ChatRoomManager][0m Room saved: 9035bbcb-4f1b-40d1-8658-0949e654f3ba
+[90m[2026-03-05T07:39:53.127Z] [DEBUG] [MessageBus][0m Publishing message in room 9035bbcb-4f1b-40d1-8658-0949e654f3ba from casu_00297
+[90m[2026-03-05T07:39:53.132Z] [DEBUG] [SessionManager][0m Session saved: 9035bbcb-4f1b-40d1-8658-0949e654f3ba
+[90m[2026-03-05T07:39:53.132Z] [DEBUG] [ChatRoom][0m No default agent set for room "项目自进化", message not routed
+[36m[2026-03-05T07:39:53.133Z] [INFO] [ChatRoomManager][0m Room saved: 9035bbcb-4f1b-40d1-8658-0949e654f3ba
+[90m[2026-03-05T09:45:50.632Z] [DEBUG] [MessageBus][0m New subscriber for room 7d7328c6-c8f8-4ee6-b396-20ab939543ee (total: 1)
+[36m[2026-03-05T09:45:50.635Z] [INFO] [ChatRoom][0m ChatRoom created: "项目优化" (7d7328c6-c8f8-4ee6-b396-20ab939543ee)
+[36m[2026-03-05T09:45:50.635Z] [INFO] [ChatRoomManager][0m Room created: "项目优化" with 0 agents
+[36m[2026-03-05T09:46:07.218Z] [INFO] [ChatRoom][0m ChatRoom destroyed: "项目自进化" (9035bbcb-4f1b-40d1-8658-0949e654f3ba)
+[90m[2026-03-05T09:46:07.223Z] [DEBUG] [SessionManager][0m Session deleted: 9035bbcb-4f1b-40d1-8658-0949e654f3ba
+[36m[2026-03-05T09:46:07.223Z] [INFO] [ChatRoomManager][0m Room deleted: 9035bbcb-4f1b-40d1-8658-0949e654f3ba
+[36m[2026-03-05T09:46:17.569Z] [INFO] [ChatRoom][0m ChatRoom destroyed: "项目优化" (7d7328c6-c8f8-4ee6-b396-20ab939543ee)
+[36m[2026-03-05T09:46:17.570Z] [INFO] [ChatRoomManager][0m Room deleted: 7d7328c6-c8f8-4ee6-b396-20ab939543ee
+[90m[2026-03-05T09:46:44.797Z] [DEBUG] [MessageBus][0m New subscriber for room f87ef436-063f-4716-8043-5e0d99ed83da (total: 1)
+[36m[2026-03-05T09:46:44.798Z] [INFO] [ChatRoom][0m ChatRoom created: "项目优化" (f87ef436-063f-4716-8043-5e0d99ed83da)
+[36m[2026-03-05T09:46:44.798Z] [INFO] [ChatRoomManager][0m Room created: "项目优化" with 0 agents
+[36m[2026-03-05T09:47:15.626Z] [INFO] [ChatRoom][0m Human "casu_00297" joined room "项目优化"
+[36m[2026-03-05T10:11:35.758Z] [INFO] [ChatRoom][0m ChatRoom destroyed: "项目优化" (f87ef436-063f-4716-8043-5e0d99ed83da)
+[36m[2026-03-05T10:11:35.762Z] [INFO] [ChatRoomManager][0m Room deleted: f87ef436-063f-4716-8043-5e0d99ed83da
+[90m[2026-03-05T10:11:48.985Z] [DEBUG] [MessageBus][0m New subscriber for room eac31488-46a3-445a-8e0d-ff1f05693dac (total: 1)
+[36m[2026-03-05T10:11:48.986Z] [INFO] [ChatRoom][0m ChatRoom created: "项目优化" (eac31488-46a3-445a-8e0d-ff1f05693dac)
+[36m[2026-03-05T10:11:48.987Z] [INFO] [ChatRoomManager][0m Room created: "项目优化" with 0 agents
+[36m[2026-03-05T10:12:08.890Z] [INFO] [ChatRoom][0m ChatRoom destroyed: "项目优化" (eac31488-46a3-445a-8e0d-ff1f05693dac)
+[36m[2026-03-05T10:12:08.891Z] [INFO] [ChatRoomManager][0m Room deleted: eac31488-46a3-445a-8e0d-ff1f05693dac
+[90m[2026-03-05T14:50:29.315Z] [DEBUG] [Server][0m WebSocket client disconnected (total: 1)
+[36m[2026-03-05T14:50:29.318Z] [INFO] [Server][0m WebSocket client connected (total: 2)
+[90m[2026-03-05T14:50:29.471Z] [DEBUG] [Server][0m WebSocket client disconnected (total: 1)
+[36m[2026-03-05T14:50:31.474Z] [INFO] [Server][0m WebSocket client connected (total: 2)
+[90m[2026-03-05T14:50:31.759Z] [DEBUG] [Server][0m WebSocket client disconnected (total: 1)
+[90m[2026-03-05T14:50:31.760Z] [DEBUG] [Server][0m WebSocket client disconnected (total: 0)
+[36m[2026-03-05T14:50:31.848Z] [INFO] [Server][0m WebSocket client connected (total: 1)
+[90m[2026-03-05T14:50:48.551Z] [DEBUG] [MessageBus][0m New subscriber for room 93cec326-0e27-4396-affd-4df34da608ca (total: 1)
+[36m[2026-03-05T14:50:48.552Z] [INFO] [ChatRoom][0m ChatRoom created: "项目优化" (93cec326-0e27-4396-affd-4df34da608ca)
+[36m[2026-03-05T14:50:48.552Z] [INFO] [ChatRoom][0m Agent "架构师" joined room "项目优化"
+[36m[2026-03-05T14:50:48.553Z] [INFO] [ChatRoom][0m Default agent for room "项目优化": developer
+[36m[2026-03-05T14:50:48.553Z] [INFO] [ChatRoom][0m Agent "开发者" joined room "项目优化"
+[36m[2026-03-05T14:50:48.553Z] [INFO] [ChatRoom][0m Agent "QA负责人" joined room "项目优化"
+[36m[2026-03-05T14:50:48.553Z] [INFO] [ChatRoomManager][0m Room created: "项目优化" with 3 agents
+[36m[2026-03-05T14:50:48.559Z] [INFO] [ChatRoom][0m Human "用户" joined room "项目优化"
+[90m[2026-03-05T14:50:48.576Z] [DEBUG] [Server][0m WebSocket client disconnected (total: 0)
+[36m[2026-03-05T14:50:48.579Z] [INFO] [Server][0m WebSocket client connected (total: 1)
+[36m[2026-03-05T14:50:50.578Z] [INFO] [Server][0m WebSocket client connected (total: 2)
+[90m[2026-03-05T14:51:17.235Z] [DEBUG] [MessageBus][0m Publishing message in room 93cec326-0e27-4396-affd-4df34da608ca from 用户
+[90m[2026-03-05T14:51:17.237Z] [DEBUG] [SessionManager][0m Session saved: 93cec326-0e27-4396-affd-4df34da608ca
+[36m[2026-03-05T14:51:17.237Z] [INFO] [ChatRoom][0m Routing to default agent @开发者 in "项目优化"
+[36m[2026-03-05T14:51:17.238Z] [INFO] [Agent][0m [开发者] Received routed message from 用户 (default)
+[36m[2026-03-05T14:51:17.243Z] [INFO] [ChatRoomManager][0m Room saved: 93cec326-0e27-4396-affd-4df34da608ca
+[90m[2026-03-05T14:51:17.243Z] [DEBUG] [ContextAssembler][0m Built participants section with 4 participants
+[36m[2026-03-05T14:51:17.244Z] [INFO] [Mem0LongTermMemory][0m Initializing Mem0 bridge...
+[90m[2026-03-05T14:51:17.244Z] [DEBUG] [Mem0LongTermMemory][0m Starting Python process with config: {"vector_store":{"provider":"qdrant","config":{"host":"localhost","port":6333,"collection_name":"colony_memories"}},"llm":{"provider":"openai","config":{"model":"glm-4.7-flashx","api_key":"81278a2d760...
+[90m[2026-03-05T14:51:17.244Z] [DEBUG] [Mem0LongTermMemory][0m PYTHONPATH: /Users/casu/Documents/Colony/scripts
+[36m[2026-03-05T14:51:17.262Z] [INFO] [Mem0LongTermMemory][0m Mem0 bridge initialized successfully
+[36m[2026-03-05T14:51:17.262Z] [INFO] [Mem0LongTermMemory][0m Recalling memories for query: "帮我看看discord命令创建会话的参数应该如何写，给出示例..."
+[90m[2026-03-05T14:51:17.501Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: /Users/casu/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
+  warnings.warn(
+
+[90m[2026-03-05T14:51:18.075Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,075 - mem0_bridge - INFO - Initializing Mem0...
+
+[90m[2026-03-05T14:51:18.075Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,075 - mem0_bridge - INFO - Using LLM endpoint from env: https://open.bigmodel.cn/api/paas/v4/
+2026-03-05 22:51:18,075 - mem0_bridge - INFO - Using LLM API key from environment
+2026-03-05 22:51:18,075 - mem0_bridge - INFO - Using embedder endpoint from env: https://open.bigmodel.cn/api/paas/v4/
+2026-03-05 22:51:18,075 - mem0_bridge - INFO - Using embedder API key from environment
+2026-03-05 22:51:18,075 - mem0_bridge - INFO - Mem0 configuration:
+2026-03-05 22:51:18,075 - mem0_bridge - INFO -   LLM: openai
+2026-03-05 22:51:18,075 - mem0_bridge - INFO -   Embedder: openai
+2026-03-05 22:51:18,075 - mem0_bridge - INFO -   Vector Store: qdrant
+2026-03-05 22:51:18,075 - mem0_bridge - INFO -   Graph Store: disabled
+
+[90m[2026-03-05T14:51:18.373Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,373 - httpx - INFO - HTTP Request: GET http://localhost:6333 "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:18.383Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,383 - httpx - INFO - HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:18.395Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,395 - httpx - INFO - HTTP Request: PUT http://localhost:6333/collections/colony_memories/index?wait=true "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:18.396Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,396 - mem0.vector_stores.qdrant - INFO - Created index for user_id in collection colony_memories
+
+[90m[2026-03-05T14:51:18.401Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,401 - httpx - INFO - HTTP Request: PUT http://localhost:6333/collections/colony_memories/index?wait=true "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:18.401Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,401 - mem0.vector_stores.qdrant - INFO - Created index for agent_id in collection colony_memories
+
+[90m[2026-03-05T14:51:18.410Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,410 - httpx - INFO - HTTP Request: PUT http://localhost:6333/collections/colony_memories/index?wait=true "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:18.410Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,410 - mem0.vector_stores.qdrant - INFO - Created index for run_id in collection colony_memories
+
+[90m[2026-03-05T14:51:18.415Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,415 - httpx - INFO - HTTP Request: PUT http://localhost:6333/collections/colony_memories/index?wait=true "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:18.415Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,415 - mem0.vector_stores.qdrant - INFO - Created index for actor_id in collection colony_memories
+
+[90m[2026-03-05T14:51:18.434Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,434 - httpx - INFO - HTTP Request: GET http://localhost:6333 "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:18.440Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,440 - httpx - INFO - HTTP Request: GET http://localhost:6333/collections "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:18.443Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,443 - httpx - INFO - HTTP Request: PUT http://localhost:6333/collections/mem0migrations/index?wait=true "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:18.444Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,444 - mem0.vector_stores.qdrant - INFO - Created index for user_id in collection mem0migrations
+
+[90m[2026-03-05T14:51:18.446Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,446 - httpx - INFO - HTTP Request: PUT http://localhost:6333/collections/mem0migrations/index?wait=true "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:18.446Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,446 - mem0.vector_stores.qdrant - INFO - Created index for agent_id in collection mem0migrations
+
+[90m[2026-03-05T14:51:18.449Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,449 - httpx - INFO - HTTP Request: PUT http://localhost:6333/collections/mem0migrations/index?wait=true "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:18.449Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,449 - mem0.vector_stores.qdrant - INFO - Created index for run_id in collection mem0migrations
+
+[90m[2026-03-05T14:51:18.451Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,451 - httpx - INFO - HTTP Request: PUT http://localhost:6333/collections/mem0migrations/index?wait=true "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:18.451Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,451 - mem0.vector_stores.qdrant - INFO - Created index for actor_id in collection mem0migrations
+
+[90m[2026-03-05T14:51:18.454Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,453 - httpx - INFO - HTTP Request: POST http://localhost:6333/collections/mem0migrations/points "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:18.466Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,466 - mem0_bridge - INFO - Mem0 initialized successfully
+
+[90m[2026-03-05T14:51:18.466Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,466 - mem0_bridge - INFO - Mem0 bridge ready, waiting for requests...
+
+[90m[2026-03-05T14:51:18.469Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:18,469 - httpx - INFO - HTTP Request: POST http://localhost:6333/collections/mem0migrations/points "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:20.572Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:20,572 - httpx - INFO - HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/embeddings "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:20.883Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:51:20,883 - httpx - INFO - HTTP Request: POST http://localhost:6333/collections/colony_memories/points/query "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:51:20.886Z] [DEBUG] [Mem0LongTermMemory][0m Received data from Python (52 bytes): {"id": 1, "success": true, "data": {"results": []}}
+
+[90m[2026-03-05T14:51:20.887Z] [DEBUG] [Mem0LongTermMemory][0m Processing line: {"id": 1, "success": true, "data": {"results": []}}...
+[90m[2026-03-05T14:51:20.887Z] [DEBUG] [Mem0LongTermMemory][0m Parsed response for request 1: success
+[36m[2026-03-05T14:51:20.887Z] [INFO] [Mem0LongTermMemory][0m Recalled 0 memories
+[36m[2026-03-05T14:51:20.888Z] [INFO] [ContextAssembler][0m Assembled prompt for 开发者: 449 tokens (budget: 8000), sections: [identity, rules, participants, guidelines, current]
+[36m[2026-03-05T14:51:20.889Z] [INFO] [Agent][0m [开发者] Invoking LLM (round 1) for message from 用户...
+[90m[2026-03-05T14:51:20.889Z] [DEBUG] [MessageBus][0m Publishing message in room 93cec326-0e27-4396-affd-4df34da608ca from 开发者
+[90m[2026-03-05T14:51:20.890Z] [DEBUG] [SessionManager][0m Session saved: 93cec326-0e27-4396-affd-4df34da608ca
+[90m[2026-03-05T14:51:20.890Z] [DEBUG] [ChatRoom][0m Agent "开发者" sent message without @mention, not routing to default
+[36m[2026-03-05T14:51:20.891Z] [INFO] [ModelRouter][0m Invoking gemini (attempt 1)
+[90m[2026-03-05T14:51:20.916Z] [DEBUG] [CLIInvoker][0m CLI path resolution for gemini
+[90m[2026-03-05T14:51:20.917Z] [DEBUG] [CLIInvoker][0m CLI slot acquired (1/2 active)
+[36m[2026-03-05T14:51:20.917Z] [INFO] [ChatRoomManager][0m Room saved: 93cec326-0e27-4396-affd-4df34da608ca
+[36m[2026-03-05T14:51:20.917Z] [INFO] [CLIInvoker][0m Invoking gemini { sessionId: 'new', cwd: 'default', fileCount: 0 }
+[90m[2026-03-05T14:51:20.919Z] [DEBUG] [CLIInvoker][0m gemini spawn parameters {
+  args: [
+    '-p',
+    '# 你是 开发者\n' +
+      '\n' +
+      '你是一名高级全栈开发工程师，擅长编码实现和技术落地。\n' +
+      '你的职责是将技术设计转化为代码、编写测试、修复Bug。\n' +
+      '你注重代码质量、可读性和测试覆盖率。\n' +
+      '你会主动汇报开发进展和遇到的问题。\n' +
+      '\n' +
+      '## 规则\n' +
+      '- 编写代码前先理解需求和技术设计\n' +
+      '- 必须使用工作流技能初始化任务：大型任务用 dev-workflow，小型迭代用 quick-task。系统将自动创建分支并管理合并\n' +
+      '- 每完成一个模块，编写相应的单元测试\n' +
+      '- 遵循项目的代码规范和架构约束\n' +
+      '- Write 强制分步：单次写入超过 50 行必须分步实施，先写骨架再逐段填充\n' +
+      '- 并行执行：多个文件的独立修改必须在一条消息中并行发出所有 Edit，不得串行等待\n' +
+      '- 工具熔断：同一工具连续失败 2 次相同错误，必须换思路而非重试\n' +
+      '- 分支矩阵全覆盖：编码必须覆盖所有分支组合（正常/异常/边界），禁止只实现 happy path\n' +
+      '- 类型安全：修改 types.ts 或接口定义时，必须与后端 service 返回值逐字段比对确认一致\n' +
+      '\n' +
+      '## 房间参与者\n' +
+      '当前房间内的参与者有：\n' +
+      '- @架构师 (代理) - 负责整体系统设计、技术规范和方案评审\n' +
+      '- @开发者 (代理) - 负责代码编写、单元测试实现和功能落地\n' +
+      '- @QA负责人 (代理) - 负责测试用例设计、自动化验证和Bug报告\n' +
+      '- @用户 (人类)\n' +
+      '\n' +
+      '你可以通过 @name 的方式提及他们，但必须严格遵守下述提及规范。\n' +
+      '\n' +
+      '## 【硬性要求】你的回复必须以调用 send-message 工具结束\n' +
+      '\n' +
+      '> **⚠️ 关键规则：你的思考内容对用户完全不可见。无论分析了什么、做了什么，如果你没有调用 send-message，用户将看不到任何输出。每次响应的最后一步必须是调用 send-message 发送你的回复或结果。**\n' +
+      '\n' +
+      '## 协作指南\n' +
+      '\n' +
+      '### 元规则 (Meta Rules)\n' +
+      '1. **消息不可见原则**：你在此处写的所有内容都是内心独白，只有通过调用 send-message 工具，你的话才会被用户或其他 Agent 看到。\n' +
+      '2. 不确定就提问：遇到不清楚的需求时，先调用 send-message 向用户提问，不要硬猜。\n' +
+      '3. 要 @提及其他 agent，必须通过 send-message 的 mentions 参数传入（在消息正文里写 @ 无效）。仅在需要对方操作介入时才 @。\n' +
+      '4. 禁止表演性同意：有疑虑或更好的建议必须明确说出来。\n' +
+      '5. 交接必须说明WHY：提交决策或方案、以及将工作交接给另一个agent时，必须说明设计理由与决策原因。\n' +
+      '6. 重要变更需确认：涉及架构或 API 的重大调整，必须 @相关方并等待确认信号。\n' +
+      '7. **提问即交权**：同一轮消息禁止"提问 + 执行"并存，提问后只能等待回答，不得同时推进任务。\n' +
+      '8. **工具熔断**：同一工具连续失败 2 次相同错误，必须换思路，不得重复尝试。\n' +
+      '9. **防丢失原则**：对话是临时的，文件是持久的。重要决策、发现的问题必须写入文件，不做口头承诺。\n' +
+      '10. **Session 回溯**：不确定之前做过什么时，使用 `get-session-history` 技能搜索旧 session 记录——不要猜。\n' +
+      '\n' +
+      '### 工作流程\n' +
+      '1. 理解当前消息\n' +
+      '2. 执行必要的工具调用（查阅文件、执行操作等）\n' +
+      '3. **必须调用 send-message 发送回复** ← 永远不能省略这一步\n' +
+      '\n' +
+      '## 当前消息（需要你回应）\n' +
+      '**来自**: 用户 (human)\n' +
+      '**内容**: 帮我看看discord命令创建会话的参数应该如何写，给出示例\n' +
+      '\n' +
+      '**→ 处理完成后，调用 send-message 工具发送你的回复。这是必须的最后一步。**',
+    '--output-format',
+    'stream-json',
+    '--yolo'
+  ],
+  env: {
+    COLONY_AGENT_ID: 'developer',
+    COLONY_ROOM_ID: '93cec326-0e27-4396-affd-4df34da608ca',
+    COLONY_API: 'http://localhost:3001',
+    CLAUDE_CODE_SESSION_ACCESS_TOKEN: '***'
+  },
+  cwd: undefined
 }
+[90m[2026-03-05T14:55:38.518Z] [DEBUG] [Server][0m WebSocket client disconnected (total: 1)
+[90m[2026-03-05T14:55:38.518Z] [DEBUG] [Server][0m WebSocket client disconnected (total: 0)
+[36m[2026-03-05T14:55:38.594Z] [INFO] [Server][0m WebSocket client connected (total: 1)
+[36m[2026-03-05T14:55:39.569Z] [INFO] [ChatRoom][0m Human "用户" joined room "项目优化"
+[36m[2026-03-05T14:55:39.571Z] [INFO] [Server][0m WebSocket client connected (total: 2)
+[90m[2026-03-05T14:55:39.572Z] [DEBUG] [Server][0m WebSocket client disconnected (total: 1)
+[36m[2026-03-05T14:55:41.579Z] [INFO] [Server][0m WebSocket client connected (total: 2)
+[90m[2026-03-05T14:56:31.665Z] [DEBUG] [MessageBus][0m Publishing message in room 93cec326-0e27-4396-affd-4df34da608ca from 开发者
+[90m[2026-03-05T14:56:31.668Z] [DEBUG] [SessionManager][0m Session saved: 93cec326-0e27-4396-affd-4df34da608ca
+[90m[2026-03-05T14:56:31.668Z] [DEBUG] [ChatRoom][0m Agent "开发者" sent message without @mention, not routing to default
+[36m[2026-03-05T14:56:31.672Z] [INFO] [ChatRoomManager][0m Room saved: 93cec326-0e27-4396-affd-4df34da608ca
+[36m[2026-03-05T14:56:38.604Z] [INFO] [CLIInvoker][0m gemini finished successfully (572 chars, 14 tools)
+[90m[2026-03-05T14:56:38.605Z] [DEBUG] [CLIInvoker][0m CLI slot released (0/2 active, 0 waiting)
+[90m[2026-03-05T14:56:38.605Z] [DEBUG] [RateLimitManager][0m Usage recorded for gemini: +172030 tokens (172030/120000 min, 172030/2000000 day)
+[36m[2026-03-05T14:56:38.605Z] [INFO] [Agent][0m [开发者] ── LLM Response round 1 (572 chars) ──
+[36m[2026-03-05T14:56:38.605Z] [INFO] [Agent][0m [开发者] I have researched the Discord command implementation and documentation in the Colony codebase. The session creation command and its parameters are as follows:
 
-Node.js v25.6.1
+- **Command Format**: `/colony create <name> [agentIds] [--dir <workingDir>]`
+- **Parameters**: 
+  - `<name>`: (Required) Name of the session.
+  - `[agentIds]`: (Optional) Comma-separated agent IDs (e.g., `architect,developer`). Defaults to all agents.
+  - `[--dir <workingDir>]`: (Optional) Custom working directory for the session.
+
+I have sent detailed usage examples and available agent IDs to the chat room.
+[36m[2026-03-05T14:56:38.605Z] [INFO] [Agent][0m [开发者] ── End Response ──
+[36m[2026-03-05T14:56:38.607Z] [INFO] [SessionRecord][0m Created session 4a7d2bc6-03a9-43d2-be20-ebf7cecdab80 (chain #0) for developer in room 93cec326-0e27-4396-affd-4df34da608ca
+[90m[2026-03-05T14:56:38.608Z] [DEBUG] [TranscriptWriter][0m Transcript appended: developer/4a7d2bc6-03a9-43d2-be20-ebf7cecdab80 invocation #1
+[36m[2026-03-05T14:56:38.608Z] [INFO] [ContextHealthBar][0m [开发者] Context: 17.2% (172030/1000000) 🟢 healthy — invocation #1
+[36m[2026-03-05T14:56:38.609Z] [INFO] [Mem0LongTermMemory][0m Retaining memory to Mem0...
+[90m[2026-03-05T14:57:00.033Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:57:00,032 - httpx - INFO - HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:57:04.736Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:57:04,736 - httpx - INFO - HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/embeddings "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:57:04.951Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:57:04,951 - httpx - INFO - HTTP Request: POST http://localhost:6333/collections/colony_memories/points/query "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:57:04.951Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:57:04,951 - mem0.memory.main - INFO - Total existing memories: 0
+
+[31m[2026-03-05T14:57:08.611Z] [ERROR] [Mem0LongTermMemory][0m Failed to retain memory: Error: Request 2 timeout
+    at Timeout._onTimeout (/Users/casu/Documents/Colony/dist/memory/Mem0LongTermMemory.js:174:28)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[31m[2026-03-05T14:57:08.614Z] [ERROR] [Agent][0m [开发者] Failed to store to long-term memory: Error: Request 2 timeout
+    at Timeout._onTimeout (/Users/casu/Documents/Colony/dist/memory/Mem0LongTermMemory.js:174:28)
+    at listOnTimeout (node:internal/timers:605:17)
+    at process.processTimers (node:internal/timers:541:7)
+[90m[2026-03-05T14:57:20.060Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:57:20,060 - httpx - INFO - HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/chat/completions "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:57:20.070Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:57:20,070 - mem0.memory.main - INFO - {'id': '0', 'text': '询问Discord命令创建会话的参数写法', 'event': 'ADD'}
+
+[90m[2026-03-05T14:57:20.106Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:57:20,106 - mem0.vector_stores.qdrant - INFO - Inserting 1 vectors into collection colony_memories
+
+[90m[2026-03-05T14:57:20.123Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:57:20,123 - httpx - INFO - HTTP Request: PUT http://localhost:6333/collections/colony_memories/points?wait=true "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:57:20.133Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 22:57:20,133 - httpx - INFO - HTTP Request: POST http://localhost:6333/collections/mem0migrations/points "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T14:57:20.134Z] [DEBUG] [Mem0LongTermMemory][0m Received data from Python (213 bytes): {"id": 2, "success": true, "data": {"results": [{"id": "a50115fa-1c62-467b-9bba-a895321defd8", "memory": "\u8be2\u95eeDiscord\u547d\u4ee4\u521b\u5efa\u4f1a\u8bdd\u7684\u53c2\u6570\u5199\u6cd5", "event
+[90m[2026-03-05T14:57:20.135Z] [DEBUG] [Mem0LongTermMemory][0m Processing line: {"id": 2, "success": true, "data": {"results": [{"id": "a50115fa-1c62-467b-9bba-a895321defd8", "memo...
+[90m[2026-03-05T14:57:20.135Z] [DEBUG] [Mem0LongTermMemory][0m Parsed response for request 2: success
+[33m[2026-03-05T14:57:20.135Z] [WARN] [Mem0LongTermMemory][0m No pending request found for ID 2
+[90m[2026-03-05T14:58:51.123Z] [DEBUG] [MessageBus][0m New subscriber for room 6eb7859a-45eb-4f65-a39c-a472100d8df8 (total: 1)
+[36m[2026-03-05T14:58:51.127Z] [INFO] [ChatRoom][0m ChatRoom created: "RefactorTask" (6eb7859a-45eb-4f65-a39c-a472100d8df8)
+[36m[2026-03-05T14:58:51.127Z] [INFO] [ChatRoom][0m Agent "架构师" joined room "RefactorTask"
+[36m[2026-03-05T14:58:51.128Z] [INFO] [ChatRoom][0m Default agent for room "RefactorTask": developer
+[36m[2026-03-05T14:58:51.128Z] [INFO] [ChatRoom][0m Agent "开发者" joined room "RefactorTask"
+[36m[2026-03-05T14:58:51.128Z] [INFO] [ChatRoomManager][0m Room created: "RefactorTask" with 2 agents
+[90m[2026-03-05T15:00:06.648Z] [DEBUG] [MessageBus][0m Publishing message in room 93cec326-0e27-4396-affd-4df34da608ca from 用户
+[90m[2026-03-05T15:00:06.652Z] [DEBUG] [SessionManager][0m Session saved: 93cec326-0e27-4396-affd-4df34da608ca
+[36m[2026-03-05T15:00:06.652Z] [INFO] [ChatRoom][0m Routing to default agent @开发者 in "项目优化"
+[36m[2026-03-05T15:00:06.652Z] [INFO] [Agent][0m [开发者] Received routed message from 用户 (default)
+[36m[2026-03-05T15:00:06.655Z] [INFO] [ChatRoomManager][0m Room saved: 93cec326-0e27-4396-affd-4df34da608ca
+[90m[2026-03-05T15:00:06.657Z] [DEBUG] [ContextAssembler][0m Built participants section with 4 participants
+[36m[2026-03-05T15:00:06.659Z] [INFO] [Mem0LongTermMemory][0m Recalling memories for query: "修改代码，使得agent列表参数支持输入agent名，而不是id，在discord看不到agent的..."
+[90m[2026-03-05T15:00:06.685Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 23:00:06,684 - httpx - INFO - HTTP Request: POST http://localhost:6333/collections/mem0migrations/points "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T15:00:09.440Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 23:00:09,439 - httpx - INFO - HTTP Request: POST https://open.bigmodel.cn/api/paas/v4/embeddings "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T15:00:09.474Z] [DEBUG] [Mem0LongTermMemory][0m Mem0 bridge stderr: 2026-03-05 23:00:09,474 - httpx - INFO - HTTP Request: POST http://localhost:6333/collections/colony_memories/points/query "HTTP/1.1 200 OK"
+
+[90m[2026-03-05T15:00:09.475Z] [DEBUG] [Mem0LongTermMemory][0m Received data from Python (602 bytes): {"id": 3, "success": true, "data": {"results": [{"id": "a50115fa-1c62-467b-9bba-a895321defd8", "memory": "\u8be2\u95eeDiscord\u547d\u4ee4\u521b\u5efa\u4f1a\u8bdd\u7684\u53c2\u6570\u5199\u6cd5", "hash"
+[90m[2026-03-05T15:00:09.475Z] [DEBUG] [Mem0LongTermMemory][0m Processing line: {"id": 3, "success": true, "data": {"results": [{"id": "a50115fa-1c62-467b-9bba-a895321defd8", "memo...
+[90m[2026-03-05T15:00:09.476Z] [DEBUG] [Mem0LongTermMemory][0m Parsed response for request 3: success
+[36m[2026-03-05T15:00:09.476Z] [INFO] [Mem0LongTermMemory][0m Recalled 1 memories
+[36m[2026-03-05T15:00:09.476Z] [INFO] [ContextAssembler][0m Retrieved 1 long-term memories for query: "修改代码，使得agent列表参数支持输入agent名，而不是id，在discord看不到agent的..."
+[36m[2026-03-05T15:00:09.476Z] [INFO] [ContextAssembler][0m Assembled prompt for 开发者: 496 tokens (budget: 8000), sections: [identity, rules, participants, guidelines, history, long-term, current]
+[36m[2026-03-05T15:00:09.477Z] [INFO] [Agent][0m [开发者] Invoking LLM (round 1) for message from 用户...
+[90m[2026-03-05T15:00:09.477Z] [DEBUG] [MessageBus][0m Publishing message in room 93cec326-0e27-4396-affd-4df34da608ca from 开发者
+[90m[2026-03-05T15:00:09.478Z] [DEBUG] [SessionManager][0m Session saved: 93cec326-0e27-4396-affd-4df34da608ca
+[90m[2026-03-05T15:00:09.478Z] [DEBUG] [ChatRoom][0m Agent "开发者" sent message without @mention, not routing to default
+[36m[2026-03-05T15:00:09.478Z] [INFO] [ModelRouter][0m Invoking gemini (attempt 1)
+[90m[2026-03-05T15:00:09.487Z] [DEBUG] [CLIInvoker][0m CLI path resolution for gemini
+[90m[2026-03-05T15:00:09.487Z] [DEBUG] [CLIInvoker][0m CLI slot acquired (1/2 active)
+[36m[2026-03-05T15:00:09.487Z] [INFO] [ChatRoomManager][0m Room saved: 93cec326-0e27-4396-affd-4df34da608ca
+[36m[2026-03-05T15:00:09.487Z] [INFO] [CLIInvoker][0m Invoking gemini {
+  sessionId: '4a7d2bc6-03a9-43d2-be20-ebf7cecdab80',
+  cwd: 'default',
+  fileCount: 0
+}
+[90m[2026-03-05T15:00:09.488Z] [DEBUG] [CLIInvoker][0m gemini spawn parameters {
+  args: [
+    '-p',
+    '# 你是 开发者\n' +
+      '\n' +
+      '你是一名高级全栈开发工程师，擅长编码实现和技术落地。\n' +
+      '你的职责是将技术设计转化为代码、编写测试、修复Bug。\n' +
+      '你注重代码质量、可读性和测试覆盖率。\n' +
+      '你会主动汇报开发进展和遇到的问题。\n' +
+      '\n' +
+      '## 规则\n' +
+      '- 编写代码前先理解需求和技术设计\n' +
+      '- 必须使用工作流技能初始化任务：大型任务用 dev-workflow，小型迭代用 quick-task。系统将自动创建分支并管理合并\n' +
+      '- 每完成一个模块，编写相应的单元测试\n' +
+      '- 遵循项目的代码规范和架构约束\n' +
+      '- Write 强制分步：单次写入超过 50 行必须分步实施，先写骨架再逐段填充\n' +
+      '- 并行执行：多个文件的独立修改必须在一条消息中并行发出所有 Edit，不得串行等待\n' +
+      '- 工具熔断：同一工具连续失败 2 次相同错误，必须换思路而非重试\n' +
+      '- 分支矩阵全覆盖：编码必须覆盖所有分支组合（正常/异常/边界），禁止只实现 happy path\n' +
+      '- 类型安全：修改 types.ts 或接口定义时，必须与后端 service 返回值逐字段比对确认一致\n' +
+      '\n' +
+      '## 房间参与者\n' +
+      '当前房间内的参与者有：\n' +
+      '- @架构师 (代理) - 负责整体系统设计、技术规范和方案评审\n' +
+      '- @开发者 (代理) - 负责代码编写、单元测试实现和功能落地\n' +
+      '- @QA负责人 (代理) - 负责测试用例设计、自动化验证和Bug报告\n' +
+      '- @用户 (人类)\n' +
+      '\n' +
+      '你可以通过 @name 的方式提及他们，但必须严格遵守下述提及规范。\n' +
+      '\n' +
+      '## 【硬性要求】你的回复必须以调用 send-message 工具结束\n' +
+      '\n' +
+      '> **⚠️ 关键规则：你的思考内容对用户完全不可见。无论分析了什么、做了什么，如果你没有调用 send-message，用户将看不到任何输出。每次响应的最后一步必须是调用 send-message 发送你的回复或结果。**\n' +
+      '\n' +
+      '## 协作指南\n' +
+      '\n' +
+      '### 元规则 (Meta Rules)\n' +
+      '1. **消息不可见原则**：你在此处写的所有内容都是内心独白，只有通过调用 send-message 工具，你的话才会被用户或其他 Agent 看到。\n' +
+      '2. 不确定就提问：遇到不清楚的需求时，先调用 send-message 向用户提问，不要硬猜。\n' +
+      '3. 要 @提及其他 agent，必须通过 send-message 的 mentions 参数传入（在消息正文里写 @ 无效）。仅在需要对方操作介入时才 @。\n' +
+      '4. 禁止表演性同意：有疑虑或更好的建议必须明确说出来。\n' +
+      '5. 交接必须说明WHY：提交决策或方案、以及将工作交接给另一个agent时，必须说明设计理由与决策原因。\n' +
+      '6. 重要变更需确认：涉及架构或 API 的重大调整，必须 @相关方并等待确认信号。\n' +
+      '7. **提问即交权**：同一轮消息禁止"提问 + 执行"并存，提问后只能等待回答，不得同时推进任务。\n' +
+      '8. **工具熔断**：同一工具连续失败 2 次相同错误，必须换思路，不得重复尝试。\n' +
+      '9. **防丢失原则**：对话是临时的，文件是持久的。重要决策、发现的问题必须写入文件，不做口头承诺。\n' +
+      '10. **Session 回溯**：不确定之前做过什么时，使用 `get-session-history` 技能搜索旧 session 记录——不要猜。\n' +
+      '\n' +
+      '### 工作流程\n' +
+      '1. 理解当前消息\n' +
+      '2. 执行必要的工具调用（查阅文件、执行操作等）\n' +
+      '3. **必须调用 send-message 发送回复** ← 永远不能省略这一步\n' +
+      '\n' +
+      '## 最近对话\n' +
+      '**[22:51:17] 用户**: 帮我看看discord命令创建会话的参数应该如何写，给出示例\n' +
+      '\n' +
+      '## 相关记忆\n' +
+      '_（从长期记忆中检索到的相关信息）_\n' +
+      '\n' +
+      '**[2026/3/5 22:56:38] [开发者, 用户]**\n' +
+      '询问Discord命令创建会话的参数写法\n' +
+      '\n' +
+      '\n' +
+      '## 当前消息（需要你回应）\n' +
+      '**来自**: 用户 (human)\n' +
+      '**内容**: 修改代码，使得agent列表参数支持输入agent名，而不是id，在discord看不到agent的id\n' +
+      '\n' +
+      '**→ 处理完成后，调用 send-message 工具发送你的回复。这是必须的最后一步。**',
+    '--output-format',
+    'stream-json',
+    '--yolo',
+    '--resume',
+    '4a7d2bc6-03a9-43d2-be20-ebf7cecdab80'
+  ],
+  env: {
+    COLONY_AGENT_ID: 'developer',
+    COLONY_ROOM_ID: '93cec326-0e27-4396-affd-4df34da608ca',
+    COLONY_API: 'http://localhost:3001',
+    CLAUDE_CODE_SESSION_ACCESS_TOKEN: '***'
+  },
+  cwd: undefined
+}

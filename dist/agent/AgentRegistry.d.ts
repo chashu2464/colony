@@ -28,6 +28,10 @@ export declare class AgentRegistry {
      */
     get(id: string): Agent | undefined;
     /**
+     * Get an agent by ID or name (case-insensitive).
+     */
+    getByIdOrName(idOrName: string): Agent | undefined;
+    /**
      * Get all registered agents.
      */
     getAll(): Agent[];

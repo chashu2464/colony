@@ -10,7 +10,7 @@ export declare class SessionManager {
      */
     loadSession(sessionId: string): Promise<object | null>;
     /**
-     * List all saved session IDs.
+     * List all saved session IDs (excludes agent-specific chain files).
      */
     listSessions(): Promise<string[]>;
     /**

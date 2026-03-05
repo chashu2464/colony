@@ -351,7 +351,28 @@ export async function invoke(
         }
 
         const argsWithFiles = config.buildArgs(prompt, sessionId, tempFiles);
-        log.info(`Invoking ${cli}`, { sessionId: sessionId ?? 'new', cwd: options.cwd ?? 'default', fileCount: tempFiles.length });
+
+        // Enhanced logging: record full spawn parameters for debugging
+        const sanitizedEnv = Object.keys(options.env ?? {}).reduce((acc, key) => {
+            // Sanitize sensitive values (API keys, tokens)
+            if (key.toLowerCase().includes('key') || key.toLowerCase().includes('token') || key.toLowerCase().includes('secret')) {
+                acc[key] = '***';
+            } else {
+                acc[key] = (options.env ?? {})[key];
+            }
+            return acc;
+        }, {} as Record<string, string | undefined>);
+
+        log.info(`Invoking ${cli}`, {
+            sessionId: sessionId ?? 'new',
+            cwd: options.cwd ?? 'default',
+            fileCount: tempFiles.length
+        });
+        log.debug(`${cli} spawn parameters`, {
+            args: argsWithFiles,
+            env: sanitizedEnv,
+            cwd: options.cwd
+        });
 
         return await new Promise<InvokeResult>((resolve, reject) => {
             let settled = false;
@@ -476,11 +497,16 @@ export async function invoke(
                 if (childExitCode === null || !rlClosed) return;
 
                 if (childExitCode !== 0) {
-                    log.warn(`${cli} finished with exit code ${childExitCode}`);
+                    // Enhanced error logging: explicitly indicate when no error output was captured
+                    const errorDetail = stderr
+                        ? `: ${stderr.trim()}`
+                        : ' (no error output captured - CLI may have crashed before producing diagnostics)';
+
+                    log.warn(`${cli} finished with exit code ${childExitCode}${errorDetail}`);
                     settle(
                         'reject',
                         new InvokeError(
-                            `${cli} exited with code ${childExitCode}${stderr ? ': ' + stderr.trim() : ''}`,
+                            `${cli} exited with code ${childExitCode}${errorDetail}`,
                             { type: 'exit_error', cli, code: childExitCode, stderr }
                         )
                     );

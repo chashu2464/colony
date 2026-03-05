@@ -90,7 +90,8 @@ class ModelRouter {
                         }
                         // Check for invalid/stale session ID
                         const isInvalidSession = errMsg.includes('invalid session')
-                            || errMsg.includes('error resuming session');
+                            || errMsg.includes('error resuming session')
+                            || errMsg.includes('no conversation found');
                         if (isInvalidSession) {
                             log.warn(`Invalid session for ${model}, clearing session ID and retrying...`);
                             callbacks?.onStatusUpdate?.(`⚠️ 会话 ID 已失效，正在重新建立会话...`);

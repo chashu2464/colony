@@ -74,6 +74,17 @@ export class AgentRegistry {
     }
 
     /**
+     * Get an agent by ID or name (case-insensitive).
+     */
+    getByIdOrName(idOrName: string): Agent | undefined {
+        const byId = this.get(idOrName);
+        if (byId) return byId;
+
+        const target = idOrName.toLowerCase();
+        return this.getAll().find(a => a.name.toLowerCase() === target || a.id.toLowerCase() === target);
+    }
+
+    /**
      * Get all registered agents.
      */
     getAll(): Agent[] {

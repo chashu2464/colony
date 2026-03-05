@@ -343,7 +343,27 @@ async function invoke(cli, prompt, options = {}) {
             log.info(`Saved ${tempFiles.length} temp image(s) for ${cli}`);
         }
         const argsWithFiles = config.buildArgs(prompt, sessionId, tempFiles);
-        log.info(`Invoking ${cli}`, { sessionId: sessionId ?? 'new', cwd: options.cwd ?? 'default', fileCount: tempFiles.length });
+        // Enhanced logging: record full spawn parameters for debugging
+        const sanitizedEnv = Object.keys(options.env ?? {}).reduce((acc, key) => {
+            // Sanitize sensitive values (API keys, tokens)
+            if (key.toLowerCase().includes('key') || key.toLowerCase().includes('token') || key.toLowerCase().includes('secret')) {
+                acc[key] = '***';
+            }
+            else {
+                acc[key] = (options.env ?? {})[key];
+            }
+            return acc;
+        }, {});
+        log.info(`Invoking ${cli}`, {
+            sessionId: sessionId ?? 'new',
+            cwd: options.cwd ?? 'default',
+            fileCount: tempFiles.length
+        });
+        log.debug(`${cli} spawn parameters`, {
+            args: argsWithFiles,
+            env: sanitizedEnv,
+            cwd: options.cwd
+        });
         return await new Promise((resolve, reject) => {
             let settled = false;
             let childExitCode = null;
@@ -427,6 +447,14 @@ async function invoke(cli, prompt, options = {}) {
                 const sid = config.extractSessionId(event);
                 if (sid)
                     capturedSessionId = sid;
+                // ── Extract errors from stdout JSON events ──────
+                // Some CLIs (notably Claude) report errors as JSON on stdout
+                // (e.g. type=result with is_error=true) instead of writing to stderr.
+                // Capture these so the InvokeError message includes the real error text.
+                if (event.is_error === true && Array.isArray(event.errors)) {
+                    const errTexts = event.errors.join('; ');
+                    stderr += (stderr ? '\n' : '') + errTexts;
+                }
                 const text = config.extractText(event);
                 if (text) {
                     textChunks.push(text);
@@ -449,8 +477,12 @@ async function invoke(cli, prompt, options = {}) {
                 if (childExitCode === null || !rlClosed)
                     return;
                 if (childExitCode !== 0) {
-                    log.warn(`${cli} finished with exit code ${childExitCode}`);
-                    settle('reject', new InvokeError(`${cli} exited with code ${childExitCode}${stderr ? ': ' + stderr.trim() : ''}`, { type: 'exit_error', cli, code: childExitCode, stderr }));
+                    // Enhanced error logging: explicitly indicate when no error output was captured
+                    const errorDetail = stderr
+                        ? `: ${stderr.trim()}`
+                        : ' (no error output captured - CLI may have crashed before producing diagnostics)';
+                    log.warn(`${cli} finished with exit code ${childExitCode}${errorDetail}`);
+                    settle('reject', new InvokeError(`${cli} exited with code ${childExitCode}${errorDetail}`, { type: 'exit_error', cli, code: childExitCode, stderr }));
                     return;
                 }
                 const finalSessionId = capturedSessionId || sessionId;

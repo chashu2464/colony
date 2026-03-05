@@ -41,7 +41,7 @@ export class ChatRoomManager {
 
         // Add specified agents (or all agents if none specified)
         const agents = agentIds
-            ? agentIds.map(id => this.agentRegistry.get(id)).filter(Boolean)
+            ? agentIds.map(id => this.agentRegistry.getByIdOrName(id)).filter(Boolean)
             : this.agentRegistry.getAll();
 
         for (const agent of agents) {
@@ -63,8 +63,9 @@ export class ChatRoomManager {
      * Get rooms by exact name (case-insensitive).
      */
     getRoomByName(name: string): ChatRoom[] {
+        if (!name) return [];
         const target = name.toLowerCase();
-        return Array.from(this.rooms.values()).filter(r => r.name.toLowerCase() === target);
+        return Array.from(this.rooms.values()).filter(r => r.name?.toLowerCase() === target);
     }
 
     /**
