@@ -17,5 +17,9 @@ export declare class SessionManager {
      * Delete a saved session.
      */
     deleteSession(sessionId: string): Promise<boolean>;
+    /**
+     * Delete workflow state associated with a session (room).
+     */
+    deleteWorkflow(sessionId: string): Promise<void>;
     private sessionPath;
 }

@@ -5,6 +5,8 @@ import { Logger } from '../utils/Logger.js';
 import { ChatRoom } from './ChatRoom.js';
 import { MessageBus } from './MessageBus.js';
 import { SessionManager } from './SessionManager.js';
+import { SessionStore } from '../session/SessionRecord.js';
+import { TranscriptWriter } from '../session/TranscriptWriter.js';
 import type { AgentRegistry } from '../agent/AgentRegistry.js';
 import type { ChatRoomInfo, Participant, Message } from '../types.js';
 
@@ -84,8 +86,19 @@ export class ChatRoomManager {
         room.destroy();
         this.rooms.delete(roomId);
 
-        // Also delete saved session
+        // 1. Delete main room session file
         await this.sessionManager.deleteSession(roomId);
+
+        // 2. Delete workflow state associated with the room
+        await this.sessionManager.deleteWorkflow(roomId);
+
+        // 3. Cascade delete agent session chains (per-agent-per-room files)
+        const sessionStore = new SessionStore();
+        sessionStore.deleteByRoom(roomId);
+
+        // 4. Cascade delete transcript directories
+        const transcriptWriter = new TranscriptWriter();
+        transcriptWriter.deleteByRoom(roomId);
 
         log.info(`Room deleted: ${roomId}`);
         return true;

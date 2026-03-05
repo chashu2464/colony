@@ -223,4 +223,24 @@ export class SessionStore {
             this.saveChain(agentId, roomId, chain);
         }
     }
+
+    /**
+     * Delete all session chains associated with a room.
+     */
+    deleteByRoom(roomId: string): void {
+        if (!fs.existsSync(this.sessionsDir)) return;
+        const files = fs.readdirSync(this.sessionsDir);
+        const suffix = `-${roomId}.json`;
+        for (const file of files) {
+            if (file.endsWith(suffix)) {
+                const filePath = path.join(this.sessionsDir, file);
+                try {
+                    fs.unlinkSync(filePath);
+                    log.info(`Deleted session chain: ${file}`);
+                } catch (err) {
+                    log.error(`Failed to delete session chain ${file}:`, err);
+                }
+            }
+        }
+    }
 }

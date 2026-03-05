@@ -5,6 +5,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChatRoomManager = void 0;
 const Logger_js_1 = require("../utils/Logger.js");
 const ChatRoom_js_1 = require("./ChatRoom.js");
+const SessionRecord_js_1 = require("../session/SessionRecord.js");
+const TranscriptWriter_js_1 = require("../session/TranscriptWriter.js");
 const log = new Logger_js_1.Logger('ChatRoomManager');
 class ChatRoomManager {
     rooms = new Map();
@@ -68,8 +70,16 @@ class ChatRoomManager {
             return false;
         room.destroy();
         this.rooms.delete(roomId);
-        // Also delete saved session
+        // 1. Delete main room session file
         await this.sessionManager.deleteSession(roomId);
+        // 2. Delete workflow state associated with the room
+        await this.sessionManager.deleteWorkflow(roomId);
+        // 3. Cascade delete agent session chains (per-agent-per-room files)
+        const sessionStore = new SessionRecord_js_1.SessionStore();
+        sessionStore.deleteByRoom(roomId);
+        // 4. Cascade delete transcript directories
+        const transcriptWriter = new TranscriptWriter_js_1.TranscriptWriter();
+        transcriptWriter.deleteByRoom(roomId);
         log.info(`Room deleted: ${roomId}`);
         return true;
     }

@@ -160,4 +160,26 @@ export class TranscriptWriter {
 
         return results;
     }
+
+    /**
+     * Delete all transcripts associated with a room.
+     */
+    deleteByRoom(roomId: string): void {
+        if (!fs.existsSync(this.baseDir)) return;
+        const dirs = fs.readdirSync(this.baseDir);
+        const suffix = `-${roomId}`;
+        for (const dirName of dirs) {
+            if (dirName.endsWith(suffix)) {
+                const dirPath = path.join(this.baseDir, dirName);
+                if (fs.statSync(dirPath).isDirectory()) {
+                    try {
+                        fs.rmSync(dirPath, { recursive: true, force: true });
+                        log.info(`Deleted transcript directory: ${dirName}`);
+                    } catch (err) {
+                        log.error(`Failed to delete transcript directory ${dirName}:`, err);
+                    }
+                }
+            }
+        }
+    }
 }

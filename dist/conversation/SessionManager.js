@@ -77,8 +77,11 @@ class SessionManager {
      */
     async listSessions() {
         const files = fs.readdirSync(this.dataDir);
+        // Room sessions are saved as [uuid].json
+        // Agent files are saved as [agentId]-[uuid].json
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.json$/i;
         return files
-            .filter(f => f.endsWith('.json') && !f.includes('-'))
+            .filter(f => uuidRegex.test(f))
             .map(f => path.basename(f, '.json'));
     }
     /**
@@ -91,6 +94,23 @@ class SessionManager {
         fs.unlinkSync(filePath);
         log.debug(`Session deleted: ${sessionId}`);
         return true;
+    }
+    /**
+     * Delete workflow state associated with a session (room).
+     */
+    async deleteWorkflow(sessionId) {
+        // Workflow files are stored in .data/workflows/${sessionId}.json
+        const dataDirBase = path.dirname(this.dataDir);
+        const workflowFile = path.join(dataDirBase, 'workflows', `${sessionId}.json`);
+        if (fs.existsSync(workflowFile)) {
+            try {
+                fs.unlinkSync(workflowFile);
+                log.debug(`Workflow state deleted: ${sessionId}`);
+            }
+            catch (err) {
+                log.error(`Failed to delete workflow state ${sessionId}:`, err);
+            }
+        }
     }
     sessionPath(sessionId) {
         return path.join(this.dataDir, `${sessionId}.json`);
