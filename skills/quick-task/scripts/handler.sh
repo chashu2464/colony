@@ -60,22 +60,31 @@ EOF
     MAIN_BRANCH=$(get_main_branch)
 
     if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-      # Add all changes
-      git add .
-      # If there are changes to commit on the feature branch
+      # Commit any pending changes on feature branch before merge
+      git add . 2>/dev/null
       if ! git diff-index --quiet HEAD -- 2>/dev/null; then
         git commit -m "feat: wip for quick task $TASK_ID" --no-verify >/dev/null 2>&1
       fi
-      
+      # Stash any remaining untracked/ignored changes before switching
+      local stashed=false
+      if [ ! -z "$(git status --porcelain 2>/dev/null)" ]; then
+        git stash push -m "quick-task-merge-stash" --quiet 2>/dev/null && stashed=true
+      fi
       git checkout "$MAIN_BRANCH" >/dev/null 2>&1
       
       if git merge --squash "$BRANCH_NAME" >/dev/null 2>&1; then
         git commit -m "feat: complete quick task $TASK_ID - $TASK_NAME" --no-verify >/dev/null 2>&1
         git branch -D "$BRANCH_NAME" >/dev/null 2>&1
         rm "$STATE_FILE"
-        echo "{"success": true, "message": "Task $TASK_ID completed and merged to $MAIN_BRANCH"}"
+        echo "{\"success\": true, \"message\": \"Task $TASK_ID completed and merged to $MAIN_BRANCH\"}"
       else
-        echo '{"error": "Merge conflict detected. Please resolve manually on master branch."}'
+        # Abort failed merge and return to feature branch
+        git merge --abort >/dev/null 2>&1
+        git checkout "$BRANCH_NAME" >/dev/null 2>&1
+        if [ "$stashed" = true ]; then
+          git stash pop --quiet 2>/dev/null
+        fi
+        echo '{"error": "Merge conflict detected. Merge aborted and returned to feature branch. Please resolve manually."}'
         exit 1
       fi
     fi

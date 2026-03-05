@@ -101,8 +101,10 @@ function do_git_commit() {
   local msg=$3
   if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     if ! git diff-index --quiet HEAD -- 2>/dev/null; then
-      git add .
-      git commit -m "chore(workflow): Advance to stage $stage_num - $stage_name" -m "Notes: $msg" --no-verify >/dev/null 2>&1
+      git add . 2>/dev/null
+      if ! git commit -m "chore(workflow): Advance to stage $stage_num - $stage_name" -m "Notes: $msg" --no-verify >/dev/null 2>&1; then
+        echo "Warning: git commit failed (stage $stage_num), continuing without commit" >&2
+      fi
     fi
   fi
 }
@@ -112,7 +114,20 @@ function ensure_feature_branch() {
   if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     local current=$(git branch --show-current)
     if [ "$current" != "$branch" ]; then
-      git checkout "$branch" >/dev/null 2>&1 || git checkout -b "$branch" >/dev/null 2>&1
+      # Auto-stash dirty changes to prevent checkout failure
+      local stashed=false
+      if [ ! -z "$(git status --porcelain 2>/dev/null)" ]; then
+        git stash push -m "workflow-auto-stash" --quiet 2>/dev/null && stashed=true
+      fi
+      if ! git checkout "$branch" >/dev/null 2>&1; then
+        if ! git checkout -b "$branch" >/dev/null 2>&1; then
+          echo "Warning: Failed to switch to branch $branch, staying on $current" >&2
+        fi
+      fi
+      # Restore stashed changes
+      if [ "$stashed" = true ]; then
+        git stash pop --quiet 2>/dev/null || echo "Warning: Failed to restore stashed changes" >&2
+      fi
     fi
   fi
 }
@@ -274,13 +289,25 @@ EOF
         # Squash Merge back to main branch
         MAIN_BRANCH=$(get_main_branch)
         if [ ! -z "$MAIN_BRANCH" ]; then
+          # Stash any uncommitted changes before switching
+          local merge_stashed=false
+          if [ ! -z "$(git status --porcelain 2>/dev/null)" ]; then
+            git stash push -m "workflow-merge-stash" --quiet 2>/dev/null && merge_stashed=true
+          fi
           git checkout "$MAIN_BRANCH" >/dev/null 2>&1
           log_msg="feat: complete task $TASK_ID - $TASK_NAME"
           if git merge --squash "$BRANCH_NAME" >/dev/null 2>&1; then
             git commit -m "$log_msg" --no-verify >/dev/null 2>&1
             git branch -D "$BRANCH_NAME" >/dev/null 2>&1
           else
-            echo '{"error": "Merge conflict detected. Please resolve manually on master branch."}'
+            # Abort the failed merge to restore clean state
+            git merge --abort >/dev/null 2>&1
+            # Return to feature branch so repo isn't left on master with conflicts
+            git checkout "$BRANCH_NAME" >/dev/null 2>&1
+            if [ "$merge_stashed" = true ]; then
+              git stash pop --quiet 2>/dev/null
+            fi
+            echo '{"error": "Merge conflict detected. Merge aborted and returned to feature branch. Please resolve manually."}'
             exit 1
           fi
         fi
