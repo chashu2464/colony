@@ -6,6 +6,8 @@ dist/
 
 # Logs
 logs/
+*.log
+colony-server.log
 
 # Data
 .data/
@@ -13,3 +15,11 @@ logs/
 # Environment
 .env
 .env.local
+
+# OS
+.DS_Store
+
+# Test artifacts
+tests/*.js
+repro.js
+verify_real.js
