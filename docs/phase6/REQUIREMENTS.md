@@ -1,29 +1,32 @@
-# Phase 6 Workflow Skill Upgrade Requirements
+# Requirements: Web Session Message Isolation Fix
 
-## 1. Action: prev
-- **Goal**: Provide a simpler way to backtrack exactly one stage.
-- **Input**: Optional `reason`.
-- **Behavior**:
-  - Decrement `current_stage` by 1.
-  - Must not go below stage 0.
-  - Log the action in history with the reason.
-  - Provide `git reset` warning if a previous commit hash exists for the target stage.
+## Problem Description
+When a user switches between chat sessions in the web UI, messages from a previously active session can leak into the newly active session. This happens because the WebSocket event handler's closure captures a stale `activeSession` ID, and the race condition allows messages from the old session to pass the `msg.roomId === activeSession` check incorrectly before the handler is recreated.
 
-## 2. Evidence Validation Enhancement
-- **Goal**: Ensure work is actually verifiable before advancing.
-- **Behavior**:
-  - In `next` action, if `evidence` is provided, verify it exists on disk (file or directory).
-  - Return an error if it doesn't exist.
-  - (Optional/Discussion) Decide if `evidence` is strictly mandatory for all stages > 0.
+## Functional Requirements
+1. **Durable Message Filtering**: The WebSocket message handlers must verify that the incoming message's `roomId` matches the *current* `activeSession` at the time of state update.
+2. **Immediate UI Feedback**: When switching sessions, the message list must be cleared immediately to prevent ghost messages from the previous session from showing up while the new messages are being fetched.
+3. **Consistency Across Events**: Both `message` (new message) and `message_updated` (message content edit/thinking update) events must implement the filtered update logic.
 
-## 3. Tech Lead Role Integration
-- **Goal**: Formalize the tech lead's role in reviews and notifications.
-- **Behavior**:
-  - Update Stage 8 (Go-Live Review) to strictly require the `tech_lead` to be the reviewer for completion (or at least ensure they are assigned).
-  - Ensure `tech_lead` is correctly handled in all JSON outputs and assignment validations.
+## Technical Requirements
+- Implement "Double Check" in `setMessages` callback:
+  ```typescript
+  setMessages(prev => {
+    if (msg.roomId !== activeSession) return prev;
+    // ... update logic
+  });
+  ```
+- Clear messages in the `activeSession` change effect:
+  ```typescript
+  useEffect(() => {
+    setMessages([]); // Clear immediately
+    if (activeSession) {
+      fetchMessages(activeSession).then(setMessages);
+    }
+  }, [activeSession]);
+  ```
 
-## 4. Input Validation
-- **Goal**: Prevent script crashes due to malformed JSON.
-- **Behavior**:
-  - At the start of the script, use `jq` to validate the input string.
-  - Return a JSON error message if the input is not valid JSON.
+## Acceptance Criteria
+- [ ] Switching between Session A and Session B does not result in Session A's messages appearing in Session B's view.
+- [ ] The message list is visually empty immediately after clicking a different session in the sidebar.
+- [ ] Message updates (thinking dots, streaming text) only occur in the correct session view.

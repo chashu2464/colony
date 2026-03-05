@@ -24,5 +24,5 @@ echo "--- Phase 2: Restarting Service ---"
 TARGET_PORT="${PORT:-3001}"
 
 # Use nohup to ensure it survives the termination of the current process
-nohup sh -c "lsof -i :$TARGET_PORT -t | xargs kill -9 2>/dev/null || true; npm start" > colony-server.log 2>&1 &
+nohup sh -c "lsof -i :$TARGET_PORT -t | xargs kill -9 2>/dev/null || true; npm start" > logs/colony-server.log 2>&1 &
 echo '{"status": "restarting", "message": "Service is restarting in the background. Check colony-server.log for details."}'

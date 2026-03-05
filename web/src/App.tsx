@@ -51,10 +51,9 @@ export default function App() {
 
   // Load messages when session changes
   useEffect(() => {
+    setMessages([]); // Clear immediately to prevent ghosting
     if (activeSession) {
       fetchMessages(activeSession).then(setMessages).catch(console.error);
-    } else {
-      setMessages([]);
     }
   }, [activeSession]);
 
@@ -62,24 +61,24 @@ export default function App() {
   const handleWSEvent = useCallback((event: WSEvent) => {
     if (event.type === 'message' && event.data) {
       const msg = event.data as Message;
-      if (msg.roomId === activeSession) {
-        setMessages(prev => {
-          // Deduplicate
-          if (prev.some(m => m.id === msg.id)) return prev;
-          return [...prev, msg];
-        });
-      }
+      setMessages(prev => {
+        // FINAL GATE: Verify that the message indeed belongs to the currently active session
+        if (msg.roomId !== activeSession) return prev;
+        // Deduplicate
+        if (prev.some(m => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
       // Refresh sessions list for message count
       fetchSessions().then(setSessions).catch(console.error);
     }
 
     if (event.type === 'message_updated' && event.data) {
       const updated = event.data as Message;
-      if (updated.roomId === activeSession) {
-        setMessages(prev =>
-          prev.map(m => m.id === updated.id ? { ...m, content: updated.content, metadata: updated.metadata } : m)
-        );
-      }
+      setMessages(prev => {
+        // FINAL GATE: Verify that the message indeed belongs to the currently active session
+        if (updated.roomId !== activeSession) return prev;
+        return prev.map(m => m.id === updated.id ? { ...m, content: updated.content, metadata: updated.metadata } : m);
+      });
     }
 
     if (event.type === 'session_stopped') {
