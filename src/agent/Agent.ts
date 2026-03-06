@@ -142,6 +142,7 @@ export class Agent {
                 contextLimit: getContextLimit(this.config.model.primary, this.config.session?.contextLimit),
                 invocationCount: 0,
                 label: '🟢 healthy',
+                chainIndex: 0,
             };
         }
         return getHealthStatus(activeSession);

@@ -40,7 +40,10 @@
       "Bash(head:*)",
       "Bash(env:*)",
       "Bash(ls:*)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(claude:*)",
+      "Bash(bash /Users/casu/Documents/Colony/skills/send-message/scripts/handler.sh)",
+      "Bash(test:*)"
     ]
   }
 }

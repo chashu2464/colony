@@ -21,6 +21,7 @@ export interface Participant {
         tokensUsed: number;
         contextLimit: number;
         label: string;
+        chainIndex: number;
     };
 }
 

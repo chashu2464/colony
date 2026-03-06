@@ -18,6 +18,8 @@ export interface HealthStatus {
     invocationCount: number;
     /** Human-readable label */
     label: string;
+    /** Session chain index (0-indexed) */
+    chainIndex: number;
 }
 
 /**
@@ -40,6 +42,7 @@ export function getHealthStatus(session: SessionRecord): HealthStatus {
         contextLimit,
         invocationCount: session.invocationCount,
         label,
+        chainIndex: session.chainIndex,
     };
 }
 

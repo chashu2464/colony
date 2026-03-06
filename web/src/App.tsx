@@ -493,7 +493,7 @@ export default function App() {
                   {health && (
                     <div className="agent-card-health" style={{ marginTop: 8, fontSize: 11, color: '#888' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span>Session Health</span>
+                        <span>Session #{health.chainIndex}</span>
                         <span title={`${health.tokensUsed} / ${health.contextLimit} tokens`}>
                           {health.label} ({(health.fillRatio * 100).toFixed(0)}%)
                         </span>
