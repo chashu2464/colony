@@ -229,7 +229,12 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
         extractTokenUsage: (event) => {
             if (event.type === 'result' && event.usage) {
                 const usage = event.usage as Record<string, number>;
-                return { input: usage.input_tokens ?? 0, output: usage.output_tokens ?? 0 };
+                return {
+                    input: usage.input_tokens ?? 0,
+                    output: usage.output_tokens ?? 0,
+                    cacheRead: usage.cache_read_input_tokens ?? 0,
+                    cacheCreation: usage.cache_creation_input_tokens ?? 0,
+                };
             }
             return null;
         },
@@ -309,7 +314,12 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
         extractTokenUsage: (event) => {
             if (event.type === 'result' && event.usage) {
                 const usage = event.usage as Record<string, number>;
-                return { input: usage.input_tokens ?? 0, output: usage.output_tokens ?? 0 };
+                return {
+                    input: usage.input_tokens ?? 0,
+                    output: usage.output_tokens ?? 0,
+                    cacheRead: usage.cache_read_input_tokens ?? 0,
+                    cacheCreation: usage.cache_creation_input_tokens ?? 0,
+                };
             }
             return null;
         },
