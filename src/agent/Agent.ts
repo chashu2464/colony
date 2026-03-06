@@ -87,6 +87,16 @@ export class Agent {
         // Note: SkillManager is still used for context assembly (skill descriptions)
         // but actual skill execution is handled by CLI
         const skillManager = new SkillManager();
+        
+        // Discover and load all available skills
+        const skillsDir = path.join(process.cwd(), 'skills');
+        if (fs.existsSync(skillsDir)) {
+            skillManager.discoverFromDirectory(skillsDir);
+            const allSkillNames = skillManager.getAllMetadata().map(m => m.name);
+            skillManager.loadSkills(allSkillNames);
+            log.info(`[${this.name}] Loaded ${allSkillNames.length} skills: ${allSkillNames.join(', ')}`);
+        }
+
         this.contextAssembler.registerAgent(config, skillManager);
     }
 

@@ -80,7 +80,23 @@ export class InvokeError extends Error {
 // Prevents too many CLI processes from running simultaneously,
 // which could cause OOM kills (each gemini/claude CLI is heavy).
 
-const MAX_CONCURRENT_CLI = 2;
+/**
+ * Loads the maximum concurrency from environment variables.
+ * Range: 1-5, Default: 2.
+ */
+function getMaxConcurrency(): number {
+    const val = parseInt(process.env.COLONY_MAX_CLI_CONCURRENCY || '', 10);
+    const DEFAULT = 2;
+    if (isNaN(val) || val < 1 || val > 5) {
+        if (process.env.COLONY_MAX_CLI_CONCURRENCY) {
+            log.warn(`Invalid COLONY_MAX_CLI_CONCURRENCY "${process.env.COLONY_MAX_CLI_CONCURRENCY}". Using default: ${DEFAULT}`);
+        }
+        return DEFAULT;
+    }
+    return val;
+}
+
+const MAX_CONCURRENT_CLI = getMaxConcurrency();
 let activeCLICount = 0;
 const cliWaiters: Array<{ resolve: () => void; reject: (err: Error) => void }> = [];
 

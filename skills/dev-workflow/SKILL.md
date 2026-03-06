@@ -1,3 +1,8 @@
+---
+name: dev-workflow
+description: Manage the development workflow (Stages 0-8) for collaborative tasks.
+---
+
 # dev-workflow
 
 Manage the development workflow (Stages 0-8) for collaborative tasks.
@@ -19,7 +24,7 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 | `description` | string | ❌ | Task description |
 | `notes` | string | ❌ | Progress notes for `next` stage |
 | `assignments` | object | ❌ | Map of roles to agent IDs: `{"architect": "", "tech_lead": "", "qa_lead": "", "developer": ""}` (also accepts `roles` as alias) |
-| `evidence` | string | ❌ | Path to a file or document as proof of work for `next` |
+| `evidence` | string | ❌ | Path to a file or directory as proof of work for `next` |
 | `status` | string | ❌ | `approved` or `rejected` (required for `submit-review`) |
 | `comments` | string | ❌ | Optional feedback when using `submit-review` |
 | `target_stage` | number | ❌ | The integer stage to rollback to (required for `backtrack`) |

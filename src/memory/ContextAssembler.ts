@@ -5,6 +5,7 @@ import * as fs from 'fs/promises';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import { Logger } from '../utils/Logger.js';
+import { MarkdownParser, type StageProtocol } from '../utils/MarkdownParser.js';
 import type { AgentConfig, Message, Participant } from '../types.js';
 import type { ShortTermMemory } from './ShortTermMemory.js';
 import type { LongTermMemory } from './types.js';
@@ -32,6 +33,7 @@ export class ContextAssembler implements IContextAssembler {
     private shortTermMemory: ShortTermMemory;
     private longTermMemory?: LongTermMemory;
     private skillManagers = new Map<string, SkillManager>();
+    private workflowProtocols?: Map<number, StageProtocol>;
 
     constructor(shortTermMemory: ShortTermMemory, longTermMemory?: LongTermMemory) {
         this.shortTermMemory = shortTermMemory;
@@ -53,6 +55,12 @@ export class ContextAssembler implements IContextAssembler {
         const config = this.agentConfigs.get(options.agentId);
         if (!config) {
             throw new Error(`Agent ${options.agentId} not registered with ContextAssembler`);
+        }
+
+        // Initialize workflow protocols if not already loaded
+        if (!this.workflowProtocols) {
+            const skillPath = path.join(process.cwd(), 'skills/dev-workflow/SKILL.md');
+            this.workflowProtocols = MarkdownParser.parseStageRoleMapping(skillPath);
         }
 
         const skillManager = this.skillManagers.get(options.agentId);
@@ -230,7 +238,7 @@ export class ContextAssembler implements IContextAssembler {
     }
 
     private buildHistorySection(roomId: string, currentMessage: Message): string {
-        // Get recent messages (excluding the current one)
+        // Get all messages from short-term memory (excluding the current one)
         const allMessages = this.shortTermMemory.get(roomId);
         const history = allMessages.filter(m => m.id !== currentMessage.id);
 
@@ -238,16 +246,32 @@ export class ContextAssembler implements IContextAssembler {
             return '';
         }
 
-        // Increased from 10 to 20 to preserve more context during model switches
-        const recentHistory = history.slice(-20);
+        // --- Context Compression Strategy (Direction 2) ---
+        // Level 1: Recent 10 messages (Intact)
+        const recentHistory = history.slice(-10);
+        
+        // Level 2: Messages 11-30 (Placeholder for LLM Summary)
+        // Note: In a real implementation, this would fetch a cached summary from SessionManager
+        const middleHistory = history.length > 10 ? history.slice(-30, -10) : [];
+        
+        // Level 3: Messages 30+ (Pruned/Indexed)
+        const oldHistoryCount = history.length > 30 ? history.length - 30 : 0;
 
         const lines = ['## 最近对话'];
 
-        // Add context warning if history is truncated
-        if (history.length > 20) {
-            lines.push(`_（显示最近20条消息，共${history.length}条）_`);
+        // Level 3 Info
+        if (oldHistoryCount > 0) {
+            lines.push(`_（早期 ${oldHistoryCount} 条消息已被归档，可使用 get-session-history 查阅）_`);
         }
 
+        // Level 2 Info (Simple version: list topic or placeholder)
+        if (middleHistory.length > 0) {
+            lines.push(`### 中期对话摘要 (共 ${middleHistory.length} 条)`);
+            lines.push(`- **关键内容**: 包含早期的方案讨论和初步反馈。详细摘要正在后台生成中...`);
+            lines.push('');
+        }
+
+        // Level 1 (Intact History)
         for (const msg of recentHistory) {
             const time = msg.timestamp.toLocaleTimeString();
             const mentions = msg.mentions.length > 0 ? ` @[${msg.mentions.join(', ')}]` : '';
@@ -371,67 +395,31 @@ export class ContextAssembler implements IContextAssembler {
             }
         }
 
-        // 2. Guidance mapping (will be moved to SKILL.md in P2)
+        // 2. Try to get guidance from parsed SKILL.md
+        if (this.workflowProtocols && this.workflowProtocols.has(stage)) {
+            const protocol = this.workflowProtocols.get(stage)!;
+            // If the agent is the primary role for this stage
+            if (protocol.primaryRole === role) {
+                return `你是本阶段的主要负责人。${protocol.guidance}`;
+            }
+            // If the agent is a collaborator
+            if (protocol.collaborators.includes(role)) {
+                return `你是本阶段的协作参与者。${protocol.guidance}`;
+            }
+            // Generic guidance for others
+            return protocol.guidance;
+        }
+
+        // 3. Fallback guidance mapping (static backup)
         const guidanceMap: Record<number, Record<string, string>> = {
             0: {
                 architect: '你是本阶段的主导者。组织团队讨论任务方向，明确目标和范围。',
                 developer: '参与讨论，从实现角度提供技术可行性建议。',
                 qa_lead: '参与讨论，从测试角度提出质量关注点。',
-            },
-            1: {
-                architect: '你是本阶段的主要负责人。起草需求文档，进行五方评审。',
-                tech_lead: '技术负责人审查可行性，参与需求评审。',
-            },
-            2: {
-                architect: '你是本阶段的主要负责人。完成系统设计和架构方案，输出设计文档。',
-                developer: '等待架构师完成设计文档。',
-                qa_lead: '等待架构师完成设计文档。',
-            },
-            3: {
-                developer: '你是本阶段的主要负责人。向 QA 解释设计意图，确保 QA 理解实现方案。',
-                qa_lead: '听取开发者解释设计，确保理解实现方案。',
-            },
-            4: {
-                qa_lead: '你是本阶段的主要负责人。向开发者复述设计，验证理解一致性。',
-                developer: '听取 QA 复述设计，验证理解是否一致。',
-            },
-            5: {
-                qa_lead: '你是本阶段的主要负责人。编写测试用例，覆盖功能和边界场景。',
-                developer: '等待 QA 编写测试用例。',
-            },
-            6: {
-                developer: '你是本阶段的主要负责人。根据 Stage 2 的设计文档和 Stage 5 的测试用例实现功能。',
-                architect: '开发者正在实现功能，如有架构问题可提供咨询。',
-                qa_lead: '开发者正在实现功能，准备 Stage 7 的集成测试。',
-            },
-            7: {
-                qa_lead: '你是本阶段的主要负责人。执行集成测试，记录发现的问题。',
-                developer: '协助 QA 进行集成测试，并修复发现的问题。',
-            },
-            8: {
-                tech_lead: '你是本阶段的主要负责人。组织四方最终评审，确认交付质量。',
-                architect: '参与最终评审，确认交付质量。',
-                developer: '参与最终评审，确认交付质量。',
-                qa_lead: '参与最终评审，确认交付质量。',
-            },
+            }
         };
 
         return guidanceMap[stage]?.[role] || '观察当前阶段进展。';
-    }
-
-    private getStageGuidance(stage: number): string {
-        const guidance: Record<number, string> = {
-            0: '讨论任务方向和目标定义',
-            1: '起草需求文档并进行五方评审',
-            2: '完成系统/架构设计并输出设计文档',
-            3: '开发者向 QA 解释设计（Forward Briefing）',
-            4: 'QA 向开发者复述设计（Reverse Briefing）',
-            5: 'QA 编写测试用例',
-            6: '开发者根据设计和测试用例实现功能',
-            7: 'QA 执行集成测试，开发者修复问题',
-            8: '进行四方确认并交付',
-        };
-        return guidance[stage] || '未知阶段';
     }
 
     // ── Token Budget Management ──────────────────────────

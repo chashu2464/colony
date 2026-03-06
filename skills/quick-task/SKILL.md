@@ -1,3 +1,8 @@
+---
+name: quick-task
+description: A lightweight workflow for rapid iterations and small tasks.
+---
+
 # quick-task
 
 A lightweight workflow for rapid iterations and small tasks.

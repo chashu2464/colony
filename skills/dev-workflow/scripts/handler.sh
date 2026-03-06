@@ -26,6 +26,18 @@ STAGES=(
 # Notification Helper
 function get_next_actor_role() {
   local stage=$1
+  
+  # Try to use the new SSOT parser (Direction 1)
+  local script_path="scripts/parse-workflow-table.js"
+  if [ -f "$script_path" ]; then
+    local role=$(node "$script_path" | jq -r --arg stage "$stage" '.[$stage].primaryRole // empty')
+    if [ ! -z "$role" ] && [ "$role" != "null" ]; then
+      echo "$role"
+      return 0
+    fi
+  fi
+
+  # Fallback to hardcoded logic if parser fails or file missing
   case $stage in
     0|1|2) echo "architect" ;;
     3|6) echo "developer" ;;
@@ -53,7 +65,6 @@ function validate_assignments() {
   fi
   return 0
 }
-
 function notify_server() {
   local from=$1
   local to=$2
@@ -503,3 +514,5 @@ EOF
     exit 1
     ;;
 esac
+# TEST
+# get_next_actor_role 3
