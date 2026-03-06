@@ -25,14 +25,14 @@ const log = new Logger('ContextAssembler');
  * Estimates token count for text (rough approximation).
  */
 function estimateTokens(text: string): number {
-    return Math.ceil(text.length / 3.5);
+    // Increased safety factor for Chinese characters
+    return Math.ceil(text.length / 2.5);
 }
 
 export class ContextAssembler implements IContextAssembler {
     private agentConfigs = new Map<string, AgentConfig>();
     private shortTermMemory: ShortTermMemory;
     private longTermMemory?: LongTermMemory;
-    private skillManagers = new Map<string, SkillManager>();
     private workflowProtocols?: Map<number, StageProtocol>;
 
     constructor(shortTermMemory: ShortTermMemory, longTermMemory?: LongTermMemory) {
@@ -43,9 +43,8 @@ export class ContextAssembler implements IContextAssembler {
     /**
      * Register an agent's configuration.
      */
-    registerAgent(config: AgentConfig, skillManager: SkillManager): void {
+    registerAgent(config: AgentConfig, _skillManager: SkillManager): void {
         this.agentConfigs.set(config.id, config);
-        this.skillManagers.set(config.id, skillManager);
     }
 
     /**
@@ -63,7 +62,6 @@ export class ContextAssembler implements IContextAssembler {
             this.workflowProtocols = MarkdownParser.parseStageRoleMapping(skillPath);
         }
 
-        const skillManager = this.skillManagers.get(options.agentId);
         const chatRoom = options.chatRoom; // Get chatRoom from options
 
         // Build all sections
@@ -87,18 +85,7 @@ export class ContextAssembler implements IContextAssembler {
             });
         }
 
-        // 3. Skills (high priority)
-        if (skillManager) {
-            const skillBlock = skillManager.toPromptBlock();
-            if (skillBlock) {
-                sections.push({
-                    name: 'skills',
-                    content: skillBlock,
-                    priority: 85,
-                    tokenCount: 0,
-                });
-            }
-        }
+        // Note: Manual 'skills' section is removed as CLI handles native tool discovery via .claude/skills
 
         // 3.2. Workflow Stage (high priority, if enabled)
         if (options.includeWorkflow !== false) {
@@ -113,11 +100,11 @@ export class ContextAssembler implements IContextAssembler {
             }
         }
 
-        // 3.5. Participants (high priority, for agent awareness)
+        // 3.5. Participants (medium-high priority)
         sections.push({
             name: 'participants',
             content: this.buildParticipantsSection(chatRoom),
-            priority: 80, // High priority to ensure agent knows who is around
+            priority: 80,
             tokenCount: 0,
         });
 
@@ -129,20 +116,20 @@ export class ContextAssembler implements IContextAssembler {
             tokenCount: 0,
         });
 
-        // 5. Short-Term Context (medium priority, if enabled)
+        // 5. Short-Term Context (high priority - protected)
         if (options.includeHistory !== false) {
             const historyContent = this.buildHistorySection(options.roomId, options.currentMessage);
             if (historyContent) {
                 sections.push({
                     name: 'history',
                     content: historyContent,
-                    priority: 60,
+                    priority: 82, // Raised priority to protect history from truncation
                     tokenCount: 0,
                 });
             }
         }
 
-        // 5.5. Long-Term Memory (medium-high priority, if enabled)
+        // 5.5. Long-Term Memory (medium priority)
         if (options.includeLongTerm && this.longTermMemory) {
             const longTermContent = await this.buildLongTermSection(
                 options.currentMessage.content,
@@ -233,7 +220,7 @@ export class ContextAssembler implements IContextAssembler {
 
 ### 工作流程
 1. 理解当前消息
-2. 执行必要的工具调用（查阅文件、执行操作等）
+2. 执行必要的工具调用（如 \`read-file\`, \`run-command\` 等）
 3. **必须调用 send-message 发送回复** ← 永远不能省略这一步`;
     }
 

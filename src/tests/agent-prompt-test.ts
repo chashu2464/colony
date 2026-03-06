@@ -58,15 +58,12 @@ async function testAgentPrompt() {
     console.log('✓ Assembled prompt length:', prompt.length);
     
     const hasSkills = prompt.includes('可用技能 (Available Skills)');
-    console.log('✓ Contains skills section:', hasSkills);
+    console.log('✓ Skills section removed (as expected):', !hasSkills);
 
-    if (hasSkills) {
-        console.log('✓ Found skills:');
-        const lines = prompt.split('\n');
-        const skillLines = lines.filter(l => l.startsWith('### '));
-        skillLines.forEach(l => console.log('  -', l.substring(4)));
+    if (!hasSkills) {
+        console.log('✓ Prompt is now clean and relies on native CLI tool discovery.');
     } else {
-        console.error('✗ Skills section missing!');
+        console.error('✗ Redundant skills section still present!');
         process.exit(1);
     }
 
