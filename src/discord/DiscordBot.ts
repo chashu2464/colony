@@ -1,10 +1,11 @@
 // ── Colony: Discord Bot ──────────────────────────────────
 // Discord bot for Colony integration.
 
-import { Client, GatewayIntentBits, Message, TextChannel } from 'discord.js';
+import { Client, GatewayIntentBits, Message, TextChannel, ChannelType } from 'discord.js';
 import { Logger } from '../utils/Logger.js';
-import type { DiscordConfig, UserSession } from './types.js';
+import type { DiscordConfig, UserSession, MappingMeta } from './types.js';
 import type { Colony } from '../Colony.js';
+import type { ChannelSessionMapper } from './ChannelSessionMapper.js';
 
 const log = new Logger('DiscordBot');
 
@@ -12,13 +13,15 @@ export class DiscordBot {
     private client: Client;
     private config: DiscordConfig;
     private colony: Colony;
+    private mapper: ChannelSessionMapper;
     private userSessions = new Map<string, UserSession>();
     private ready = false;
     private bridge?: any; // Will be set by DiscordManager
 
-    constructor(config: DiscordConfig, colony: Colony) {
+    constructor(config: DiscordConfig, colony: Colony, mapper: ChannelSessionMapper) {
         this.config = config;
         this.colony = colony;
+        this.mapper = mapper;
 
         // Create Discord client with necessary intents
         this.client = new Client({
@@ -46,6 +49,10 @@ export class DiscordBot {
             await this.handleMessage(message);
         });
 
+        this.client.on('channelDelete', async (channel) => {
+            await this.handleChannelDelete(channel);
+        });
+
         this.client.on('error', (error) => {
             log.error('Discord client error:', error);
         });
@@ -71,7 +78,21 @@ export class DiscordBot {
             return;
         }
 
-        // Handle regular messages (if user is in a session)
+        // Handle regular messages
+        
+        // 1. Check if channel is bound to a session
+        const mappedSessionId = this.mapper.getSessionByChannel(message.channelId);
+        if (mappedSessionId) {
+            await this.forwardToColony(message, {
+                userId: message.author.id,
+                sessionId: mappedSessionId,
+                channelId: message.channelId,
+                joinedAt: new Date(), // Mapped channels are auto-joined
+            });
+            return;
+        }
+
+        // 2. Fallback to user session (legacy)
         const userSession = this.userSessions.get(message.author.id);
         if (userSession?.sessionId) {
             await this.forwardToColony(message, userSession);
@@ -197,15 +218,52 @@ export class DiscordBot {
 
         const sessionId = this.colony.createSession(name, agentIds, workingDir);
         const room = this.colony.chatRoomManager.getRoom(sessionId);
+        const actualAgents = room?.getInfo().participants.filter(p => p.type === 'agent').map(p => p.name) || [];
 
-        await message.reply(
-            `✅ Session created\n` +
-            `ID: \`${sessionId}\`\n` +
-            `Name: ${name}\n` +
-            `Agents: ${room?.getInfo().participants.filter(p => p.type === 'agent').map(p => p.name).join(', ')}\n` +
-            (workingDir ? `Working Dir: \`${workingDir}\`\n` : '') +
-            `\nUse \`${this.config.bot.prefix} join ${name}\` to join the session.`
-        );
+        let discordMsg = `✅ Session created: **${name}** (\`${sessionId}\`)\n` +
+                        `Agents: ${actualAgents.join(', ')}\n` +
+                        (workingDir ? `Working Dir: \`${workingDir}\`\n` : '');
+
+        // Try to create Discord channel if configured
+        const guildId = this.config.guild?.id || message.guildId;
+        if (guildId) {
+            try {
+                const guild = await this.client.guilds.fetch(guildId);
+                const categoryId = this.config.guild?.sessionCategory;
+
+                // Slugify name for channel name
+                const channelName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+                
+                // Format topic
+                const topic = `🤖 Colony Session | agents: ${actualAgents.join(', ')} | id: ${sessionId}${workingDir ? ` | dir: ${workingDir}` : ''}`;
+
+                const channel = await guild.channels.create({
+                    name: channelName,
+                    type: ChannelType.GuildText,
+                    parent: categoryId,
+                    topic: topic,
+                    reason: `Colony Session creation: ${name}`
+                });
+
+                // Bind mapping
+                await this.mapper.bind(channel.id, sessionId, {
+                    sessionName: name,
+                    guildId: guild.id,
+                    createdAt: new Date().toISOString()
+                });
+
+                discordMsg += `\n🔗 **Discord Channel created:** <#${channel.id}>\n` +
+                              `Users in this channel can chat directly with agents.`;
+            } catch (error) {
+                log.error('Failed to create Discord channel:', error);
+                discordMsg += `\n⚠️ Failed to create Discord channel: ${(error as Error).message}\n` +
+                              `Use \`${this.config.bot.prefix} join ${name}\` to join manually.`;
+            }
+        } else {
+            discordMsg += `\nUse \`${this.config.bot.prefix} join ${name}\` to join the session.`;
+        }
+
+        await message.reply(discordMsg);
     }
 
     /**
@@ -448,6 +506,13 @@ export class DiscordBot {
                     }
                 }
 
+                // Unbind mapping
+                const channelId = this.mapper.getChannelBySession(sessionId);
+                if (channelId) {
+                    await this.mapper.unbind(channelId);
+                    log.info(`Unbound channel ${channelId} for deleted session ${sessionId}`);
+                }
+
                 await message.reply(`✅ Session deleted: **${roomName}** (\`${sessionId}\`)`);
             } else {
                 await message.reply(`❌ Failed to delete session: \`${sessionId}\``);
@@ -480,6 +545,30 @@ export class DiscordBot {
             `After joining a session, send messages directly to chat with agents.\n` +
             `Use \`@agent-name\` to mention specific agents.`
         );
+    }
+
+    /**
+     * Handle Discord channel deletion.
+     */
+    private async handleChannelDelete(channel: any): Promise<void> {
+        const channelId = channel.id;
+        const sessionId = this.mapper.getSessionByChannel(channelId);
+
+        if (sessionId) {
+            log.info(`Channel ${channelId} deleted. Triggering cascade deletion for session ${sessionId}`);
+            
+            try {
+                // Delete the session from Colony
+                await this.colony.chatRoomManager.deleteRoom(sessionId);
+                
+                // Unbind the mapping
+                await this.mapper.unbind(channelId);
+                
+                log.info(`Successfully deleted session ${sessionId} after channel ${channelId} was deleted.`);
+            } catch (error) {
+                log.error(`Failed to delete session ${sessionId} during channel ${channelId} deletion:`, error);
+            }
+        }
     }
 
     /**

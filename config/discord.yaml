@@ -7,6 +7,14 @@ bot:
   # Command prefix
   prefix: "/colony"
 
+# Guild/Server configuration (required for auto-channel creation)
+guild:
+  # Discord Server ID
+  # id: "1234567890"
+  
+  # Category ID where session channels will be created (optional)
+  # sessionCategory: "1234567891"
+
 # Channel configuration (optional)
 channels:
   # Default notification channel ID

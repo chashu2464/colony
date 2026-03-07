@@ -6,6 +6,10 @@ export interface DiscordConfig {
         token: string;
         prefix: string;
     };
+    guild?: {
+        id: string;               // Guild ID (required for channel creation)
+        sessionCategory?: string; // Category ID where session channels will be created
+    };
     channels?: {
         notifications?: string;
         sessions?: Record<string, string>;
@@ -19,6 +23,20 @@ export interface DiscordConfig {
         allowedRoles?: string[];
         allowedUsers?: string[];
     };
+}
+
+export interface MappingMeta {
+    sessionName: string;
+    guildId: string;
+    createdAt: string; // ISO 8601
+}
+
+export interface MappingRecord {
+    channelId: string;
+    sessionId: string;
+    sessionName: string;
+    guildId: string;
+    createdAt: string;
 }
 
 export interface DiscordCommand {

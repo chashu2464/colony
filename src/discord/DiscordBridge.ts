@@ -5,17 +5,19 @@ import { Logger } from '../utils/Logger.js';
 import type { DiscordBot } from './DiscordBot.js';
 import type { Colony } from '../Colony.js';
 import type { Message } from '../types.js';
+import type { ChannelSessionMapper } from './ChannelSessionMapper.js';
 
 const log = new Logger('DiscordBridge');
 
 export class DiscordBridge {
     private bot: DiscordBot;
     private colony: Colony;
-    private sessionChannels = new Map<string, string>(); // sessionId -> channelId
+    private mapper: ChannelSessionMapper;
 
-    constructor(bot: DiscordBot, colony: Colony) {
+    constructor(bot: DiscordBot, colony: Colony, mapper: ChannelSessionMapper) {
         this.bot = bot;
         this.colony = colony;
+        this.mapper = mapper;
 
         this.setupColonyListeners();
     }
@@ -47,7 +49,7 @@ export class DiscordBridge {
         }
 
         // Find Discord channel for this session
-        const channelId = this.sessionChannels.get(message.roomId);
+        const channelId = this.mapper.getChannelBySession(message.roomId);
         if (channelId) {
             // Send to mapped channel
             const formatted = this.formatMessage(message);
@@ -74,21 +76,5 @@ export class DiscordBridge {
 
         // Format with Discord markdown
         return `💬 **${sender}**:\n${content}`;
-    }
-
-    /**
-     * Map a session to a Discord channel.
-     */
-    mapSessionToChannel(sessionId: string, channelId: string): void {
-        this.sessionChannels.set(sessionId, channelId);
-        log.info(`Mapped session ${sessionId} to Discord channel ${channelId}`);
-    }
-
-    /**
-     * Unmap a session from Discord channel.
-     */
-    unmapSession(sessionId: string): void {
-        this.sessionChannels.delete(sessionId);
-        log.info(`Unmapped session ${sessionId} from Discord`);
     }
 }

@@ -7,6 +7,7 @@ import { Logger } from '../utils/Logger.js';
 import { DiscordBot } from './DiscordBot.js';
 import { DiscordBridge } from './DiscordBridge.js';
 import { NotificationManager } from './NotificationManager.js';
+import { ChannelSessionMapper } from './ChannelSessionMapper.js';
 import type { Colony } from '../Colony.js';
 import type { DiscordConfig } from './types.js';
 
@@ -16,6 +17,7 @@ export class DiscordManager {
     private bot: DiscordBot;
     private bridge: DiscordBridge;
     private notifications: NotificationManager;
+    private mapper: ChannelSessionMapper;
     private config: DiscordConfig;
 
     constructor(colony: Colony, configPath?: string) {
@@ -24,8 +26,9 @@ export class DiscordManager {
         this.config = this.loadConfig(path);
 
         // Initialize components
-        this.bot = new DiscordBot(this.config, colony);
-        this.bridge = new DiscordBridge(this.bot, colony);
+        this.mapper = new ChannelSessionMapper();
+        this.bot = new DiscordBot(this.config, colony, this.mapper);
+        this.bridge = new DiscordBridge(this.bot, colony, this.mapper);
         this.notifications = new NotificationManager(this.bot, this.config);
 
         log.info('Discord manager initialized');
@@ -61,6 +64,7 @@ export class DiscordManager {
      */
     async start(): Promise<void> {
         log.info('Starting Discord integration...');
+        await this.mapper.load();
         await this.bot.start();
         log.info('Discord integration started');
     }
@@ -93,5 +97,12 @@ export class DiscordManager {
      */
     getBot(): DiscordBot {
         return this.bot;
+    }
+
+    /**
+     * Get mapper.
+     */
+    getMapper(): ChannelSessionMapper {
+        return this.mapper;
     }
 }
