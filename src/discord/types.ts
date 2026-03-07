@@ -9,6 +9,8 @@ export interface DiscordConfig {
     guild?: {
         id: string;               // Guild ID (required for channel creation)
         sessionCategory?: string; // Category ID where session channels will be created
+        autoCreateOnChannelCreate?: boolean; // Direction B: Automatically create session when channel is created
+        defaultAgents?: string[];            // Direction B: Default agents if topic parsing fails
     };
     channels?: {
         notifications?: string;

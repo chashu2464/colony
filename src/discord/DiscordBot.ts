@@ -53,6 +53,10 @@ export class DiscordBot {
             await this.handleChannelDelete(channel);
         });
 
+        this.client.on('channelCreate', async (channel) => {
+            await this.handleChannelCreate(channel);
+        });
+
         this.client.on('error', (error) => {
             log.error('Discord client error:', error);
         });
@@ -581,6 +585,97 @@ export class DiscordBot {
                 log.error(`Failed to delete session ${sessionId} during channel ${channelId} deletion:`, error);
             }
         }
+    }
+
+    /**
+     * Handle Discord channel creation (Direction B).
+     */
+    private async handleChannelCreate(channel: any): Promise<void> {
+        // 1. Filter only Guild Text channels
+        if (channel.type !== ChannelType.GuildText) return;
+
+        const textChannel = channel as TextChannel;
+
+        // 2. Check if auto-creation is enabled and in target category
+        const categoryId = this.config.guild?.sessionCategory;
+        const autoCreate = this.config.guild?.autoCreateOnChannelCreate === true;
+
+        if (!autoCreate || !categoryId || textChannel.parentId !== categoryId) {
+            return;
+        }
+
+        // 3. Re-entry prevention: check if already bound (Direction A creates channel then binds)
+        if (this.mapper.getSessionByChannel(textChannel.id)) {
+            log.debug(`Channel ${textChannel.id} already mapped, skipping auto-create.`);
+            return;
+        }
+
+        log.info(`New channel detected in session category: "${textChannel.name}" (${textChannel.id}). Triggering auto-creation.`);
+
+        try {
+            // 4. Parse agents from topic
+            let agentIds = this.parseAgentsFromTopic(textChannel.topic);
+            if (!agentIds) {
+                agentIds = this.config.guild?.defaultAgents;
+            }
+
+            // 5. Create Colony session
+            // Discord channel name is already slugified, use it as session name
+            const sessionName = textChannel.name;
+            const sessionId = this.colony.createSession(sessionName, agentIds);
+            
+            log.info(`Auto-created session "${sessionName}" (${sessionId}) for channel ${textChannel.id}`);
+
+            // 6. Bind mapping
+            await this.mapper.bind(textChannel.id, sessionId, {
+                sessionName,
+                guildId: textChannel.guildId,
+                createdAt: new Date().toISOString()
+            });
+
+            // 7. Update topic with sessionId
+            const room = this.colony.chatRoomManager.getRoom(sessionId);
+            const actualAgents = room?.getInfo().participants.filter(p => p.type === 'agent').map(p => p.name) || [];
+            
+            const idSuffix = ` | id: ${sessionId}`;
+            let newTopic = textChannel.topic || `🤖 Colony Session | agents: ${actualAgents.join(', ')}`;
+            
+            if (!newTopic.includes(idSuffix)) {
+                newTopic += idSuffix;
+                await textChannel.setTopic(newTopic).catch(err => 
+                    log.warn(`Failed to update topic for channel ${textChannel.id}: ${err.message}`)
+                );
+            }
+
+            // 8. Send welcome message
+            await textChannel.send(
+                `✅ **Colony Session Joined**\n` +
+                `This channel is now bound to session: **${sessionName}**\n` +
+                `Agents: ${actualAgents.join(', ')}\n` +
+                `ID: \`${sessionId}\`\n\n` +
+                `*You can now chat directly with the agents in this channel.*`
+            ).catch(err => log.warn(`Failed to send welcome message to ${textChannel.id}: ${err.message}`));
+
+        } catch (error) {
+            log.error(`Error during auto-creation for channel ${textChannel.id}:`, error);
+        }
+    }
+
+    /**
+     * Parse agents from topic string.
+     * Format: "agents: architect, developer" or "agents: architect"
+     */
+    private parseAgentsFromTopic(topic: string | null): string[] | undefined {
+        if (!topic) return undefined;
+
+        // Match "agents: agent1, agent2" (case insensitive)
+        const match = topic.match(/agents:\s*([^|]+)/i);
+        if (match && match[1]) {
+            const agents = match[1].split(',').map(s => s.trim()).filter(Boolean);
+            return agents.length > 0 ? agents : undefined;
+        }
+
+        return undefined;
     }
 
     /**

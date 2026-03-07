@@ -15,6 +15,14 @@ guild:
   # Category ID where session channels will be created (optional)
   # sessionCategory: "1234567891"
 
+  # Direction B: Automatically create Colony Session when a Discord Channel is created
+  # autoCreateOnChannelCreate: true
+
+  # Default agents to load if not specified in channel topic (Direction B)
+  # defaultAgents:
+  #   - architect
+  #   - developer
+
 # Channel configuration (optional)
 channels:
   # Default notification channel ID
