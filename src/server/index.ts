@@ -100,7 +100,9 @@ export function createColonyServer(options: ServerOptions) {
             res.status(400).json({ error: 'name is required' });
             return;
         }
-        const room = colony.chatRoomManager.createRoom(name, agentIds, workingDir);
+        // Use colony.createSession() so Discord channel sync hook fires for Web-created sessions.
+        const sessionId = colony.createSession(name, agentIds, workingDir);
+        const room = colony.chatRoomManager.getRoom(sessionId)!;
         res.json({ session: room.getInfo() });
     });
 
