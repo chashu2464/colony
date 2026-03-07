@@ -17,6 +17,7 @@ import { logHealth, getHealthStatus } from '../session/ContextHealthBar.js';
 import { SessionSealer, DEFAULT_SEAL_CONFIG } from '../session/SessionSealer.js';
 import { DigestGenerator } from '../session/DigestGenerator.js';
 import { SessionBootstrap } from '../session/SessionBootstrap.js';
+import { MemoryClassifier } from '../memory/MemoryClassifier.js';
 import type {
     AgentConfig,
     AgentStatus,
@@ -53,6 +54,7 @@ export class Agent {
     private contextAssembler: ContextAssembler;
     private shortTermMemory: ShortTermMemory;
     private chatRoomManager: ChatRoomManager;
+    private memoryClassifier = new MemoryClassifier();
 
     // Track active invocations per room
     private activeInvocations = new Map<string, AbortController>();
@@ -462,25 +464,56 @@ export class Agent {
             return; // Long-term memory not enabled
         }
 
+        // Run classification and storage in background
+        Promise.resolve().then(async () => {
+            try {
+                // Classify the memory
+                const classification = this.memoryClassifier.classify(message, response);
+
+                // Combine user message and agent response for context
+                const conversationContext = `用户 (${message.sender.name}): ${message.content}\n\n${this.name}: ${response}`;
+
+                // Get current workflow stage if in workflow
+                const workflowStage = await this.getCurrentWorkflowStage(message.roomId);
+
+                await longTermMemory.retain({
+                    content: conversationContext,
+                    context: message,
+                    metadata: {
+                        type: 'conversation' as const,
+                        subtype: classification.subtype,
+                        importance: classification.importance,
+                        agentId: this.id,
+                        roomId: message.roomId,
+                        tags: [this.name, message.sender.name],
+                        participants: [message.sender.id, this.id],
+                        workflowStage,
+                    },
+                    timestamp: new Date(),
+                });
+
+                log.debug(`[${this.name}] Stored conversation to long-term memory (subtype: ${classification.subtype}, importance: ${classification.importance})`);
+            } catch (error) {
+                log.error(`[${this.name}] Failed to store to long-term memory:`, error);
+            }
+        });
+    }
+
+    /**
+     * Helper to get current workflow stage for a room.
+     */
+    private async getCurrentWorkflowStage(roomId: string): Promise<number | undefined> {
         try {
-            // Combine user message and agent response for context
-            const conversationContext = `用户 (${message.sender.name}): ${message.content}\n\n${this.name}: ${response}`;
+            const workflowDir = path.join(process.cwd(), '.data/workflows');
+            const workflowFile = path.join(workflowDir, `${roomId}.json`);
+            if (!fs.existsSync(workflowFile)) return undefined;
 
-            await longTermMemory.retain({
-                content: conversationContext,
-                context: message,
-                metadata: {
-                    type: 'conversation' as const,
-                    agentId: this.id,
-                    roomId: message.roomId,
-                    tags: [this.name, message.sender.name],
-                },
-                timestamp: new Date(),
-            });
-
-            log.debug(`[${this.name}] Stored conversation to long-term memory`);
+            const data = fs.readFileSync(workflowFile, 'utf8');
+            const workflow = JSON.parse(data);
+            return workflow.current_stage;
         } catch (error) {
-            log.error(`[${this.name}] Failed to store to long-term memory:`, error);
+            log.warn(`Failed to read workflow stage for room ${roomId}:`, error);
+            return undefined;
         }
     }
 

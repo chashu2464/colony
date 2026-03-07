@@ -59,3 +59,56 @@
 - **Given**: 100 iterations of `SKILL.md` parsing.
 - **When**: Time is measured using `console.time`.
 - **Then**: The average parsing time is **< 5ms**, and the total prompt assembly overhead (excluding LLM calls) is **< 50ms**.
+
+---
+
+## Direction 3: Memory System Enhancement
+
+### Test Case 10: Intelligent Memory Classification (Rules)
+**Goal**: Verify `MemoryClassifier` correctly identifies subtypes and assigns importance.
+- **Given**: Diverse message strings (e.g., "我决定采用方案A", "@developer 请开始执行测试", "发现一个严重的bug").
+- **When**: `MemoryClassifier.classify` is invoked.
+- **Then**: 
+    - "决定采用方案A" → `subtype: 'decision'`, `importance: 5`.
+    - "@developer 执行测试" → `subtype: 'task'`, `importance: 4`.
+    - "严重的bug" → `subtype: 'question'`, `importance: 3`.
+    - "随便聊聊" → `subtype: 'discussion'`, `importance: 2`.
+
+### Test Case 11: Structured Metadata Storage & Workflow Sync
+**Goal**: Verify `Agent.ts` correctly populates metadata, including workflow stage.
+- **Given**: The agent is currently in `Stage 2 (Design)` of a workflow.
+- **When**: `storeToLongTermMemory` is called after a response.
+- **Then**: The metadata passed to `longTermMemory.retain` includes:
+    - `workflowStage: 2`
+    - `participants`: [senderId, agentId]
+    - `tags`: [agentName, senderName]
+    - `subtype` and `importance` from the classifier.
+
+### Test Case 12: Joint Context Retrieval & Query Cleaning
+**Goal**: Verify retrieval uses cleaned history as query context.
+- **Given**: A history where the user mentioned a key requirement 2 messages ago, and the current message is "实现它".
+- **When**: `ContextAssembler.buildLongTermSection` is called.
+- **Then**:
+    - `cleanMessageForQuery` removes code blocks and tool JSON from context.
+    - `contextQuery` contains the previous requirement text.
+    - The retrieved memories are relevant to that requirement.
+
+### Test Case 13: Enhanced Filtering (Recency & Importance)
+**Goal**: Verify `Mem0LongTermMemory.recall` correctly translates filters to Mem0 syntax.
+- **Given**: Retrieval filters: `importance: { min: 3 }`, `timeWindow: last 7 days`.
+- **When**: `recall` is called.
+- **Then**: The bridge call to `mem0_bridge.py` includes:
+    - `filters['metadata.importance'] = { "$gte": 3 }`
+    - `filters['created_at']` with correct ISO date strings.
+
+### Test Case 14: Backward Compatibility & Legacy Data
+**Goal**: Ensure the system handles memories without the new metadata schema.
+- **Given**: Legacy memories in the vector DB without `metadata.importance`.
+- **When**: A search with `importance: { min: 3 }` is performed.
+- **Then**: The system does not crash and returns existing relevant memories (depending on how Mem0 handles missing fields, e.g., default value or exclusion).
+
+### Test Case 15: Asynchronous Storage & Non-Blocking Response
+**Goal**: Confirm that storing memory doesn't delay the agent's reply.
+- **Given**: An active chat room.
+- **When**: Agent sends a response.
+- **Then**: The response is delivered immediately; the `longTermMemory.retain` call happens in a microtask (`Promise.resolve().then()`), as verified by tracing execution order.

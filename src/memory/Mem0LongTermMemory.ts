@@ -243,11 +243,8 @@ export class Mem0LongTermMemory implements LongTermMemory {
         const params: Record<string, unknown> = {
             messages: content.content,
             metadata: {
-                type: content.metadata?.type || 'conversation',
-                importance: content.metadata?.importance || 0.5,
-                tags: content.metadata?.tags || [],
+                ...content.metadata,
                 timestamp: content.timestamp.toISOString(),
-                roomId: content.metadata?.roomId,
             }
         };
 
@@ -287,13 +284,46 @@ export class Mem0LongTermMemory implements LongTermMemory {
         await this.ensureInitialized();
         log.info(`Recalling memories for query: "${query.substring(0, 50)}..."`);
 
+        // Build Mem0 filters
+        const mem0Filters: Record<string, any> = {};
+
+        if (filters) {
+            // Time window filter
+            if (filters.timeWindow) {
+                mem0Filters.created_at = {
+                    $gte: filters.timeWindow.start.toISOString(),
+                    $lte: filters.timeWindow.end.toISOString(),
+                };
+            }
+
+            // Importance filter
+            if (filters.importance) {
+                mem0Filters['metadata.importance'] = {
+                    $gte: filters.importance.min,
+                };
+            }
+
+            // Subtype filter
+            if (filters.subtypes && filters.subtypes.length > 0) {
+                mem0Filters['metadata.subtype'] = {
+                    $in: filters.subtypes,
+                };
+            }
+
+            // Workflow stage filter
+            if (filters.workflowStage !== undefined) {
+                mem0Filters['metadata.workflowStage'] = filters.workflowStage;
+            }
+        }
+
         const params: Record<string, unknown> = {
             query,
             limit: limit || 5,
-            rerank: true
+            rerank: true,
+            filters: mem0Filters
         };
 
-        // Add filters (Mem0 requires at least one ID)
+        // Add core identifiers (Mem0 requires at least one ID)
         if (filters?.agentId) {
             params.agent_id = filters.agentId;
         }
@@ -318,12 +348,15 @@ export class Mem0LongTermMemory implements LongTermMemory {
             content: r.memory,
             metadata: {
                 type: r.metadata.type as MemoryMetadata['type'],
+                subtype: r.metadata.subtype as MemoryMetadata['subtype'],
                 importance: r.metadata.importance as number,
                 tags: r.metadata.tags as string[],
                 agentId: r.metadata.agentId as string,
                 roomId: r.metadata.roomId as string,
+                participants: r.metadata.participants as string[],
+                workflowStage: r.metadata.workflowStage as number,
             },
-            timestamp: new Date(r.metadata.timestamp as string)
+            timestamp: new Date(r.metadata.timestamp as string || Date.now())
         }));
 
         log.info(`Recalled ${memories.length} memories`);

@@ -80,10 +80,27 @@ export interface LongTermMemory {
 }
 
 export interface MemoryFilters {
+    /** Agent ID filter */
     agentId?: string;
+    /** Room ID filter (mapped to run_id in Mem0) */
     roomId?: string;
+    /** User ID filter */
     userId?: string;
-    type?: 'conversation' | 'decision' | 'code' | 'knowledge';
+    /** Memory type filter */
+    type?: 'conversation' | 'decision' | 'code' | 'knowledge' | 'task';
+    /** Time window filter (Phase 2) */
+    timeWindow?: {
+        start: Date;
+        end: Date;
+    };
+    /** Minimum importance filter (Phase 2) */
+    importance?: {
+        min: number;
+    };
+    /** Subtype filter (Phase 2) */
+    subtypes?: string[];
+    /** Workflow stage filter (Phase 2) */
+    workflowStage?: number;
 }
 
 export interface MemoryContent {
@@ -95,11 +112,23 @@ export interface MemoryContent {
 }
 
 export interface MemoryMetadata {
-    type?: 'conversation' | 'decision' | 'code' | 'knowledge';
-    importance?: number; // 0-1
-    tags?: string[];
+    type?: 'conversation' | 'decision' | 'code' | 'knowledge' | 'task';
+    /** Conversation subtype (e.g., decision, discussion, task, question) */
+    subtype?: 'decision' | 'discussion' | 'task' | 'question';
+    /** Importance score, recommended 1 (low) to 5 (critical) */
+    importance?: number;
+    /** Agent ID */
     agentId?: string;
+    /** Room ID */
     roomId?: string;
+    /** IDs of participants involved in this conversation */
+    participants?: string[];
+    /** Associated workflow stage index (0-9) */
+    workflowStage?: number;
+    /** IDs of related memories for context chaining */
+    relatedMemoryIds?: string[];
+    /** Categorization tags */
+    tags?: string[];
 }
 
 export interface ContextLineage {

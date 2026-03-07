@@ -289,10 +289,29 @@ export class ContextAssembler implements IContextAssembler {
         }
 
         try {
-            // Recall relevant memories from long-term storage
-            const memories = await this.longTermMemory.recall(query, 5, {
+            // --- Enhanced Query Context (Phase 2) ---
+            // Get recent 3 messages for semantic context
+            const recentMessages = this.shortTermMemory.get(roomId).slice(-3);
+            
+            // Clean content to remove noise (JSON, code blocks)
+            const cleanedCurrent = this.cleanMessageForQuery(query);
+            const cleanedRecent = recentMessages.map(m => this.cleanMessageForQuery(m.content));
+            
+            // Combine for a richer query
+            const contextQuery = [...cleanedRecent, cleanedCurrent].join(' ').trim();
+
+            // --- Enhanced Filters (Phase 2) ---
+            const workflowStage = await this.getCurrentWorkflowStage(roomId);
+            
+            const memories = await this.longTermMemory.recall(contextQuery, 5, {
                 agentId,
-                roomId
+                roomId,
+                timeWindow: {
+                    start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+                    end: new Date(),
+                },
+                importance: { min: 3 }, // Focus on important info
+                workflowStage, // Prioritize same workflow stage
             });
 
             if (memories.length === 0) {
@@ -312,11 +331,47 @@ export class ContextAssembler implements IContextAssembler {
                 lines.push('');
             }
 
-            log.info(`Retrieved ${memories.length} long-term memories for query: "${query.substring(0, 50)}..."`);
+            log.info(`Retrieved ${memories.length} enhanced memories for context: "${contextQuery.substring(0, 50)}..."`);
             return lines.join('\n');
         } catch (error) {
             log.error('Failed to retrieve long-term memories:', error);
             return '';
+        }
+    }
+
+    /**
+     * Remove noise from message content for cleaner vector search.
+     */
+    private cleanMessageForQuery(content: string): string {
+        return content
+            .replace(/```[\s\S]*?```/g, '') // Remove code blocks
+            // Remove JSON-like structures that look like tool calls or large objects
+            // Handles both normal quotes and escaped quotes from logged JSON
+            .replace(/\{[\s\S]*?(\\?["'])(tool|skill|action|command)(\\?["']):[\s\S]*?\}/g, '')
+            .replace(/\{[\s\S]*?\}/g, (match) => {
+                // If it's a significant JSON-like block (> 20 chars), it's likely noise
+                return match.length > 20 ? '' : match;
+            })
+            .substring(0, 500); // Truncate to keep query concise
+    }
+
+    /**
+     * Helper to get current workflow stage for a room.
+     */
+    private async getCurrentWorkflowStage(roomId: string): Promise<number | undefined> {
+        try {
+            const workflowDir = path.join(process.cwd(), '.data/workflows');
+            const workflowFile = path.join(workflowDir, `${roomId}.json`);
+            
+            if (!existsSync(workflowFile)) {
+                return undefined;
+            }
+
+            const data = await fs.readFile(workflowFile, 'utf8');
+            const workflow = JSON.parse(data);
+            return workflow.current_stage;
+        } catch (error) {
+            return undefined;
         }
     }
 
