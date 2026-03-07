@@ -4,7 +4,8 @@
 # Uses jq to manage session-specific workflow state according to docs/SKILL_DESIGN.md.
 # Phase 6 upgrade: added prev action, robust evidence validation, tech_lead role enforcement, and jq input verification.
 
-WORKFLOW_DIR=".data/workflows"
+PROJ_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+WORKFLOW_DIR="$PROJ_ROOT/.data/workflows"
 mkdir -p "$WORKFLOW_DIR"
 
 ROOM_ID="${COLONY_ROOM_ID:-default}"
