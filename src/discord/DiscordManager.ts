@@ -19,11 +19,13 @@ export class DiscordManager {
     private notifications: NotificationManager;
     private mapper: ChannelSessionMapper;
     private config: DiscordConfig;
+    private colony: Colony;
 
     constructor(colony: Colony, configPath?: string) {
         // Load configuration
         const path = configPath || 'config/discord.yaml';
         this.config = this.loadConfig(path);
+        this.colony = colony;
 
         // Initialize components
         this.mapper = new ChannelSessionMapper();
@@ -65,6 +67,14 @@ export class DiscordManager {
     async start(): Promise<void> {
         log.info('Starting Discord integration...');
         await this.mapper.load();
+
+        // Prune orphan mappings (sessions that no longer exist)
+        const existingIds = new Set(this.colony.chatRoomManager.listRooms().map((r: any) => r.id as string));
+        const pruned = await this.mapper.pruneOrphans(existingIds);
+        if (pruned > 0) {
+            log.warn(`Pruned ${pruned} orphan channel mappings on startup`);
+        }
+
         await this.bot.start();
         log.info('Discord integration started');
     }

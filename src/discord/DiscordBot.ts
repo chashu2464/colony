@@ -509,6 +509,18 @@ export class DiscordBot {
                 // Unbind mapping
                 const channelId = this.mapper.getChannelBySession(sessionId);
                 if (channelId) {
+                    // Try to delete Discord channel before unbinding
+                    try {
+                        const ch = await this.client.channels.fetch(channelId).catch(() => null);
+                        if (ch) {
+                            await ch.delete('Colony Session deleted').catch(err => 
+                                log.warn(`Failed to delete Discord channel ${channelId}: ${err.message}`)
+                            );
+                        }
+                    } catch (error) {
+                        log.warn(`Error during channel cleanup: ${(error as Error).message}`);
+                    }
+
                     await this.mapper.unbind(channelId);
                     log.info(`Unbound channel ${channelId} for deleted session ${sessionId}`);
                 }

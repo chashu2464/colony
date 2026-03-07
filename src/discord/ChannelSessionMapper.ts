@@ -84,6 +84,18 @@ export class ChannelSessionMapper {
     }
 
     /**
+     * Prune mappings for sessions that no longer exist.
+     */
+    async pruneOrphans(existingSessionIds: Set<string>): Promise<number> {
+        const orphans = this.mappings.filter(m => !existingSessionIds.has(m.sessionId));
+        const count = orphans.length;
+        for (const orphan of orphans) {
+            await this.unbind(orphan.channelId);
+        }
+        return count;
+    }
+
+    /**
      * Load mappings from disk.
      */
     async load(): Promise<void> {
