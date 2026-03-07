@@ -112,7 +112,11 @@ function do_git_commit() {
   local stage_name=$2
   local msg=$3
   if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+    # Check both tracked changes AND untracked files
+    local has_changes=false
+    if ! git diff-index --quiet HEAD -- 2>/dev/null; then has_changes=true; fi
+    if [ -n "$(git ls-files --others --exclude-standard 2>/dev/null)" ]; then has_changes=true; fi
+    if [ "$has_changes" = true ]; then
       git add . 2>/dev/null
       if ! git commit -m "chore(workflow): Advance to stage $stage_num - $stage_name" -m "Notes: $msg" --no-verify >/dev/null 2>&1; then
         echo "Warning: git commit failed (stage $stage_num), continuing without commit" >&2
@@ -264,6 +268,15 @@ EOF
         fi
         ;;
       8)
+        # Stage 8 gate: working tree must be clean (no untracked or modified files)
+        if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+          UNTRACKED=$(git ls-files --others --exclude-standard 2>/dev/null)
+          UNSTAGED=$(git status --porcelain 2>/dev/null)
+          if [ -n "$UNTRACKED" ] || [ -n "$UNSTAGED" ]; then
+            echo "{\"error\": \"Stage 8 (Go-Live Review) gate: working tree is not clean. Please commit or stash all changes before proceeding to Go-Live Review.\nUncommitted files:\n$(git status --short 2>/dev/null)\"}"
+            exit 1
+          fi
+        fi
         # Stage 8 requires approval from the assigned tech_lead, falling back to developer
         TL_ACTOR=$(jq -r '.assignments["tech_lead"] // .roles["tech_lead"] // empty' "$WORKFLOW_FILE")
         if [ -z "$TL_ACTOR" ] || [ "$TL_ACTOR" == "null" ]; then
