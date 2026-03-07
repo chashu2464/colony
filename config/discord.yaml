@@ -10,13 +10,13 @@ bot:
 # Guild/Server configuration (required for auto-channel creation)
 guild:
   # Discord Server ID
-  # id: "1234567890"
+  id: ${DISCORD_GROUP_ID}
   
   # Category ID where session channels will be created (optional)
-  # sessionCategory: "1234567891"
+  sessionCategory: ${DISCORD_SESSION_CATEGORY}
 
   # Direction B: Automatically create Colony Session when a Discord Channel is created
-  # autoCreateOnChannelCreate: true
+  autoCreateOnChannelCreate: true
 
   # Default agents to load if not specified in channel topic (Direction B)
   # defaultAgents:

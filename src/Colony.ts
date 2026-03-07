@@ -147,6 +147,16 @@ export class Colony {
      */
     createSession(name: string, agentIds?: string[], workingDir?: string): string {
         const room = this.chatRoomManager.createRoom(name, agentIds, workingDir);
+
+        // Sync to Discord: create a bound channel for this session (fire-and-forget)
+        if (this.discordManager) {
+            const agentNames = room.getInfo().participants
+                .filter(p => p.type === 'agent')
+                .map(p => p.name);
+            this.discordManager.createChannelForSession(room.id, name, agentNames)
+                .catch(err => log.warn(`Discord channel sync failed for session "${name}":`, err));
+        }
+
         return room.id;
     }
 

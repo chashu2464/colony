@@ -231,36 +231,12 @@ export class DiscordBot {
         // Try to create Discord channel if configured
         const guildId = this.config.guild?.id || message.guildId;
         if (guildId) {
-            try {
-                const guild = await this.client.guilds.fetch(guildId);
-                const categoryId = this.config.guild?.sessionCategory;
-
-                // Slugify name for channel name
-                const channelName = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-                
-                // Format topic
-                const topic = `🤖 Colony Session | agents: ${actualAgents.join(', ')} | id: ${sessionId}${workingDir ? ` | dir: ${workingDir}` : ''}`;
-
-                const channel = await guild.channels.create({
-                    name: channelName,
-                    type: ChannelType.GuildText,
-                    parent: categoryId,
-                    topic: topic,
-                    reason: `Colony Session creation: ${name}`
-                });
-
-                // Bind mapping
-                await this.mapper.bind(channel.id, sessionId, {
-                    sessionName: name,
-                    guildId: guild.id,
-                    createdAt: new Date().toISOString()
-                });
-
-                discordMsg += `\n🔗 **Discord Channel created:** <#${channel.id}>\n` +
+            const channelId = await this.createChannelForSession(sessionId, name, actualAgents, guildId);
+            if (channelId) {
+                discordMsg += `\n🔗 **Discord Channel created:** <#${channelId}>\n` +
                               `Users in this channel can chat directly with agents.`;
-            } catch (error) {
-                log.error('Failed to create Discord channel:', error);
-                discordMsg += `\n⚠️ Failed to create Discord channel: ${(error as Error).message}\n` +
+            } else {
+                discordMsg += `\n⚠️ Failed to create Discord channel. ` +
                               `Use \`${this.config.bot.prefix} join ${name}\` to join manually.`;
             }
         } else {
@@ -268,6 +244,50 @@ export class DiscordBot {
         }
 
         await message.reply(discordMsg);
+    }
+
+    /**
+     * Create a Discord channel for an existing Colony session and bind the mapping.
+     * Returns the created channel ID, or null if creation failed.
+     * Used by both cmdCreate (Discord command) and DiscordManager (for Web/API-created sessions).
+     */
+    async createChannelForSession(
+        sessionId: string,
+        sessionName: string,
+        agentNames: string[],
+        guildId: string
+    ): Promise<string | null> {
+        try {
+            const guild = await this.client.guilds.fetch(guildId);
+            const categoryId = this.config.guild?.sessionCategory;
+
+            // Slugify name for channel name
+            const channelName = sessionName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+            // Format topic
+            const topic = `🤖 Colony Session | agents: ${agentNames.join(', ')} | id: ${sessionId}`;
+
+            const channel = await guild.channels.create({
+                name: channelName,
+                type: ChannelType.GuildText,
+                parent: categoryId,
+                topic: topic,
+                reason: `Colony Session creation: ${sessionName}`
+            });
+
+            // Bind mapping
+            await this.mapper.bind(channel.id, sessionId, {
+                sessionName,
+                guildId: guild.id,
+                createdAt: new Date().toISOString()
+            });
+
+            log.info(`Discord channel created for session "${sessionName}" (${sessionId}): #${channel.name}`);
+            return channel.id;
+        } catch (error) {
+            log.error(`Failed to create Discord channel for session ${sessionId}:`, error);
+            return null;
+        }
     }
 
     /**

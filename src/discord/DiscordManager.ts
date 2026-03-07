@@ -115,4 +115,19 @@ export class DiscordManager {
     getMapper(): ChannelSessionMapper {
         return this.mapper;
     }
+
+    /**
+     * Create a Discord channel for an existing Colony session.
+     * Called by Colony.createSession() to sync Web/API-created sessions to Discord.
+     * Delegates to DiscordBot which holds the Discord client.
+     * Returns the created channel ID, or null if guild not configured or creation failed.
+     */
+    async createChannelForSession(sessionId: string, sessionName: string, agentNames: string[]): Promise<string | null> {
+        const guildId = this.config.guild?.id;
+        if (!guildId) {
+            log.debug('guild.id not configured, skipping Discord channel creation for session:', sessionId);
+            return null;
+        }
+        return this.bot.createChannelForSession(sessionId, sessionName, agentNames, guildId);
+    }
 }
