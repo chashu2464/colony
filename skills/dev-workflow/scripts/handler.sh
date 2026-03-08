@@ -353,8 +353,8 @@ EOF
     jq --arg next "$NEXT" --arg next_name "${STAGES[$NEXT]}" --arg status "$FINAL_STATUS" \
       '.current_stage = ($next|tonumber) | .stage_name = $next_name | .status = $status' \
       "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
-    
-    # Notify next actor
+
+    # Notify server to wake up next actor (system will automatically handle it, no manual @mention needed)
     notify_server $CURRENT $NEXT
 
     cat "$WORKFLOW_FILE"
@@ -430,6 +430,9 @@ EOF
       '.current_stage = ($target|tonumber) | .stage_name = $target_name | .status = "active"' \
       "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
       
+    # Notify server to wake up next actor (system will automatically handle it, no manual @mention needed)
+    notify_server $CURRENT $TARGET
+      
     if [ ! -z "$TARGET_HASH" ] && [ "$TARGET_HASH" != "null" ]; then
       TASK_ID=$(jq -r '.task_id' "$WORKFLOW_FILE")
       WARNING_MSG="Workflow rolled back to Stage $TARGET. To explicitly rollback workspace files, execute: git reset --hard $TARGET_HASH (WARNING: destructs uncommitted files)"
@@ -476,6 +479,9 @@ EOF
     jq --arg target "$TARGET" --arg target_name "${STAGES[$TARGET]}" \
       '.current_stage = ($target|tonumber) | .stage_name = $target_name | .status = "active"' \
       "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
+      
+    # Notify server to wake up next actor (system will automatically handle it, no manual @mention needed)
+    notify_server $CURRENT $TARGET
       
     if [ ! -z "$TARGET_HASH" ] && [ "$TARGET_HASH" != "null" ]; then
       TASK_ID=$(jq -r '.task_id' "$WORKFLOW_FILE")

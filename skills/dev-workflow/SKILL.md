@@ -59,6 +59,46 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 | 9 | Completed | - | - | 任务已完成并合并到主分支。 |
 
 
+## Agent Behavior Rules (MANDATORY)
+
+> ⚠️ **禁止等待用户确认 stage 推进。** Agent 完成当前阶段工作后，必须自主执行以下步骤，不得询问用户是否推进：
+> 1. 若当前 stage 需要 review（见下方 Approvals），先调用 `submit-review` 自我批准
+> 2. 立即调用 `dev-workflow next` 推进到下一 stage
+> 3. 系统会自动通过 `notify_server` 唤起下一阶段负责人，**不再需要手动 @mention**。Agent 仅需通过 `send-message` 发送交接内容（见下方交接模板）即可。
+>
+> **Stage 推进不属于"重大架构变更"，不触发重要变更需确认规则。**
+
+### 交接消息模板 (Handoff Message)
+
+每次推进 stage 后，**必须**发送一条结构化交接消息（无需 @mention，系统已自动通知）：
+
+```
+Stage X → Stage Y 交接
+
+已完成：
+- [本阶段产出的关键内容，如文档路径、实现的功能]
+
+移交内容：
+- [下一阶段负责人需要了解的关键信息]
+- [需要特别注意的事项或风险]
+
+产物路径：[evidence 文件路径]
+```
+
+### 阶段交接对象速查 (系统自动处理)
+
+| 当前 Stage | 当前负责人 | 下一阶段负责人 |
+|-----------|----------|----------------|
+| 0 Brainstorming | architect | 架构师（自身继续推进至 Stage 1）|
+| 1 Initial Requirements | architect | 架构师（自身继续推进至 Stage 2）|
+| 2 System Design | architect | 开发者 |
+| 3 Forward Briefing | developer | QA负责人 |
+| 4 Reverse Briefing | qa_lead | QA负责人（自身继续推进至 Stage 5）|
+| 5 Test Case Design | qa_lead | 开发者 |
+| 6 Implementation | developer | QA负责人 |
+| 7 Integration Testing | qa_lead | tech_lead（或开发者）|
+| 8 Go-Live Review | tech_lead | （完成）|
+
 ## Important Actions
 
 ### Advancing (next)

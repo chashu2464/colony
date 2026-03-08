@@ -14,7 +14,7 @@ vector_store:
 llm:
   provider: openai  # Options: openai, anthropic, google, ollama, azure_openai
   config:
-    model: glm-4.7-flashx # gpt-4o-mini  # Cheaper model for memory extraction
+    model: Pro/MiniMaxAI/MiniMax-M2.5 # gpt-4o-mini  # Cheaper model for memory extraction
     api_key: 81278a2d760345e58c195c6b3346cb81.mwvOxbLu9HxAK8CC
     # Note: Use OPENAI_API_BASE environment variable for custom endpoint
 
@@ -22,7 +22,7 @@ llm:
 embedder:
   provider: openai  # Options: openai, huggingface, ollama, azure_openai
   config:
-    model: embedding-3
+    model: Qwen/Qwen3-Embedding-4B
     api_key: 81278a2d760345e58c195c6b3346cb81.mwvOxbLu9HxAK8CC
     embedding_dims: 1536
     # Note: Use OPENAI_API_BASE environment variable for custom endpoint
