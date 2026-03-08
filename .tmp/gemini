@@ -1,5 +1,0 @@
-#!/bin/bash
-echo '{"type":"init","session_id":"test-session"}'
-sleep 2
-echo '{"type":"message","role":"assistant","content":"Done"}'
-echo '{"type":"result","usage":{"input_tokens":10,"output_tokens":10}}'
