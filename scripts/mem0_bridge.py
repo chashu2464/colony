@@ -28,6 +28,24 @@ logging.basicConfig(
 logger = logging.getLogger('mem0_bridge')
 
 
+def normalize_filters(filters: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    """Normalize MongoDB-style $ operator prefixes to mem0-compatible format.
+
+    Converts $gte/$lte/$in/$gt/$lt/$ne etc. to gte/lte/in/gt/lt/ne
+    so that mem0's qdrant._create_filter() can correctly parse range conditions.
+    """
+    if not filters or not isinstance(filters, dict):
+        return filters
+    result = {}
+    for key, value in filters.items():
+        normalized_key = key.lstrip('$')
+        if isinstance(value, dict):
+            result[normalized_key] = normalize_filters(value)
+        else:
+            result[normalized_key] = value
+    return result
+
+
 class Mem0Bridge:
     """Bridge between Colony (TypeScript) and Mem0 (Python)."""
 
@@ -158,7 +176,7 @@ class Mem0Bridge:
         agent_id = params.get('agent_id')
         run_id = params.get('run_id')
         limit = params.get('limit', 5)
-        filters = params.get('filters')
+        filters = normalize_filters(params.get('filters'))
         threshold = params.get('threshold')
         rerank = params.get('rerank', True)
 
@@ -181,7 +199,7 @@ class Mem0Bridge:
         agent_id = params.get('agent_id')
         run_id = params.get('run_id')
         limit = params.get('limit')
-        filters = params.get('filters')
+        filters = normalize_filters(params.get('filters'))
 
         result = self.memory.get_all(
             user_id=user_id,

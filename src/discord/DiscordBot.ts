@@ -87,6 +87,16 @@ export class DiscordBot {
         // 1. Check if channel is bound to a session
         const mappedSessionId = this.mapper.getSessionByChannel(message.channelId);
         if (mappedSessionId) {
+            // Auto-join: ensure the Discord user is a participant in the Colony room
+            const room = this.colony.chatRoomManager.getRoom(mappedSessionId);
+            if (room && !room.getParticipantIds().includes(message.author.id)) {
+                this.colony.joinSession(mappedSessionId, {
+                    id: message.author.id,
+                    type: 'human',
+                    name: message.author.username,
+                });
+                log.debug(`Auto-joined user ${message.author.username} (${message.author.id}) to session ${mappedSessionId}`);
+            }
             await this.forwardToColony(message, {
                 userId: message.author.id,
                 sessionId: mappedSessionId,
@@ -220,7 +230,10 @@ export class DiscordBot {
             }
         }
 
-        const sessionId = this.colony.createSession(name, agentIds, workingDir);
+        // Create the session in Colony. 
+        // IMPORTANT: We use skipDiscordSync: true here because cmdCreate handles 
+        // its own Discord channel creation below to provide direct feedback to the user.
+        const sessionId = this.colony.createSession(name, agentIds, workingDir, { skipDiscordSync: true });
         const room = this.colony.chatRoomManager.getRoom(sessionId);
         const actualAgents = room?.getInfo().participants.filter(p => p.type === 'agent').map(p => p.name) || [];
 
@@ -257,15 +270,26 @@ export class DiscordBot {
         agentNames: string[],
         guildId: string
     ): Promise<string | null> {
+        // Re-entry guard: if this session is already mapped, skip
+        if (this.mapper.getChannelBySession(sessionId)) {
+            log.debug(`Session ${sessionId} already has a channel mapped, skipping creation.`);
+            return this.mapper.getChannelBySession(sessionId) ?? null;
+        }
+
         try {
             const guild = await this.client.guilds.fetch(guildId);
             const categoryId = this.config.guild?.sessionCategory;
 
-            // Slugify name for channel name
-            const channelName = sessionName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            // Slugify name for channel name, fallback to 'session' if result is empty
+            const slugified = sessionName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            const channelName = slugified || 'session';
 
             // Format topic
             const topic = `🤖 Colony Session | agents: ${agentNames.join(', ')} | id: ${sessionId}`;
+
+            // Pre-register sessionId as "pending" BEFORE channel creation
+            // so that channelCreate event sees the mapping and skips re-entry
+            this.mapper.setPendingSession(sessionId);
 
             const channel = await guild.channels.create({
                 name: channelName,
@@ -275,7 +299,7 @@ export class DiscordBot {
                 reason: `Colony Session creation: ${sessionName}`
             });
 
-            // Bind mapping
+            // Bind mapping (replaces pending entry)
             await this.mapper.bind(channel.id, sessionId, {
                 sessionName,
                 guildId: guild.id,
@@ -285,9 +309,30 @@ export class DiscordBot {
             log.info(`Discord channel created for session "${sessionName}" (${sessionId}): #${channel.name}`);
             return channel.id;
         } catch (error) {
+            this.mapper.clearPendingSession(sessionId);
             log.error(`Failed to create Discord channel for session ${sessionId}:`, error);
             return null;
         }
+    }
+
+
+    /**
+     * Delete the Discord channel bound to a session (cascade on session deletion from Web/API).
+     * Unbinds the mapping regardless of whether channel deletion succeeds.
+     */
+    async deleteChannelForSession(channelId: string, sessionId: string): Promise<void> {
+        try {
+            const ch = await this.client.channels.fetch(channelId).catch(() => null);
+            if (ch) {
+                await ch.delete("Colony Session deleted").catch(err =>
+                    log.warn(`Failed to delete Discord channel ${channelId}: ${err.message}`)
+                );
+            }
+        } catch (error) {
+            log.warn(`Error during channel cleanup for session ${sessionId}: ${(error as Error).message}`);
+        }
+        await this.mapper.unbind(channelId);
+        log.info(`Unbound and deleted channel ${channelId} for session ${sessionId}`);
     }
 
     /**
@@ -630,6 +675,17 @@ export class DiscordBot {
             return;
         }
 
+        // 3b. Re-entry prevention: check if this channel was created by Direction A (pending guard)
+        // We detect Direction A channels by their topic containing '| id: <sessionId>'
+        const topicSessionMatch = textChannel.topic?.match(/\| id: ([a-f0-9-]{36})/);
+        if (topicSessionMatch) {
+            const embeddedSessionId = topicSessionMatch[1];
+            if (this.mapper.isSessionPending(embeddedSessionId) || this.mapper.getChannelBySession(embeddedSessionId)) {
+                log.debug(`Channel ${textChannel.id} was created by Direction A (session ${embeddedSessionId}), skipping Direction B.`);
+                return;
+            }
+        }
+
         log.info(`New channel detected in session category: "${textChannel.name}" (${textChannel.id}). Triggering auto-creation.`);
 
         try {
@@ -640,9 +696,10 @@ export class DiscordBot {
             }
 
             // 5. Create Colony session
-            // Discord channel name is already slugified, use it as session name
+            // IMPORTANT: Use skipDiscordSync: true to prevent Direction A from triggering 
+            // and creating yet another channel, which would cause an infinite loop.
             const sessionName = textChannel.name;
-            const sessionId = this.colony.createSession(sessionName, agentIds);
+            const sessionId = this.colony.createSession(sessionName, agentIds, undefined, { skipDiscordSync: true });
             
             log.info(`Auto-created session "${sessionName}" (${sessionId}) for channel ${textChannel.id}`);
 
@@ -760,7 +817,10 @@ export class DiscordBot {
      */
     async start(): Promise<void> {
         log.info('Starting Discord bot...');
-        await this.client.login(this.config.bot.token);
+        await new Promise<void>((resolve) => {
+            this.client.once('ready', () => resolve());
+            this.client.login(this.config.bot.token);
+        });
     }
 
     /**

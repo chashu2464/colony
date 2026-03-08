@@ -44,10 +44,22 @@ export class DiscordManager {
             const content = fs.readFileSync(path, 'utf-8');
             const config = yaml.parse(content) as DiscordConfig;
 
-            // Substitute environment variables
-            if (config.bot.token.startsWith('${') && config.bot.token.endsWith('}')) {
-                const envVar = config.bot.token.slice(2, -1);
-                config.bot.token = process.env[envVar] || '';
+            // Helper: replace ${VAR} placeholder with env value
+            const resolveEnv = (value: string | undefined): string | undefined => {
+                if (typeof value === 'string' && value.startsWith('${') && value.endsWith('}')) {
+                    const envVar = value.slice(2, -1);
+                    return process.env[envVar] ?? '';
+                }
+                return value;
+            };
+
+            // Substitute environment variables for all known string fields
+            config.bot.token = resolveEnv(config.bot.token) ?? '';
+            if (config.guild) {
+                config.guild.id = resolveEnv(config.guild.id) ?? config.guild.id;
+                if (config.guild.sessionCategory) {
+                    config.guild.sessionCategory = resolveEnv(config.guild.sessionCategory) ?? config.guild.sessionCategory;
+                }
             }
 
             if (!config.bot.token) {
@@ -76,6 +88,25 @@ export class DiscordManager {
         }
 
         await this.bot.start();
+
+        // Backfill: create Discord channels for sessions that have no mapping
+        const guildId = this.config.guild?.id;
+        if (guildId) {
+            const allRooms = this.colony.chatRoomManager.listRooms();
+            const unmapped = allRooms.filter((r: any) => !this.mapper.getChannelBySession(r.id as string));
+            if (unmapped.length > 0) {
+                log.info(`Backfilling ${unmapped.length} session(s) with no Discord channel...`);
+                for (const room of unmapped) {
+                    const agentNames = (room.participants || [])
+                        .filter((p: any) => p.type === 'agent')
+                        .map((p: any) => p.name as string);
+                    await this.bot.createChannelForSession(room.id as string, room.name as string, agentNames, guildId)
+                        .catch((err: Error) => log.warn(`Failed to backfill channel for session "${room.name}": ${err.message}`));
+                }
+                log.info('Backfill complete');
+            }
+        }
+
         log.info('Discord integration started');
     }
 
@@ -129,5 +160,18 @@ export class DiscordManager {
             return null;
         }
         return this.bot.createChannelForSession(sessionId, sessionName, agentNames, guildId);
+    }
+
+    /**
+     * Delete the Discord channel bound to a Colony session (cascade on session deletion).
+     * No-op if no mapping exists or deletion fails.
+     */
+    async deleteChannelForSession(sessionId: string): Promise<void> {
+        const channelId = this.mapper.getChannelBySession(sessionId);
+        if (!channelId) {
+            log.debug(`No Discord channel mapped for session ${sessionId}, skipping deletion.`);
+            return;
+        }
+        await this.bot.deleteChannelForSession(channelId, sessionId);
     }
 }

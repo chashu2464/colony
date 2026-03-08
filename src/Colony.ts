@@ -144,12 +144,13 @@ export class Colony {
     /**
      * Create a new chat session with agents.
      * @param workingDir - Optional working directory for CLI tools (defaults to current directory)
+     * @param options - Optional flags (e.g. skipDiscordSync)
      */
-    createSession(name: string, agentIds?: string[], workingDir?: string): string {
+    createSession(name: string, agentIds?: string[], workingDir?: string, options: { skipDiscordSync?: boolean } = {}): string {
         const room = this.chatRoomManager.createRoom(name, agentIds, workingDir);
 
         // Sync to Discord: create a bound channel for this session (fire-and-forget)
-        if (this.discordManager) {
+        if (this.discordManager && !options.skipDiscordSync) {
             const agentNames = room.getInfo().participants
                 .filter(p => p.type === 'agent')
                 .map(p => p.name);
@@ -158,6 +159,18 @@ export class Colony {
         }
 
         return room.id;
+    }
+
+    /**
+     * Delete a session and cascade-delete the bound Discord channel (if any).
+     */
+    async deleteSession(sessionId: string): Promise<boolean> {
+        // Cascade: delete Discord channel first, before removing session record
+        if (this.discordManager) {
+            await this.discordManager.deleteChannelForSession(sessionId)
+                .catch(err => log.warn(`Discord channel cleanup failed for session "${sessionId}":`, err));
+        }
+        return this.chatRoomManager.deleteRoom(sessionId);
     }
 
     /**

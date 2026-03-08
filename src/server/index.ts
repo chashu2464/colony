@@ -256,7 +256,7 @@ export function createColonyServer(options: ServerOptions) {
     // Delete a room
     app.delete('/api/sessions/:id', async (req, res) => {
         try {
-            const deleted = await colony.chatRoomManager.deleteRoom(req.params.id);
+            const deleted = await colony.deleteSession(req.params.id);
             res.json({ deleted });
         } catch (err) {
             res.status(500).json({ error: (err as Error).message });

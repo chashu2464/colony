@@ -13,6 +13,8 @@ export class ChannelSessionMapper {
     private filePath: string;
     private channelToSession = new Map<string, string>();
     private sessionToChannel = new Map<string, string>();
+    /** In-flight sessions being created by Direction A — prevents channelCreate re-entry */
+    private pendingSessions = new Set<string>();
 
     constructor(dataDir: string = '.data') {
         this.filePath = path.join(dataDir, 'discord-channel-map.json');
@@ -43,6 +45,8 @@ export class ChannelSessionMapper {
         this.mappings.push(record);
         this.channelToSession.set(channelId, sessionId);
         this.sessionToChannel.set(sessionId, channelId);
+        // Clear pending guard if present
+        this.pendingSessions.delete(sessionId);
 
         log.info(`Bound channel ${channelId} to session ${sessionId} (${meta.sessionName})`);
         await this.save();
@@ -74,6 +78,28 @@ export class ChannelSessionMapper {
      */
     getChannelBySession(sessionId: string): string | undefined {
         return this.sessionToChannel.get(sessionId);
+    }
+
+    /**
+     * Mark a session as pending channel creation (Direction A in-flight guard).
+     * Prevents channelCreate event from triggering Direction B re-entry.
+     */
+    setPendingSession(sessionId: string): void {
+        this.pendingSessions.add(sessionId);
+    }
+
+    /**
+     * Remove pending session guard (called on error path).
+     */
+    clearPendingSession(sessionId: string): void {
+        this.pendingSessions.delete(sessionId);
+    }
+
+    /**
+     * Check if a session is pending channel creation (in-flight Direction A).
+     */
+    isSessionPending(sessionId: string): boolean {
+        return this.pendingSessions.has(sessionId);
     }
 
     /**
