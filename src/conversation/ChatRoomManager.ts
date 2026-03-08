@@ -207,6 +207,54 @@ export class ChatRoomManager {
     }
 
     /**
+     * Update agents in a room.
+     * @param roomId - Room ID to update
+     * @param agentIds - New list of agent names or IDs
+     */
+    updateRoomAgents(roomId: string, agentIds: string[]): void {
+        const room = this.rooms.get(roomId);
+        if (!room) throw new Error(`Room not found: ${roomId}`);
+
+        const currentAgents = room.getAgents();
+        const newAgents = agentIds
+            .map(id => this.agentRegistry.getByIdOrName(id))
+            .filter((a): a is any => a !== undefined);
+
+        // 1. Remove agents not in the new list
+        for (const agent of currentAgents) {
+            if (!newAgents.find(a => a.id === agent.id)) {
+                // Terminate pending work
+                if (typeof agent.abortRoomInvocation === 'function') {
+                    agent.abortRoomInvocation(roomId);
+                }
+                room.removeAgent(agent.id);
+                log.info(`Agent "${agent.name}" removed from room ${roomId}`);
+            }
+        }
+
+        // 2. Add agents not in the current list
+        for (const agent of newAgents) {
+            if (!currentAgents.find(a => a.id === agent.id)) {
+                room.addAgent(agent);
+                log.info(`Agent "${agent.name}" added to room ${roomId}`);
+            }
+        }
+
+        // 3. Ensure a default agent exists if list is not empty
+        const info = room.getInfo();
+        const activeAgents = info.participants.filter(p => p.type === 'agent');
+        if (activeAgents.length > 0) {
+            const currentDefault = room.getDefaultAgentId();
+            if (!currentDefault || !activeAgents.find(p => p.id === currentDefault)) {
+                room.setDefaultAgent(activeAgents[0].id);
+                log.info(`Room ${roomId} default agent updated to: ${activeAgents[0].name}`);
+            }
+        }
+
+        log.info(`Updated agents for room ${roomId}. New count: ${activeAgents.length}`);
+    }
+
+    /**
      * Stop a chat room (abort agent threads)
      */
     stopRoom(roomId: string): void {

@@ -57,6 +57,12 @@ export class DiscordBot {
             await this.handleChannelCreate(channel);
         });
 
+        this.client.on('channelUpdate', async (oldChannel, newChannel) => {
+            if (newChannel.isTextBased()) {
+                await this.handleChannelUpdate(oldChannel as TextChannel, newChannel as TextChannel);
+            }
+        });
+
         this.client.on('error', (error) => {
             log.error('Discord client error:', error);
         });
@@ -188,6 +194,9 @@ export class DiscordBot {
                     break;
                 case 'delete':
                     await this.cmdDelete(message, args);
+                    break;
+                case 'update':
+                    await this.cmdUpdate(message, args);
                     break;
                 case 'help':
                     await this.cmdHelp(message);
@@ -604,6 +613,38 @@ export class DiscordBot {
     }
 
     /**
+     * Command: Update agents in a session.
+     */
+    private async cmdUpdate(message: Message, args: string[]): Promise<void> {
+        // 1. Identify session
+        const mappedSessionId = this.mapper.getSessionByChannel(message.channelId);
+        const userSession = this.userSessions.get(message.author.id);
+        const sessionId = mappedSessionId || userSession?.sessionId;
+
+        if (!sessionId) {
+            await message.reply('❌ You are not in a session. Use `/colony join <name>` first or use this command in a session channel.');
+            return;
+        }
+
+        if (args.length === 0) {
+            await message.reply('Usage: `/colony update <agent1,agent2,...>`');
+            return;
+        }
+
+        const agentIds = args[0].split(',').map(s => s.trim()).filter(Boolean);
+        
+        try {
+            await this.colony.updateSessionAgents(sessionId, agentIds);
+            const room = this.colony.chatRoomManager.getRoom(sessionId);
+            const actualAgents = room?.getInfo().participants.filter(p => p.type === 'agent').map(p => p.name) || [];
+            
+            await message.reply(`✅ Session agents updated.\n**Current Agents**: ${actualAgents.join(', ')}`);
+        } catch (error) {
+            await message.reply(`❌ Failed to update agents: ${(error as Error).message}`);
+        }
+    }
+
+    /**
      * Command: Show help.
      */
     private async cmdHelp(message: Message): Promise<void> {
@@ -616,6 +657,7 @@ export class DiscordBot {
             `\`${prefix} join <name|id>\` - Join a session\n` +
             `\`${prefix} leave\` - Leave current session\n` +
             `\`${prefix} delete <name|id>\` - Delete a session\n` +
+            `\`${prefix} update <agent1,agent2,...>\` - Update session agents\n` +
             `\`${prefix} current\` - Show current session\n` +
             `\`${prefix} stop\` - Pause current session\n` +
             `\`${prefix} start\` - Resume current session\n\n` +
@@ -753,6 +795,70 @@ export class DiscordBot {
         }
 
         return undefined;
+    }
+
+    /**
+     * Update Discord channel topic with new agents.
+     */
+    async updateChannelTopic(sessionId: string, agentNames: string[]): Promise<void> {
+        const channelId = this.mapper.getChannelBySession(sessionId);
+        if (!channelId) return;
+
+        try {
+            const channel = await this.client.channels.fetch(channelId);
+            if (channel && channel.type === ChannelType.GuildText) {
+                const textChannel = channel as TextChannel;
+                
+                // Reconstruct topic
+                const idSuffix = ` | id: ${sessionId}`;
+                const baseTopic = textChannel.topic?.split('|')[0].trim() || '🤖 Colony Session';
+                const newTopic = `${baseTopic} | agents: ${agentNames.join(', ')}${idSuffix}`;
+                
+                if (textChannel.topic !== newTopic) {
+                    await textChannel.setTopic(newTopic);
+                    log.info(`Updated Discord topic for channel ${channelId}`);
+                }
+            }
+        } catch (error) {
+            log.warn(`Failed to update Discord topic for session ${sessionId}:`, error);
+        }
+    }
+
+    /**
+     * Handle manual Discord topic changes.
+     */
+    private async handleChannelUpdate(oldChannel: TextChannel, newChannel: TextChannel): Promise<void> {
+        // Only care about topic changes
+        if (oldChannel.topic === newChannel.topic) return;
+
+        const sessionId = this.mapper.getSessionByChannel(newChannel.id);
+        if (!sessionId) return;
+
+        // Extract agents from new topic
+        const newAgents = this.parseAgentsFromTopic(newChannel.topic);
+        if (!newAgents) return;
+
+        // Compare with current state in Colony
+        const room = this.colony.chatRoomManager.getRoom(sessionId);
+        if (!room) return;
+
+        const currentAgents = room.getInfo().participants
+            .filter(p => p.type === 'agent')
+            .map(p => p.id); // ChatRoomManager.updateRoomAgents matches against IDs or names
+
+        // Simple check if lists are identical
+        if (JSON.stringify([...newAgents].sort()) === JSON.stringify([...currentAgents].sort())) {
+            return;
+        }
+
+        log.info(`Topic change detected for channel ${newChannel.id}. Syncing agents to session ${sessionId}.`);
+        
+        try {
+            // Update session agents (this will also trigger a topic update back, but should be caught by re-entry check)
+            await this.colony.updateSessionAgents(sessionId, newAgents);
+        } catch (error) {
+            log.error(`Failed to sync agents from topic for channel ${newChannel.id}:`, error);
+        }
     }
 
     /**

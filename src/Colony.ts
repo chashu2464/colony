@@ -190,6 +190,34 @@ export class Colony {
     }
 
     /**
+     * Update agents for a session.
+     * @param sessionId - Session ID to update
+     * @param agentIds - New list of agent IDs or names
+     */
+    async updateSessionAgents(sessionId: string, agentIds: string[]): Promise<void> {
+        log.info(`Updating agents for session ${sessionId}...`);
+        
+        // 1. Update ChatRoom
+        this.chatRoomManager.updateRoomAgents(sessionId, agentIds);
+        
+        // 2. Persist change
+        await this.chatRoomManager.saveRoom(sessionId);
+
+        // 3. Sync to Discord if applicable
+        if (this.discordManager) {
+            const room = this.chatRoomManager.getRoom(sessionId);
+            if (room) {
+                const agentNames = room.getInfo().participants
+                    .filter(p => p.type === 'agent')
+                    .map(p => p.name);
+                
+                await this.discordManager.getBot().updateChannelTopic(sessionId, agentNames)
+                    .catch(err => log.warn(`Discord topic sync failed for session ${sessionId}:`, err));
+            }
+        }
+    }
+
+    /**
      * Get status summary.
      */
     getStatus(): object {
