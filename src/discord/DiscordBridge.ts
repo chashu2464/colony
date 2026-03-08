@@ -28,7 +28,8 @@ export class DiscordBridge {
     private setupColonyListeners(): void {
         // Listen for messages from Colony
         this.colony.messageBus.events.on('message', (message: Message) => {
-            this.handleColonyMessage(message);
+            this.handleColonyMessage(message)
+                .catch(err => log.error('Failed to forward Colony message to Discord:', err));
         });
 
         log.info('Discord bridge initialized');
@@ -38,13 +39,13 @@ export class DiscordBridge {
      * Handle messages from Colony and forward to Discord.
      */
     private async handleColonyMessage(message: Message): Promise<void> {
-        // Only forward agent messages
-        if (message.sender.type !== 'agent') {
+        // Skip monologue messages (thinking, tool calls, etc.) for Discord
+        if (message.metadata?.isMonologue) {
             return;
         }
 
-        // Skip monologue messages (thinking, tool calls, etc.) for Discord
-        if (message.metadata?.isMonologue) {
+        // Skip human messages that originated from Discord (prevent echo loop)
+        if (message.sender.type === 'human' && message.metadata?.fromDiscord) {
             return;
         }
 
@@ -57,7 +58,10 @@ export class DiscordBridge {
             return;
         }
 
-        // Otherwise, send to all users in this room
+        // Fallback: send agent messages to legacy user session channels
+        if (message.sender.type !== 'agent') {
+            return; // Only forward agent messages over legacy path
+        }
         const sessions = this.bot.getUserSessionsForRoom(message.roomId);
         if (sessions.length > 0) {
             const formatted = this.formatMessage(message);
@@ -73,8 +77,8 @@ export class DiscordBridge {
     private formatMessage(message: Message): string {
         const sender = message.sender.name;
         const content = message.content;
+        const icon = message.sender.type === 'agent' ? '💬' : '👤';
 
-        // Format with Discord markdown
-        return `💬 **${sender}**:\n${content}`;
+        return `${icon} **${sender}**:\n${content}`;
     }
 }

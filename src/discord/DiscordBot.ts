@@ -777,12 +777,14 @@ export class DiscordBot {
                 mentions.push(match[1]);
             }
 
-            // Send to Colony
-            this.colony.sendMessage(
-                userSession.sessionId!,
+            // Send to Colony, tagging as fromDiscord to prevent echo back to Discord
+            const room = this.colony.chatRoomManager.getRoom(userSession.sessionId!);
+            if (!room) throw new Error(`Room not found: ${userSession.sessionId}`);
+            room.sendHumanMessage(
                 message.author.id,
                 message.content,
-                mentions.length > 0 ? mentions : undefined
+                mentions.length > 0 ? mentions : undefined,
+                { fromDiscord: true }
             );
 
             // React to show message was received

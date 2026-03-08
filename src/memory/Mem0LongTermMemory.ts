@@ -187,13 +187,13 @@ export class Mem0LongTermMemory implements LongTermMemory {
             const requestStr = JSON.stringify(request) + '\n';
             this.pythonProcess!.stdin!.write(requestStr);
 
-            // Timeout after 30 seconds
+            // Timeout after 60 seconds (extraction can be slow)
             setTimeout(() => {
                 if (this.pendingRequests.has(id)) {
                     this.pendingRequests.delete(id);
-                    reject(new Error(`Request ${id} timeout`));
+                    reject(new Error(`Request ${id} timeout (after 60s)`));
                 }
-            }, 30000);
+            }, 60000);
         });
     }
 
@@ -298,21 +298,21 @@ export class Mem0LongTermMemory implements LongTermMemory {
 
             // Importance filter
             if (filters.importance) {
-                mem0Filters['metadata.importance'] = {
+                mem0Filters.importance = {
                     $gte: filters.importance.min,
                 };
             }
 
             // Subtype filter
             if (filters.subtypes && filters.subtypes.length > 0) {
-                mem0Filters['metadata.subtype'] = {
+                mem0Filters.subtype = {
                     $in: filters.subtypes,
                 };
             }
 
             // Workflow stage filter
             if (filters.workflowStage !== undefined) {
-                mem0Filters['metadata.workflowStage'] = filters.workflowStage;
+                mem0Filters.workflowStage = filters.workflowStage;
             }
         }
 

@@ -39,13 +39,14 @@ def normalize_filters(filters: Optional[Dict[str, Any]]) -> Optional[Dict[str, A
     """Normalize MongoDB-style $ operator prefixes to mem0-compatible format.
 
     Converts $gte/$lte/$in/$gt/$lt/$ne etc. to gte/lte/in/gt/lt/ne
-    so that mem0's qdrant._create_filter() can correctly parse range conditions.
+    Also removes any "metadata." prefix to ensure compatibility with mem0's qdrant provider.
     """
     if not filters or not isinstance(filters, dict):
         return filters
     result = {}
     for key, value in filters.items():
-        normalized_key = key.lstrip('$')
+        # Remove metadata prefix if it exists and strip $ prefix
+        normalized_key = key.replace('metadata.', '').lstrip('$')
         if isinstance(value, dict):
             result[normalized_key] = normalize_filters(value)
         else:
@@ -183,6 +184,18 @@ class Mem0Bridge:
             del mem0_config['graph_store']
             logger.info('Graph store disabled')
 
+        # Apply Qdrant monkeypatch BEFORE initializing Memory
+        if HAS_QDRANT_MODELS and (
+            config.get('vectorStore', {}).get('provider') == 'qdrant' or 
+            config.get('vector_store', {}).get('provider') == 'qdrant'
+        ):
+            try:
+                from mem0.vector_stores.qdrant import Qdrant
+                Qdrant._create_filter = _improved_create_filter
+                logger.info('Applied monkeypatch for Qdrant._create_filter before initialization')
+            except (ImportError, AttributeError):
+                logger.warning('Failed to apply Qdrant monkeypatch')
+
         # Initialize Mem0
         logger.info('Mem0 configuration:')
         logger.info(f"  LLM: {mem0_config.get('llm', {}).get('provider', 'N/A')}")
@@ -193,15 +206,6 @@ class Mem0Bridge:
         # Use Memory.from_config() to properly initialize with dict config
         self.memory = Memory.from_config(mem0_config)
         logger.info('Mem0 initialized successfully')
-
-        # Apply Qdrant monkeypatch if using Qdrant
-        if HAS_QDRANT_MODELS and mem0_config.get('vector_store', {}).get('provider') == 'qdrant':
-            try:
-                from mem0.vector_stores.qdrant import Qdrant
-                Qdrant._create_filter = _improved_create_filter
-                logger.info('Applied monkeypatch for Qdrant._create_filter')
-            except (ImportError, AttributeError):
-                logger.warning('Failed to apply Qdrant monkeypatch')
 
     def add(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Add memories from messages."""
