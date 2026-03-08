@@ -12,6 +12,13 @@ import os
 from typing import Dict, Any, Optional
 from mem0 import Memory
 
+# Qdrant models for monkeypatch
+try:
+    from qdrant_client.models import Filter, FieldCondition, MatchValue, Range, MatchAny, DatetimeRange
+    HAS_QDRANT_MODELS = True
+except ImportError:
+    HAS_QDRANT_MODELS = False
+
 # Import config loader if available
 try:
     from mem0_config_loader import load_config, substitute_env_vars
@@ -44,6 +51,42 @@ def normalize_filters(filters: Optional[Dict[str, Any]]) -> Optional[Dict[str, A
         else:
             result[normalized_key] = value
     return result
+
+
+def _improved_create_filter(self, filters):
+    """Improved Qdrant filter creation to support Range, DatetimeRange and MatchAny.
+    This replaces the default mem0 implementation to fix range bugs and support $in.
+    """
+    if not filters:
+        return None
+
+    # If models are not available, we can't do anything (though this shouldn't happen)
+    if not HAS_QDRANT_MODELS:
+        return None
+
+    conditions = []
+    for key, value in filters.items():
+        if isinstance(value, dict):
+            range_keys = ["gte", "lte", "gt", "lt"]
+            if any(k in value for k in range_keys):
+                # Use DatetimeRange if any value is a string (ISO date)
+                is_datetime = any(isinstance(v, str) for v in value.values() if v is not None)
+                if is_datetime:
+                    conditions.append(FieldCondition(key=key, range=DatetimeRange(
+                        gte=value.get("gte"), lte=value.get("lte"), gt=value.get("gt"), lt=value.get("lt")
+                    )))
+                else:
+                    conditions.append(FieldCondition(key=key, range=Range(
+                        gte=value.get("gte"), lte=value.get("lte"), gt=value.get("gt"), lt=value.get("lt")
+                    )))
+            elif "in" in value:
+                conditions.append(FieldCondition(key=key, match=MatchAny(any=value["in"])))
+            else:
+                conditions.append(FieldCondition(key=key, match=MatchValue(value=value)))
+        else:
+            conditions.append(FieldCondition(key=key, match=MatchValue(value=value)))
+
+    return Filter(must=conditions) if conditions else None
 
 
 class Mem0Bridge:
@@ -150,6 +193,15 @@ class Mem0Bridge:
         # Use Memory.from_config() to properly initialize with dict config
         self.memory = Memory.from_config(mem0_config)
         logger.info('Mem0 initialized successfully')
+
+        # Apply Qdrant monkeypatch if using Qdrant
+        if HAS_QDRANT_MODELS and mem0_config.get('vector_store', {}).get('provider') == 'qdrant':
+            try:
+                from mem0.vector_stores.qdrant import Qdrant
+                Qdrant._create_filter = _improved_create_filter
+                logger.info('Applied monkeypatch for Qdrant._create_filter')
+            except (ImportError, AttributeError):
+                logger.warning('Failed to apply Qdrant monkeypatch')
 
     def add(self, params: Dict[str, Any]) -> Dict[str, Any]:
         """Add memories from messages."""
