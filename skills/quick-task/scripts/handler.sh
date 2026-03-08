@@ -70,7 +70,7 @@ EOF
         git commit -m "feat: wip for quick task $TASK_ID" --no-verify >/dev/null 2>&1
       fi
       # Stash any remaining untracked/ignored changes before switching
-      local stashed=false
+      stashed=false
       if [ ! -z "$(git status --porcelain 2>/dev/null)" ]; then
         git stash push -m "quick-task-merge-stash" --quiet 2>/dev/null && stashed=true
       fi
