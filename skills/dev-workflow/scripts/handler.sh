@@ -315,7 +315,7 @@ EOF
         MAIN_BRANCH=$(get_main_branch)
         if [ ! -z "$MAIN_BRANCH" ]; then
           # Stash any uncommitted changes before switching
-          local merge_stashed=false
+          merge_stashed=false
           if [ ! -z "$(git status --porcelain 2>/dev/null)" ]; then
             git stash push -m "workflow-merge-stash" --quiet 2>/dev/null && merge_stashed=true
           fi
