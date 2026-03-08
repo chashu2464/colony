@@ -17,7 +17,7 @@ Unlike traditional chatbot interfaces, Colony provides a structured **environmen
 - **Autonomous Multi-Agent Collaboration**: Real-time interaction between agents with specialized roles (Architect, Developer, QA, etc.).
 - **Unified LLM Runtime**: Seamless routing between multiple models (Claude, Gemini, CodeX) via native CLI wrappers.
 - **Persistent Long-Term Memory**: Integration with Mem0 for cross-session knowledge retention and semantic search.
-- **Extensible Skill System**: Filesystem-based skill definitions (`SKILL.md` + `handler.sh`) discoverable by native CLIs.
+- **Extensible Skill System**: Filesystem-based skill definitions (`SKILL.md` + `handler.sh`) discoverable by native CLIs. See [Skill Development Guide](docs/SKILL_DEVELOPMENT.md).
 - **Mandatory Development Workflow**: Enforced branching strategy (`feature/task-xxx`) and squash merges to ensure a clean and stable `master` branch.
 - **Multi-Channel Access**: Interaction via a modern React-based Web UI or mobile-friendly Discord integration.
 - **Vision Support**: Full support for image attachments in vision-capable models via base64 pipeline.
@@ -34,19 +34,19 @@ graph TD
     User -->|Mobile| Discord[Discord Bot]
     WebUI -->|WebSocket| Server[Colony Server]
     Discord -->|Bridge| Server
-    
+
     subgraph "Colony Server (Node.js/TS)"
         MessageBus[Message Bus]
         RoomManager[Room Manager]
         ContextAssembler[Context Assembler]
         AgentRuntime[Agent Runtime]
     end
-    
+
     subgraph "Agent Processes (External CLIs)"
         Claude[Claude CLI]
         Gemini[Gemini CLI]
     end
-    
+
     subgraph "Memory & Storage"
         ShortTerm[Short-Term Memory]
         LongTerm[Mem0 Long-Term Memory]
@@ -65,10 +65,11 @@ graph TD
 ## 📁 Project Structure
 
 - **`config/`**: YAML configurations for agents (roles, models, rules) and memory systems.
-- **`docs/`**: Detailed implementation notes, research reports, and technical guides.
+- **`docs/`**: Detailed implementation notes, research reports, and technical guides. Includes [Skill Development Guide](docs/SKILL_DEVELOPMENT.md).
 - **`logs/`**: Daily rotated persistent logs for system auditing.
 - **`scripts/`**: Utility scripts, including Git hooks (`git-guard.sh`) and the Mem0 Python bridge.
-- **`skills/`**: Extensible agent capabilities (Tools) implemented as bash handlers.
+- **`skills/`**: Extensible agent capabilities (Tools) implemented as bash handlers. See [Skill Development Guide](docs/SKILL_DEVELOPMENT.md).
+
 - **`src/`**: Core Backend (TypeScript)
     - **`agent/`**: Agent lifecycle, status management, and skill execution.
     - **`conversation/`**: Real-time chat room logic, session management, and the central message bus.
