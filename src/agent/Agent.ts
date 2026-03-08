@@ -247,6 +247,7 @@ export class Agent {
                         log.info(`[${this.name}] Sealing session ${activeSession.id} (${(action.fillRatio * 100).toFixed(1)}%)`);
                         const sealed = this.sessionStore.seal(this.id, message.roomId, activeSession.id);
                         if (sealed) {
+                            activeSession.status = 'sealed'; // Invalidate active state so a new session is started
                             // Generate digest asynchronously (don't block the current invoke)
                             this.digestGenerator.generate(sealed).then(digest => {
                                 this.sessionStore.setDigest(this.id, message.roomId, sealed.id, digest);

@@ -5,6 +5,7 @@ import { useWebSocket, type WSEvent } from './hooks/useWebSocket';
 import {
   fetchSessions, fetchMessages, fetchAgents,
   createSession, joinSession, sendMessage, stopSession, deleteSession,
+  updateSessionAgents,
   type Session, type Message, type AgentInfo, type Participant
 } from './api';
 import ReactMarkdown from 'react-markdown';
@@ -42,6 +43,8 @@ export default function App() {
   const [thinkingAgents, setThinkingAgents] = useState<Set<string>>(new Set());
   const [attachments, setAttachments] = useState<{ type: string; url: string }[]>([]);
   const [newSessionAgentIds, setNewSessionAgentIds] = useState<string[]>([]);
+  const [showEditAgentsModal, setShowEditAgentsModal] = useState(false);
+  const [editingSessionAgentIds, setEditingSessionAgentIds] = useState<string[]>([]);
 
   // Load initial data
   useEffect(() => {
@@ -125,10 +128,25 @@ export default function App() {
     setShowNewModal(true);
   }
 
-  function toggleAgentSelection(agentId: string) {
-    setNewSessionAgentIds(prev =>
-      prev.includes(agentId) ? prev.filter(id => id !== agentId) : [...prev, agentId]
-    );
+  function openEditAgentsModal() {
+    if (!activeSessionData) return;
+    const currentAgentIds = activeSessionData.participants
+      .filter(p => p.type === 'agent')
+      .map(p => p.id);
+    setEditingSessionAgentIds(currentAgentIds);
+    setShowEditAgentsModal(true);
+  }
+
+  function toggleAgentSelection(agentId: string, isNewSession: boolean = true) {
+    if (isNewSession) {
+      setNewSessionAgentIds(prev =>
+        prev.includes(agentId) ? prev.filter(id => id !== agentId) : [...prev, agentId]
+      );
+    } else {
+      setEditingSessionAgentIds(prev =>
+        prev.includes(agentId) ? prev.filter(id => id !== agentId) : [...prev, agentId]
+      );
+    }
   }
 
   async function handleCreateSession() {
@@ -144,6 +162,17 @@ export default function App() {
     setNewSessionName('');
     setNewSessionWorkingDir('');
     setNewSessionAgentIds([]);
+  }
+
+  async function handleUpdateAgents() {
+    if (!activeSession || editingSessionAgentIds.length === 0) return;
+    try {
+      const updatedSession = await updateSessionAgents(activeSession, editingSessionAgentIds);
+      setSessions(prev => prev.map(s => s.id === activeSession ? updatedSession : s));
+      setShowEditAgentsModal(false);
+    } catch (error) {
+      alert('更新 Agent 失败: ' + (error as Error).message);
+    }
   }
 
   async function handleSelectSession(sessionId: string) {
@@ -466,7 +495,23 @@ export default function App() {
       {/* ── Agent Panel ── */}
       {activeSession && (
         <div className="agent-panel">
-          <div className="agent-panel-title">Agents</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div className="agent-panel-title" style={{ marginBottom: 0 }}>Agents</div>
+            <button
+              onClick={openEditAgentsModal}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text-accent)',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                padding: '2px 4px'
+              }}
+            >
+              修改
+            </button>
+          </div>
           {agents
             .filter(agent => activeSessionData?.participants.some(p => p.id === agent.id))
             .map(agent => {
@@ -585,6 +630,58 @@ export default function App() {
                 disabled={!newSessionName.trim() || newSessionAgentIds.length === 0}
               >
                 创建
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Edit Agents Modal ── */}
+      {showEditAgentsModal && (
+        <div className="modal-overlay" onClick={() => setShowEditAgentsModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h2>修改会话参与 Agent</h2>
+            <div style={{ fontSize: '13px', color: '#666', marginBottom: '16px' }}>
+              正在修改会话：<strong>{activeSessionData?.name}</strong>
+            </div>
+
+            {/* Agent selection */}
+            <div className="modal-agent-select">
+              <div className="modal-agent-list">
+                {agents.map(agent => (
+                  <label key={agent.id} className="modal-agent-item">
+                    <input
+                      type="checkbox"
+                      checked={editingSessionAgentIds.includes(agent.id)}
+                      onChange={() => toggleAgentSelection(agent.id, false)}
+                    />
+                    <div className={`message-avatar ${getAgentColor(agent.id)}`} style={{ width: 22, height: 22, fontSize: 10 }}>
+                      {getInitial(agent.name)}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 500, fontSize: '13px' }}>{agent.name}</div>
+                      {agent.description && (
+                        <div style={{ fontSize: '11px', color: '#888' }}>{agent.description}</div>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '11px', color: '#aaa' }}>{agent.model}</span>
+                  </label>
+                ))}
+              </div>
+              {editingSessionAgentIds.length === 0 && (
+                <div style={{ fontSize: '12px', color: '#ef4444', marginTop: '6px' }}>请至少选择一个 Agent</div>
+              )}
+            </div>
+            <div className="modal-actions">
+              <button className="modal-btn secondary" onClick={() => setShowEditAgentsModal(false)}>
+                取消
+              </button>
+              <button
+                className="modal-btn primary"
+                onClick={handleUpdateAgents}
+                disabled={editingSessionAgentIds.length === 0}
+              >
+                保存修改
               </button>
             </div>
           </div>

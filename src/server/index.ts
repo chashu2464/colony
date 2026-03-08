@@ -254,7 +254,7 @@ export function createColonyServer(options: ServerOptions) {
     });
 
     // Delete a room
-    app.delete('/api/sessions/:id', async (req, res) => {
+    app.delete('\/api\/sessions\/:id', async (req, res) => {
         try {
             const deleted = await colony.deleteSession(req.params.id);
             res.json({ deleted });
@@ -263,8 +263,24 @@ export function createColonyServer(options: ServerOptions) {
         }
     });
 
+    // Update session agents
+    app.patch('\/api\/sessions\/:id\/agents', async (req, res) => {
+        const { agentIds } = req.body as { agentIds: string[] };
+        if (!agentIds || !Array.isArray(agentIds)) {
+            res.status(400).json({ error: 'agentIds array is required' });
+            return;
+        }
+        try {
+            await colony.updateSessionAgents(req.params.id, agentIds);
+            const room = colony.chatRoomManager.getRoom(req.params.id);
+            res.json({ session: room?.getInfo() });
+        } catch (err) {
+            res.status(500).json({ error: (err as Error).message });
+        }
+    });
+
     // Restore a saved session
-    app.post('/api/sessions/:id/restore', async (req, res) => {
+    app.post('\/api\/sessions\/:id\/restore', async (req, res) => {
         try {
             const room = await colony.chatRoomManager.restoreRoom(req.params.id);
             if (!room) {

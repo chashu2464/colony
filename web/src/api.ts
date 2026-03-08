@@ -86,6 +86,16 @@ export async function deleteSession(sessionId: string): Promise<boolean> {
     return data.deleted;
 }
 
+export async function updateSessionAgents(sessionId: string, agentIds: string[]): Promise<Session> {
+    const res = await fetch(`${API_BASE}/sessions/${sessionId}/agents`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentIds }),
+    });
+    const data = await res.json();
+    return data.session;
+}
+
 export async function fetchMessages(sessionId: string, limit?: number): Promise<Message[]> {
     const url = limit
         ? `${API_BASE}/sessions/${sessionId}/messages?limit=${limit}`
