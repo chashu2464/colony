@@ -910,10 +910,15 @@ export class DiscordBot {
             return;
         }
 
+        log.debug(`Attempting to send message to Discord channel ${channelId}`);
+
         try {
             const channel = await this.client.channels.fetch(channelId);
             if (channel && channel.isTextBased()) {
                 await (channel as TextChannel).send(content);
+                log.info(`Message sent to Discord channel ${channelId} successfully`);
+            } else {
+                log.warn(`Channel ${channelId} not found or not text-based`);
             }
         } catch (error) {
             log.error(`Error sending message to Discord channel ${channelId}:`, error);
