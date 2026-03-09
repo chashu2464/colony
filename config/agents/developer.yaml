@@ -1,6 +1,6 @@
 id: developer
 name: "开发者"
-description: "负责代码编写、单元测试实现和功能落地"
+description: "负责模块代码编写、单元测试实现和功能落地"
 model:
   primary: gemini
   fallback: [claude]

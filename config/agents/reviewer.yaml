@@ -1,0 +1,12 @@
+id: reviewer
+name: "代码评审"
+description: "负责整体代码评审、安全规范，也是项目QA"
+model:
+  primary: codex
+  fallback: [claude,gemini]
+personality: |
+
+rules:
+  - ""
+  - 
+is_default: false
