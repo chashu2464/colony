@@ -281,28 +281,51 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
 
     codex: {
         buildArgs: (prompt, sessionId, files) => {
-            const args = ['-p', prompt, '--output-format', 'stream-json', '--yolo'];
-            if (sessionId) args.push('--resume', sessionId);
+            const args = ['exec'];
             if (files && files.length > 0) {
                 for (const file of files) {
-                    args.push('--file', file);
+                    args.push('-i', file);
                 }
             }
+            if (sessionId) {
+                args.push('resume', sessionId, prompt);
+            } else {
+                args.push(prompt);
+            }
+            args.push('--json');
             return args;
         },
         extractText: (event) => {
+            const item = event.item as Record<string, any> | undefined;
+            if (event.type === 'item.completed' && item?.type === 'agent_message') {
+                return (item.text as string) ?? null;
+            }
+            // Compatibility for old format or other event types
             if (event.type === 'message' && event.role === 'assistant') {
                 return (event.content as string) ?? null;
             }
             return null;
         },
         extractSessionId: (event) => {
+            if (event.type === 'thread.started' && event.thread_id) {
+                return event.thread_id as string;
+            }
             if ((event.type === 'init' || event.type === 'system') && event.session_id) {
                 return event.session_id as string;
             }
             return null;
         },
         extractToolUse: (event) => {
+            if (event.type === 'item.completed' && event.item) {
+                const item = event.item as Record<string, any>;
+                // Map Codex-native executions to ToolUseEvent so they appear in Colony logs/UI
+                if (['command_execution', 'web_search', 'read_file', 'write_file', 'apply_patch'].includes(item.type)) {
+                    return [{
+                        name: item.type,
+                        input: item,
+                    }];
+                }
+            }
             if (event.type === 'tool_call') {
                 return [{
                     name: event.name as string,
@@ -312,6 +335,14 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
             return [];
         },
         extractTokenUsage: (event) => {
+            if (event.type === 'turn.completed' && event.usage) {
+                const usage = event.usage as Record<string, number>;
+                return {
+                    input: usage.input_tokens ?? 0,
+                    output: usage.output_tokens ?? 0,
+                    cacheRead: usage.cached_input_tokens ?? 0,
+                };
+            }
             if (event.type === 'result' && event.usage) {
                 const usage = event.usage as Record<string, number>;
                 return {
@@ -528,7 +559,9 @@ export async function invoke(
                         ? `: ${stderr.trim()}`
                         : ' (no error output captured - CLI may have crashed before producing diagnostics)';
 
-                    log.warn(`${cli} finished with exit code ${childExitCode}${errorDetail}`);
+                    log.error(`CLI invocation failed: ${cliPath} ${argsWithFiles.join(' ')}`);
+                    log.error(`${cli} finished with exit code ${childExitCode}${errorDetail}`);
+
                     settle(
                         'reject',
                         new InvokeError(
@@ -565,6 +598,8 @@ export async function invoke(
 
             child.on('error', (err) => {
                 options.onError?.(err);
+                log.error(`CLI spawn failed: ${cliPath} ${argsWithFiles.join(' ')}`);
+                log.error(`Error: ${err.message}`);
                 settle(
                     'reject',
                     new InvokeError(`Failed to start ${cli}: ${err.message}`, {
@@ -579,5 +614,27 @@ export async function invoke(
         if (tempFiles.length > 0) {
             cleanupTempFiles(tempFiles);
         }
+    }
+}
+
+/**
+ * Health check: Verify if a CLI is working correctly by sending a simple test prompt.
+ */
+export async function verifyCLI(cli: SupportedCLI): Promise<boolean> {
+    try {
+        log.info(`Health check: Verifying ${cli}...`);
+        const result = await invoke(cli, 'respond with "ok" and only "ok"', {
+            idleTimeoutMs: 15000, // 15s timeout for health check
+        });
+        const isHealthy = result.text.toLowerCase().includes('ok');
+        if (isHealthy) {
+            log.info(`Health check: ${cli} is healthy.`);
+        } else {
+            log.warn(`Health check: ${cli} returned unexpected response: ${result.text}`);
+        }
+        return isHealthy;
+    } catch (err) {
+        log.error(`Health check: ${cli} is NOT healthy.`, (err as Error).message);
+        return false;
     }
 }

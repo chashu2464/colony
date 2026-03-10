@@ -120,7 +120,13 @@ verify_ui() {
         exit 1
     fi
     
-    log_info "Verifying UI for scheme: $SCHEME on $DEVICE"
+    COMPONENT=$(echo "$INPUT" | jq -r '.component // empty')
+    
+    if [[ -n "$COMPONENT" ]]; then
+        log_info "Verifying component: $COMPONENT on $DEVICE"
+    else
+        log_info "Verifying full app UI for scheme: $SCHEME on $DEVICE"
+    fi
     
     # Create baseline directory
     mkdir -p "$BASELINE_DIR"
@@ -138,7 +144,7 @@ verify_ui() {
     
     # Boot simulator if not running
     DEVICE_STATE=$(xcrun simctl list devices | grep "$DEVICE_UDID" | grep -oE '\(.*\)' | tr -d '()')
-    if [[ "$DEVICE_STATE" != "Booted" ]]; then
+    if [[ "$DEVICE_STATE" != *"Booted"* ]]; then
         log_info "Booting simulator..."
         xcrun simctl boot "$DEVICE_UDID"
         sleep 3
@@ -172,15 +178,25 @@ verify_ui() {
     
     # Get bundle ID
     BUNDLE_ID=$(defaults read "$APP_PATH/Info.plist" CFBundleIdentifier)
-    log_info "Launching app: $BUNDLE_ID"
-    xcrun simctl launch "$DEVICE_UDID" "$BUNDLE_ID"
+    
+    # Launch arguments
+    LAUNCH_ARGS="-SKIP_HAPTICS"
+    if [[ -n "$COMPONENT" ]]; then
+        LAUNCH_ARGS="$LAUNCH_ARGS -SNAPSHOT_COMPONENT=$COMPONENT"
+    fi
+    
+    log_info "Launching app: $BUNDLE_ID with args: $LAUNCH_ARGS"
+    xcrun simctl launch "$DEVICE_UDID" "$BUNDLE_ID" $LAUNCH_ARGS
     
     # Wait for app to render
-    sleep 2
+    sleep 3
     
     # Take screenshot
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-    SCREENSHOT_PATH="$BASELINE_DIR/${SCHEME}_${DEVICE// /_}_${TIMESTAMP}.png"
+    NAME_PREFIX="${SCHEME}"
+    [[ -n "$COMPONENT" ]] && NAME_PREFIX="${COMPONENT}"
+    
+    SCREENSHOT_PATH="$BASELINE_DIR/${NAME_PREFIX}_${DEVICE// /_}_${TIMESTAMP}.png"
     
     log_info "Capturing screenshot..."
     xcrun simctl io "$DEVICE_UDID" screenshot "$SCREENSHOT_PATH"
@@ -188,16 +204,19 @@ verify_ui() {
     log_info "Screenshot saved: $SCREENSHOT_PATH"
     
     # Check for baseline
-    BASELINE_PATTERN="$BASELINE_DIR/${SCHEME}_${DEVICE// /_}_baseline.png"
+    BASELINE_PATTERN="$BASELINE_DIR/${NAME_PREFIX}_${DEVICE// /_}_baseline.png"
     if [[ -f "$BASELINE_PATTERN" ]]; then
         log_info "Comparing with baseline..."
-        # Simple file size comparison (real implementation would use image diff)
+        # Simple file size comparison
         BASELINE_SIZE=$(stat -f%z "$BASELINE_PATTERN" 2>/dev/null || stat -c%s "$BASELINE_PATTERN")
         CURRENT_SIZE=$(stat -f%z "$SCREENSHOT_PATH" 2>/dev/null || stat -c%s "$SCREENSHOT_PATH")
         SIZE_DIFF=$((CURRENT_SIZE - BASELINE_SIZE))
         
-        if [[ $SIZE_DIFF -gt 10000 ]] || [[ $SIZE_DIFF -lt -10000 ]]; then
-            log_warn "Significant difference detected (${SIZE_DIFF} bytes)"
+        # Absolute value
+        ABS_DIFF=${SIZE_DIFF#-}
+        
+        if [[ $ABS_DIFF -gt 5000 ]]; then
+            log_warn "Significant difference detected (${ABS_DIFF} bytes)"
             echo '{"status": "warning", "message": "Visual difference detected", "screenshot": "'"$SCREENSHOT_PATH"'", "baseline": "'"$BASELINE_PATTERN"'", "size_diff": '$SIZE_DIFF'}'
         else
             log_info "Visual verification passed"
