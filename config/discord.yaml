@@ -11,7 +11,7 @@ bot:
 guild:
   # Discord Server ID
   id: ${DISCORD_GROUP_ID}
-  
+
   # Category ID where session channels will be created (optional)
   sessionCategory: ${DISCORD_SESSION_CATEGORY}
 
@@ -22,6 +22,13 @@ guild:
   # defaultAgents:
   #   - architect
   #   - developer
+
+  # Direction B: Whitelist of allowed working directories (for security)
+  # When a Discord channel topic includes "workdir: /path/to/project", the path
+  # must be in this whitelist (exact match or subdirectory) to be accepted.
+  # If not configured, all workdir requests will be ignored.
+  allowedWorkdirs:
+    - /Users/casu/Documents
 
 # Channel configuration (optional)
 channels:

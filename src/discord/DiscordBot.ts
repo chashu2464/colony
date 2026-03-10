@@ -737,11 +737,14 @@ export class DiscordBot {
                 agentIds = this.config.guild?.defaultAgents;
             }
 
+            // 4b. Parse working directory from topic
+            const workingDir = this.parseWorkdirFromTopic(textChannel.topic);
+
             // 5. Create Colony session
-            // IMPORTANT: Use skipDiscordSync: true to prevent Direction A from triggering 
+            // IMPORTANT: Use skipDiscordSync: true to prevent Direction A from triggering
             // and creating yet another channel, which would cause an infinite loop.
             const sessionName = textChannel.name;
-            const sessionId = this.colony.createSession(sessionName, agentIds, undefined, { skipDiscordSync: true });
+            const sessionId = this.colony.createSession(sessionName, agentIds, workingDir, { skipDiscordSync: true });
             
             log.info(`Auto-created session "${sessionName}" (${sessionId}) for channel ${textChannel.id}`);
 
@@ -795,6 +798,65 @@ export class DiscordBot {
         }
 
         return undefined;
+    }
+
+    /**
+     * Parse working directory from topic string.
+     * Format: "workdir: /path/to/project" or "workdir:/path/to/project"
+     * Returns the validated path if it's in the whitelist, otherwise undefined.
+     * Creates the directory if it doesn't exist.
+     */
+    private parseWorkdirFromTopic(topic: string | null): string | undefined {
+        if (!topic) return undefined;
+
+        // Match "workdir: /path/to/project" (case insensitive)
+        const match = topic.match(/workdir:\s*([^|]+)/i);
+        if (!match || !match[1]) {
+            return undefined;
+        }
+
+        const requestedPath = match[1].trim();
+        if (!requestedPath) {
+            return undefined;
+        }
+
+        // Validate against whitelist
+        const allowedWorkdirs = this.config.guild?.allowedWorkdirs;
+        if (!allowedWorkdirs || allowedWorkdirs.length === 0) {
+            log.warn(`Working directory "${requestedPath}" requested but no whitelist configured. Ignoring.`);
+            return undefined;
+        }
+
+        // Check if the requested path is in the whitelist (exact match or subdirectory)
+        const isAllowed = allowedWorkdirs.some(allowed => {
+            // Normalize paths for comparison
+            const normalizedAllowed = allowed.replace(/\/$/, '');
+            const normalizedRequested = requestedPath.replace(/\/$/, '');
+
+            // Allow exact match or subdirectory
+            return normalizedRequested === normalizedAllowed ||
+                   normalizedRequested.startsWith(normalizedAllowed + '/');
+        });
+
+        if (!isAllowed) {
+            log.warn(`Working directory "${requestedPath}" not in whitelist. Allowed: ${allowedWorkdirs.join(', ')}`);
+            return undefined;
+        }
+
+        // Create directory if it doesn't exist
+        try {
+            const fs = require('fs');
+            if (!fs.existsSync(requestedPath)) {
+                fs.mkdirSync(requestedPath, { recursive: true });
+                log.info(`Created working directory: "${requestedPath}"`);
+            }
+        } catch (error) {
+            log.error(`Failed to create working directory "${requestedPath}":`, error);
+            return undefined;
+        }
+
+        log.info(`Working directory "${requestedPath}" validated successfully.`);
+        return requestedPath;
     }
 
     /**
@@ -902,7 +964,67 @@ export class DiscordBot {
     }
 
     /**
+     * Split a long message into chunks that fit Discord's 2000 character limit.
+     * Tries to split at natural boundaries (code blocks, paragraphs) to preserve formatting.
+     */
+    private splitMessage(content: string, maxLength: number = 1900): string[] {
+        if (content.length <= maxLength) {
+            return [content];
+        }
+
+        const chunks: string[] = [];
+        let remaining = content;
+
+        while (remaining.length > 0) {
+            if (remaining.length <= maxLength) {
+                chunks.push(remaining);
+                break;
+            }
+
+            // Try to find a good split point
+            let splitIndex = maxLength;
+
+            // Look for code block boundary (```)
+            const codeBlockEnd = remaining.lastIndexOf('```', maxLength);
+            if (codeBlockEnd > maxLength * 0.5) {
+                // Find the end of this code block
+                const nextCodeBlock = remaining.indexOf('```', codeBlockEnd + 3);
+                if (nextCodeBlock !== -1 && nextCodeBlock <= maxLength) {
+                    splitIndex = nextCodeBlock + 3;
+                } else {
+                    splitIndex = codeBlockEnd;
+                }
+            } else {
+                // Look for paragraph break (\n\n)
+                const paragraphBreak = remaining.lastIndexOf('\n\n', maxLength);
+                if (paragraphBreak > maxLength * 0.5) {
+                    splitIndex = paragraphBreak + 2;
+                } else {
+                    // Look for single line break
+                    const lineBreak = remaining.lastIndexOf('\n', maxLength);
+                    if (lineBreak > maxLength * 0.5) {
+                        splitIndex = lineBreak + 1;
+                    } else {
+                        // Look for space
+                        const space = remaining.lastIndexOf(' ', maxLength);
+                        if (space > maxLength * 0.5) {
+                            splitIndex = space + 1;
+                        }
+                        // Otherwise use maxLength (hard cut)
+                    }
+                }
+            }
+
+            chunks.push(remaining.substring(0, splitIndex).trim());
+            remaining = remaining.substring(splitIndex).trim();
+        }
+
+        return chunks;
+    }
+
+    /**
      * Send a message to Discord channel.
+     * Automatically splits messages that exceed Discord's 2000 character limit.
      */
     async sendToDiscord(channelId: string, content: string): Promise<void> {
         if (!this.ready) {
@@ -910,16 +1032,43 @@ export class DiscordBot {
             return;
         }
 
-        log.debug(`Attempting to send message to Discord channel ${channelId}`);
+        log.debug(`Attempting to send message to Discord channel ${channelId} (length: ${content.length})`);
 
         try {
             const channel = await this.client.channels.fetch(channelId);
-            if (channel && channel.isTextBased()) {
-                await (channel as TextChannel).send(content);
-                log.info(`Message sent to Discord channel ${channelId} successfully`);
-            } else {
+            if (!channel || !channel.isTextBased()) {
                 log.warn(`Channel ${channelId} not found or not text-based`);
+                return;
             }
+
+            const textChannel = channel as TextChannel;
+
+            // Split message if needed
+            const chunks = this.splitMessage(content);
+
+            if (chunks.length > 1) {
+                log.info(`Message split into ${chunks.length} chunks due to length (${content.length} chars)`);
+            }
+
+            // Send each chunk with pagination markers
+            for (let i = 0; i < chunks.length; i++) {
+                let chunkContent = chunks[i];
+
+                // Add pagination marker if multiple chunks
+                if (chunks.length > 1) {
+                    chunkContent = `**[${i + 1}/${chunks.length}]**\n${chunkContent}`;
+                }
+
+                await textChannel.send(chunkContent);
+                log.debug(`Sent chunk ${i + 1}/${chunks.length} to Discord channel ${channelId}`);
+
+                // Small delay between chunks to avoid rate limiting
+                if (i < chunks.length - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+            }
+
+            log.info(`Message sent to Discord channel ${channelId} successfully (${chunks.length} chunk(s))`);
         } catch (error) {
             log.error(`Error sending message to Discord channel ${channelId}:`, error);
         }

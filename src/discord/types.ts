@@ -11,6 +11,7 @@ export interface DiscordConfig {
         sessionCategory?: string; // Category ID where session channels will be created
         autoCreateOnChannelCreate?: boolean; // Direction B: Automatically create session when channel is created
         defaultAgents?: string[];            // Direction B: Default agents if topic parsing fails
+        allowedWorkdirs?: string[];          // Direction B: Whitelist of allowed working directories (for security)
     };
     channels?: {
         notifications?: string;
