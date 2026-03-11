@@ -172,6 +172,14 @@ export function getSession(name: string): SessionRecord | null {
     return loadSessions()[name] ?? null;
 }
 
+export function deleteSession(name: string): void {
+    ensureDataDir();
+    const sessions = loadSessions();
+    delete sessions[name];
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions, null, 2));
+    log.info(`Deleted CLI session cache: ${name}`);
+}
+
 // ── CLI Configurations ───────────────────────────────────
 
 interface CLIConfigEntry {
@@ -242,11 +250,14 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
 
     gemini: {
         buildArgs: (prompt, sessionId, files) => {
-            const args = ['-p', prompt, '--output-format', 'stream-json', '--yolo'];
-            if (sessionId) args.push('--resume', sessionId);
+            let finalPrompt = prompt;
             if (files && files.length > 0) {
-                log.warn(`Gemini CLI does not support --file parameter. Skipping ${files.length} attachment(s).`);
+                files.forEach((file) => {
+                    finalPrompt += `\n@${file}`;
+                });
             }
+            const args = ['-p', finalPrompt, '--output-format', 'stream-json', '--yolo'];
+            if (sessionId) args.push('--resume', sessionId);
             return args;
         },
         extractText: (event) => {
@@ -459,8 +470,12 @@ export async function invoke(
             let lastActivity = Date.now();
             const resetActivity = () => { lastActivity = Date.now(); };
 
-            child.stdout.on('data', resetActivity);
-            child.stderr.on('data', resetActivity);
+            if (child.stdout) {
+                child.stdout.on('data', resetActivity);
+            }
+            if (child.stderr) {
+                child.stderr.on('data', resetActivity);
+            }
 
             const idleChecker = setInterval(() => {
                 if (Date.now() - lastActivity > idleTimeoutMs) {
@@ -516,6 +531,10 @@ export async function invoke(
             }
 
             // ── Parse stdout line by line ──────────────────────
+            if (!child.stdout) {
+                settle('reject', new InvokeError('Child process stdout is null', { type: 'exit_error', cli, stderr }));
+                return;
+            }
             const rl = createInterface({ input: child.stdout });
 
             rl.on('line', (line) => {
@@ -554,7 +573,9 @@ export async function invoke(
             });
 
             // ── Collect stderr ─────────────────────────────────
-            child.stderr.on('data', (d) => { stderr += d.toString(); });
+            if (child.stderr) {
+                child.stderr.on('data', (d) => { stderr += d.toString(); });
+            }
 
             // ── Finalize ───────────────────────────────────────
             function tryFinalize(): void {

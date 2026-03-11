@@ -1054,13 +1054,15 @@ export class DiscordBot {
             for (let i = 0; i < chunks.length; i++) {
                 let chunkContent = chunks[i];
 
+                log.debug(`Processing chunk ${i + 1}/${chunks.length} (length: ${chunkContent.length}) for channel ${channelId}`);
+
                 // Add pagination marker if multiple chunks
                 if (chunks.length > 1) {
                     chunkContent = `**[${i + 1}/${chunks.length}]**\n${chunkContent}`;
                 }
 
                 await textChannel.send(chunkContent);
-                log.debug(`Sent chunk ${i + 1}/${chunks.length} to Discord channel ${channelId}`);
+                log.debug(`Successfully sent chunk ${i + 1}/${chunks.length} to Discord channel ${channelId}`);
 
                 // Small delay between chunks to avoid rate limiting
                 if (i < chunks.length - 1) {

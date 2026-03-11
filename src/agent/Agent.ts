@@ -18,6 +18,7 @@ import { SessionSealer, DEFAULT_SEAL_CONFIG } from '../session/SessionSealer.js'
 import { DigestGenerator } from '../session/DigestGenerator.js';
 import { SessionBootstrap } from '../session/SessionBootstrap.js';
 import { MemoryClassifier } from '../memory/MemoryClassifier.js';
+import { deleteSession } from '../llm/CLIInvoker.js';
 import type {
     AgentConfig,
     AgentStatus,
@@ -248,6 +249,10 @@ export class Agent {
                         const sealed = this.sessionStore.seal(this.id, message.roomId, activeSession.id);
                         if (sealed) {
                             activeSession.status = 'sealed'; // Invalidate active state so a new session is started
+
+                            // Delete CLI session cache to force creation of a new session
+                            deleteSession(sessionName);
+
                             // Generate digest asynchronously (don't block the current invoke)
                             this.digestGenerator.generate(sealed).then(digest => {
                                 this.sessionStore.setDigest(this.id, message.roomId, sealed.id, digest);
