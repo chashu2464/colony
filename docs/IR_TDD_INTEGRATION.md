@@ -8,6 +8,7 @@
 - 开发者必须在编码前先编写失败的测试用例。
 - 必须记录 TDD 迭代过程 (Red-Green-Refactor)。
 - 产出 `TDD_LOG.md` 作为阶段性成果。
+- 开发阶段需使用 `npm run test:watch` 等模式以支持快速反馈。
 
 ### 2.2 自动化质量门禁
 - **覆盖率检查**：
@@ -17,14 +18,20 @@
   - 使用 StrykerJS。
   - 变异测试得分 >= 80%。
 - **报告生成**：
-  - 自动化工具生成 `QUALITY_REPORT.md`。
+  - 自动化工具在 `dev-workflow next` 过程中触发检查。
+  - 最终生成 `docs/QUALITY_REPORT.md`。
 
 ## 3. 角色职责
-- **架构师 (Architect)**：定义门禁指标，设计集成方案。
-- **开发者 (Developer)**：执行 TDD，确保各项指标达标。
-- **QA负责人 (QA Lead)**：设计高价值测试用例，评审变异测试的有效性。
+- **架构师 (Architect)**：定义门禁指标，设计集成方案，编写 `handler.sh` 的逻辑增强。
+- **开发者 (Developer)**：配置测试工具链，执行 TDD，确保各项指标达标。
+- **QA负责人 (QA Lead)**：设计高价值测试用例，从安全和健壮性角度评审变异测试的有效性。
 
-## 4. 验收标准 (DoD)
+## 4. 技术可行性分析 (Feasibility Check)
+- **工具链兼容性**：Vitest 与当前 CommonJS/TypeScript 环境兼容度高，支持快速热重载。
+- **StrykerJS 消耗**：变异测试计算开销较大，可能增加 Stage 6 -> Stage 7 的等待时间，需优化变异范围。
+- **指标合理性**：90% 覆盖率对于核心逻辑是合理的，但对于一些 boilerplate 或 IO 相关代码可能需要忽略 (exclusion rules)。
+
+## 5. 验收标准 (DoD)
 - `dev-workflow` 脚本能自动拦截不达标的 Stage 6 提交。
 - 自动化生成所有要求的质量报告。
-- 完成一个试点任务验证该流程的可行性。
+- 完成一个试点功能，演示完整的 TDD 及门禁通过流程。
