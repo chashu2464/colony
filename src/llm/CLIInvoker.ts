@@ -413,6 +413,17 @@ export async function invoke(
     await acquireCLISlot(options.signal);
 
     try {
+        // Validate skills symlink exists before spawning CLI
+        if (options.cwd) {
+            const skillsPath = path.join(options.cwd, `.${cli}`, 'skills');
+            if (!fs.existsSync(skillsPath)) {
+                throw new InvokeError(
+                    `Skills symlink not found: ${skillsPath}. CLI cannot access Colony skills.`,
+                    { type: 'spawn_error', cli }
+                );
+            }
+        }
+
         // Handle attachments
         if (options.attachments && options.attachments.length > 0) {
             tempFiles = options.attachments.map((att, idx) => saveTempImage(att.url, idx));

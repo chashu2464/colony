@@ -575,6 +575,7 @@ export class Agent {
                 log.info(`Created skills symlink: ${skillsLink} -> ${colonySkillsDir}`);
             } catch (error) {
                 log.error(`Failed to create skills symlink for ${cliDir}:`, error);
+                throw new Error(`Cannot create skills symlink for ${cliDir}: ${error instanceof Error ? error.message : String(error)}`);
             }
         }
     }
