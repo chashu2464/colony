@@ -31,30 +31,7 @@ export function createColonyServer(options: ServerOptions) {
     app.use(express.json({ limit: '10mb' }));
 
     // ── Workflow Events ───────────────────────────────
-<<<<<<< Updated upstream
     app.use('/api/workflow', createWorkflowRouter(colony.chatRoomManager));
-=======
-    app.post('/api/workflow/events', async (req, res) => {
-        try {
-            const { type, roomId, from_stage, to_stage, next_actor } = req.body;
-            if (type !== 'WORKFLOW_STAGE_CHANGED') {
-                res.status(400).json({ error: 'Unknown event type' });
-                return;
-            }
-            const room = colony.chatRoomManager.getRoom(roomId);
-            if (!room) {
-                res.status(404).json({ error: 'Room not found' });
-                return;
-            }
-            const message = `🔄 工作流已从 Stage ${from_stage} 推进到 Stage ${to_stage}。 @${next_actor} 请开始处理。`;
-            room.sendSystemMessage(message, [next_actor]);
-            res.json({ success: true });
-        } catch (error) {
-            log.error('Failed to handle workflow event:', error);
-            res.status(500).json({ error: 'Internal server error' });
-        }
-    });
->>>>>>> Stashed changes
 
     // Set of connected WebSocket clients
     const clients = new Set<WebSocket>();

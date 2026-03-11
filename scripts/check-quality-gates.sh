@@ -75,10 +75,12 @@ fi
 
 # Correct extraction of mutation score for Stryker JSON report
 # We count Killed + Timeout out of (Killed + Timeout + Survived + NoCoverage)
-MUTATION_STATS=$(jq '[.files[].mutants[]] | {killed: (map(select(.status=="Killed")) | length), timeout: (map(select(.status=="Timeout")) | length), total: (map(select(.status=="Killed" or .status=="Survived" or .status=="Timeout" or .status=="NoCoverage")) | length)}' reports/mutation/mutation.json)
+# We also count total number of files mutated
+MUTATION_STATS=$(jq '{files: (.files | keys | length), killed: ([.files[].mutants[] | select(.status=="Killed")] | length), timeout: ([.files[].mutants[] | select(.status=="Timeout")] | length), total: ([.files[].mutants[] | select(.status=="Killed" or .status=="Survived" or .status=="Timeout" or .status=="NoCoverage")] | length)}' reports/mutation/mutation.json)
 KILLED=$(echo "$MUTATION_STATS" | jq -r '.killed')
 TIMEOUT=$(echo "$MUTATION_STATS" | jq -r '.timeout')
 TOTAL=$(echo "$MUTATION_STATS" | jq -r '.total')
+FILES_COUNT=$(echo "$MUTATION_STATS" | jq -r '.files')
 
 if [ "$TOTAL" -gt 0 ]; then
     MUTATION_SCORE=$(echo "scale=2; ($KILLED + $TIMEOUT) / $TOTAL * 100" | bc -l)
@@ -100,6 +102,7 @@ cat > "$REPORT_FILE" <<EOF
 - **Unit Coverage**: $UNIT_COV% (Threshold: $UNIT_THRESHOLD%)
 - **Integration Coverage**: $INT_COV% (Threshold: $INT_THRESHOLD%)
 - **Mutation Score**: $MUTATION_SCORE% (Threshold: $EFFECTIVE_MUTATION_THRESHOLD%)
+- **Mutation Files Count**: $FILES_COUNT
 - **Task ID**: $TASK_ID
 - **Branch**: $(git branch --show-current 2>/dev/null)
 - **Commit**: $(git rev-parse HEAD 2>/dev/null)

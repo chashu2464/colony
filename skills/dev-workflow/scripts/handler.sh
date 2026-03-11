@@ -245,6 +245,32 @@ EOF
       exit 0
     fi
 
+    # TDD Quality Gates (Stage 6 -> 7)
+    if [ "$CURRENT" -eq 6 ]; then
+      # Support emergency skip
+      if [ "$SKIP_QUALITY_GATES" = "true" ]; then
+        echo "{\"warning\": \"Quality Gates skipped by environment variable. This action is logged for audit.\"}"
+        # Ensure we still try to generate a skip report if the script supports it
+        bash scripts/check-quality-gates.sh || true
+      else
+        # 1. Verify TDD Log integrity and existence
+        if ! node scripts/generate-tdd-log.js --verify 2>/dev/null; then
+          # Try to generate it once if it's missing but commits exist
+          node scripts/generate-tdd-log.js > /dev/null 2>&1
+          if ! node scripts/generate-tdd-log.js --verify 2>/dev/null; then
+            echo "{\"error\": \"TDD Log Verification Failed: Log is missing, tampered, or commits are not in history. Stage 6 requires valid TDD evidence.\"}"
+            exit 1
+          fi
+        fi
+
+        # 2. Run Quality Gates (Unit/Int/Mutation)
+        if ! bash scripts/check-quality-gates.sh; then
+          echo "{\"error\": \"Quality Gate Failed: One or more metrics (90/80/70) are not met. Check docs/QUALITY_REPORT.md for details.\"}"
+          exit 1
+        fi
+      fi
+    fi
+
     # Evidence Validation
     if [ ! -z "$EVIDENCE" ] && [ "$EVIDENCE" != "null" ]; then
       if [ ! -e "$EVIDENCE" ] && [ ! -d "$EVIDENCE" ]; then
