@@ -102,11 +102,29 @@ function generateTddLog(verifyOnly = false) {
 
         // 3. Commit existence check (Security)
         if (log) {
-            const invalid = verifyCommits(log.split('\n'));
+            const lines = log.split('\n');
+            const invalid = verifyCommits(lines);
             if (invalid.length > 0) {
                 console.error('Error: The following commits in TDD log are not in current branch history:', invalid.join(', '));
                 process.exit(1);
             }
+
+            // 4. TDD Cycle Integrity Check (Red-Green-Refactor)
+            const hasRed = lines.some(line => line.toLowerCase().includes('tdd:red'));
+            const hasGreen = lines.some(line => line.toLowerCase().includes('tdd:green'));
+            const hasRefactor = lines.some(line => line.toLowerCase().includes('tdd:refactor'));
+
+            if (!hasRed || !hasGreen) {
+                console.error('Error: TDD Cycle Incomplete. Missing Red or Green phase evidence.');
+                console.error('Current evidence:', { hasRed, hasGreen, hasRefactor });
+                process.exit(1);
+            }
+            if (!hasRefactor) {
+                console.warn('Warning: No Refactor phase evidence found. While not blocking, refactoring is a core part of TDD.');
+            }
+        } else {
+            console.error('Error: No TDD commits found in history. TDD evidence is mandatory.');
+            process.exit(1);
         }
         
         console.log('TDD Log verification successful.');

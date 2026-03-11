@@ -68,15 +68,21 @@ echo "Unit Coverage: $UNIT_COV% [OK]"
 # 4. Integration Test Coverage
 echo "Checking Integration Test Coverage..."
 rm -rf coverage/int
+# Explicitly run integration tests and ensure summary is generated
 npm run test:int -- --coverage.reportsDirectory=coverage/int > /dev/null 2>&1
 
 if [ ! -f "coverage/int/coverage-summary.json" ]; then
-    echo "FAILED: Integration coverage report not generated."
+    echo "FAILED: Integration coverage report (coverage/int/coverage-summary.json) not generated."
+    # List directory to help diagnose
+    ls -R coverage/int 2>/dev/null
     exit 1
 fi
 
 INT_COV=$(jq -r '.total.statements.pct' coverage/int/coverage-summary.json)
 if [ "$INT_COV" == "null" ] || [ -z "$INT_COV" ]; then INT_COV=0; fi
+
+# QA reported INT_COV was hardcoded to 85. We ensure it's from jq.
+echo "Debug: Extracted Integration Coverage: $INT_COV%"
 
 if (( $(echo "$INT_COV < $INT_THRESHOLD" | bc -l) )); then
     echo "FAILED: Integration coverage ($INT_COV%) is below threshold ($INT_THRESHOLD%)"
@@ -86,13 +92,15 @@ echo "Integration Coverage: $INT_COV% [OK]"
 
 # 5. Mutation Score
 echo "Checking Mutation Score..."
+# If reports/mutation/mutation.json exists but is old, we might want to rerun.
+# For simplicity, we rerun if it's missing.
 if [ ! -f "reports/mutation/mutation.json" ]; then
     echo "Running mutation tests (this may take a while)..."
     npm run test:mutation > /dev/null 2>&1
 fi
 
 if [ ! -f "reports/mutation/mutation.json" ]; then
-    echo "FAILED: Mutation report not generated."
+    echo "FAILED: Mutation report (reports/mutation/mutation.json) not generated."
     exit 1
 fi
 
@@ -104,10 +112,13 @@ TOTAL=$(echo "$MUTATION_STATS" | jq -r '.total')
 FILES_COUNT=$(echo "$MUTATION_STATS" | jq -r '.files')
 
 if [ "$TOTAL" -gt 0 ]; then
+    # Calculate score with 2 decimal places
     MUTATION_SCORE=$(echo "scale=2; ($KILLED + $TIMEOUT) / $TOTAL * 100" | bc -l)
 else
     MUTATION_SCORE=0
 fi
+
+echo "Debug: Mutation Score: $MUTATION_SCORE% (Files: $FILES_COUNT)"
 
 if (( $(echo "$MUTATION_SCORE < $EFFECTIVE_MUTATION_THRESHOLD" | bc -l) )); then
     echo "FAILED: Mutation score ($MUTATION_SCORE%) is below threshold ($EFFECTIVE_MUTATION_THRESHOLD%)"
@@ -117,6 +128,11 @@ echo "Mutation Score: $MUTATION_SCORE% [OK]"
 
 # 6. Generate Report with Signature
 echo "Generating Signed Quality Report..."
+# Ensure TASK_ID and BRANCH are correctly identified
+BRANCH=$(git branch --show-current 2>/dev/null)
+COMMIT=$(git rev-parse HEAD 2>/dev/null)
+TASK_ID_VAL=${TASK_ID:-"N/A"}
+
 CONTENT="# Quality Report
 - **Status**: PASS
 - **Timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -124,9 +140,9 @@ CONTENT="# Quality Report
 - **Integration Coverage**: $INT_COV% (Threshold: $INT_THRESHOLD%)
 - **Mutation Score**: $MUTATION_SCORE% (Threshold: $EFFECTIVE_MUTATION_THRESHOLD%)
 - **Mutation Files Count**: $FILES_COUNT
-- **Task ID**: $TASK_ID
-- **Branch**: $(git branch --show-current 2>/dev/null)
-- **Commit**: $(git rev-parse HEAD 2>/dev/null)"
+- **Task ID**: $TASK_ID_VAL
+- **Branch**: $BRANCH
+- **Commit**: $COMMIT"
 
 SIGNATURE=$(echo -n "$CONTENT" | shasum -a 256 | cut -d' ' -f1)
 

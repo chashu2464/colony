@@ -247,6 +247,11 @@ EOF
 
     # TDD Quality Gates (Stage 6 -> 7)
     if [ "$CURRENT" -eq 6 ]; then
+      # Export TASK_ID and AGENT_ID for scripts
+      TASK_ID=$(jq -r '.task_id' "$WORKFLOW_FILE")
+      export TASK_ID
+      export COLONY_AGENT_ID
+
       # Support emergency skip
       if [ "$SKIP_QUALITY_GATES" = "true" ]; then
         echo "{\"warning\": \"Quality Gates skipped by environment variable. This action is logged for audit.\"}"
@@ -258,7 +263,7 @@ EOF
           # Try to generate it once if it's missing but commits exist
           node scripts/generate-tdd-log.js > /dev/null 2>&1
           if ! node scripts/generate-tdd-log.js --verify 2>/dev/null; then
-            echo "{\"error\": \"TDD Log Verification Failed: Log is missing, tampered, or commits are not in history. Stage 6 requires valid TDD evidence.\"}"
+            echo "{\"error\": \"TDD Log Verification Failed: Log is missing, tampered, or commits are not in history. Stage 6 requires valid TDD evidence (Red, Green, Refactor commits).\"}"
             exit 1
           fi
         fi
@@ -274,12 +279,7 @@ EOF
           # Extract signature from the last line
           ACTUAL_SIG=$(grep "<!-- SIGNATURE:" docs/QUALITY_REPORT.md | sed 's/.*SIGNATURE: \([a-f0-9]*\) -->/\1/')
           # Extract content (all lines except the blank line and signature line at the end)
-          # We know the content ends before the signature line. 
-          # Let's use sed to get everything until the line containing SIGNATURE, then remove that line and the blank line before it.
           CALC_CONTENT=$(sed '/<!-- SIGNATURE:/,$d' docs/QUALITY_REPORT.md | sed '$d')
-          # Wait, echo -n "$CONTENT" was used in generator. 
-          # When reading from file, we might have an extra newline if we use cat or head.
-          # Let's use a more robust check:
           if [ ! -z "$ACTUAL_SIG" ]; then
              CALC_SIG=$(echo -n "$CALC_CONTENT" | shasum -a 256 | cut -d' ' -f1)
              if [ "$ACTUAL_SIG" != "$CALC_SIG" ]; then
