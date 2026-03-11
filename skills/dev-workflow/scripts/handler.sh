@@ -27,6 +27,7 @@ STAGES=(
 # Notification Helper
 function get_next_actor_role() {
   local stage=$1
+<<<<<<< Updated upstream
   
   # Try to use the new SSOT parser (Direction 1)
   local script_path="scripts/parse-workflow-table.js"
@@ -39,10 +40,13 @@ function get_next_actor_role() {
   fi
 
   # Fallback to hardcoded logic if parser fails or file missing
+=======
+>>>>>>> Stashed changes
   case $stage in
     0|1|2) echo "architect" ;;
     3|6) echo "developer" ;;
     4|5|7) echo "qa_lead" ;;
+<<<<<<< Updated upstream
     8) 
       # Fallback to developer if tech_lead is not assigned
       local tl=$(jq -r '.assignments["tech_lead"] // .roles["tech_lead"] // empty' "$WORKFLOW_FILE")
@@ -52,10 +56,14 @@ function get_next_actor_role() {
         echo "tech_lead"
       fi
       ;;
+=======
+    8) echo "tech_lead" ;;
+>>>>>>> Stashed changes
     *) echo "developer" ;;
   esac
 }
 
+<<<<<<< Updated upstream
 function validate_assignments() {
   local assignments="$1"
   # Check if any value contains / or @ (heuristic for file paths or malformed IDs)
@@ -66,10 +74,13 @@ function validate_assignments() {
   fi
   return 0
 }
+=======
+>>>>>>> Stashed changes
 function notify_server() {
   local from=$1
   local to=$2
   local role=$(get_next_actor_role $to)
+<<<<<<< Updated upstream
   # Check assignments (legacy support for roles is handled during state loading/saving)
   local actor=$(jq -r --arg role "$role" '.assignments[$role] // empty' "$WORKFLOW_FILE")
   
@@ -79,6 +90,12 @@ function notify_server() {
     # Delay notification to let the current CLI invocation finish processing
     # the skill response before a new agent is triggered.
     (sleep 2 && curl -X POST "http://localhost:${port}/api/workflow/events" \
+=======
+  local actor=$(jq -r --arg role "$role" '.assignments[$role] // empty' "$WORKFLOW_FILE")
+  
+  if [ ! -z "$actor" ]; then
+    curl -X POST "http://localhost:3001/api/workflow/events" \
+>>>>>>> Stashed changes
       -H "Content-Type: application/json" \
       -d "{
         \"type\": \"WORKFLOW_STAGE_CHANGED\",
@@ -87,7 +104,11 @@ function notify_server() {
         \"to_stage\": $to,
         \"next_actor\": \"$actor\"
       }" \
+<<<<<<< Updated upstream
       --silent --show-error > /dev/null 2>&1 || echo "Warning: Failed to send workflow event notification" >&2) &
+=======
+      --silent --show-error > /dev/null 2>&1 || echo "Warning: Failed to send workflow event notification" >&2
+>>>>>>> Stashed changes
   fi
 }
 
@@ -353,8 +374,13 @@ EOF
     jq --arg next "$NEXT" --arg next_name "${STAGES[$NEXT]}" --arg status "$FINAL_STATUS" \
       '.current_stage = ($next|tonumber) | .stage_name = $next_name | .status = $status' \
       "$WORKFLOW_FILE" > "${WORKFLOW_FILE}.tmp" && mv "${WORKFLOW_FILE}.tmp" "$WORKFLOW_FILE"
+<<<<<<< Updated upstream
 
     # Notify server to wake up next actor (system will automatically handle it, no manual @mention needed)
+=======
+    
+    # Notify next actor
+>>>>>>> Stashed changes
     notify_server $CURRENT $NEXT
 
     cat "$WORKFLOW_FILE"
