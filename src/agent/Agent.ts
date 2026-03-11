@@ -525,7 +525,7 @@ export class Agent {
 
     /**
      * Ensure skills symlinks exist in the working directory.
-     * Creates .claude/skills and .gemini/skills pointing to Colony's skills directory.
+     * Creates .claude/skills, .gemini/skills, and .codex/skills pointing to Colony's skills directory.
      */
     private async ensureSkillsSymlinks(workingDir: string): Promise<void> {
         const colonySkillsDir = path.join(process.cwd(), 'skills');
@@ -542,8 +542,8 @@ export class Agent {
             return;
         }
 
-        // Create symlinks for both Claude and Gemini
-        for (const cliDir of ['.claude', '.gemini']) {
+        // Create symlinks for all supported CLIs (Claude, Gemini, Codex)
+        for (const cliDir of ['.claude', '.gemini', '.codex']) {
             const targetDir = path.join(workingDir, cliDir);
             const skillsLink = path.join(targetDir, 'skills');
 

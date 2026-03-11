@@ -66,6 +66,7 @@ function validate_assignments() {
   fi
   return 0
 }
+
 function notify_server() {
   local from=$1
   local to=$2
