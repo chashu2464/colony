@@ -281,18 +281,19 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
 
     codex: {
         buildArgs: (prompt, sessionId, files) => {
-            const args = ['exec'];
+            const args = ['exec', '--dangerously-bypass-approvals-and-sandbox', '--json'];
+
+            if (sessionId) {
+                args.push('resume', sessionId);
+            }
+
             if (files && files.length > 0) {
                 for (const file of files) {
                     args.push('-i', file);
                 }
             }
-            if (sessionId) {
-                args.push('resume', sessionId, prompt);
-            } else {
-                args.push(prompt);
-            }
-            args.push('--json');
+
+            // Note: prompt will be passed via stdin, not as argument
             return args;
         },
         extractText: (event) => {
@@ -437,10 +438,16 @@ export async function invoke(
             let rlClosed = false;
 
             const child = spawn(cliPath, argsWithFiles, {
-                stdio: ['ignore', 'pipe', 'pipe'],
+                stdio: cli === 'codex' ? ['pipe', 'pipe', 'pipe'] : ['ignore', 'pipe', 'pipe'],
                 env: { ...process.env, ...options.env },
                 cwd: options.cwd, // Set working directory
             });
+
+            // For codex CLI, write prompt to stdin
+            if (cli === 'codex' && child.stdin) {
+                child.stdin.write(prompt + '\n');
+                child.stdin.end();
+            }
 
             const textChunks: string[] = [];
             let capturedSessionId: string | null = null;

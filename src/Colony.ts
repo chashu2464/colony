@@ -130,10 +130,15 @@ export class Colony {
     }
 
     /**
-     * Initialize Colony (restore saved sessions and start Discord).
+     * Initialize Colony (restore saved sessions, verify CLI health, and start Discord).
      */
     async initialize(): Promise<void> {
+        // Restore saved sessions
         await this.chatRoomManager.restoreAllSessions();
+
+        // Verify CLI health for all agents
+        log.info('Environment check: Verifying CLI health for agents...');
+        await this.agentRegistry.verifyAllAgents();
 
         // Start Discord integration if enabled
         if (this.discordManager) {

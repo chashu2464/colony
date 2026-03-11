@@ -128,12 +128,30 @@ Colony enforces a strict engineering workflow to ensure code quality and system 
     cp .env.example .env
     # Edit .env with your API keys and configuration
     ```
-4.  **Build and Run**:
+4.  **Verify Environment**:
+    Colony automatically performs a health check for your installed CLIs upon startup. To manually verify:
+    ```bash
+    # Verify specific CLI availability
+    gemini --version
+    claude --version
+    codex --version
+    ```
+5.  **Build and Run**:
     ```bash
     npm run build
     npm start
     ```
-5.  **Access the UI**: Open `http://localhost:3000` in your browser.
+6.  **Access the UI**: Open `http://localhost:3000` in your browser.
+
+---
+
+## 🔍 Health Checks & Observability
+
+Colony includes built-in diagnostics to ensure your agent environment is stable:
+
+- **Startup Health Check**: During `colony.initialize()`, the system performs an end-to-end check of each agent's primary model. If a CLI (e.g., `codex`) is unresponsive or misconfigured, it will be flagged in the logs immediately.
+- **Enhanced Logging**: Failed CLI calls now log the **full command execution** (path + arguments) to `logs/colony-YYYY-MM-DD.log`, making parameter mismatches or missing binary issues trivial to diagnose.
+- **Manual Verification**: You can use the `verifyCLI` utility in `src/llm/CLIInvoker.ts` to build custom health check scripts.
 
 ---
 

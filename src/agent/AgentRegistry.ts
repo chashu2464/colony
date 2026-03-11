@@ -8,7 +8,8 @@ import { ModelRouter } from '../llm/ModelRouter.js';
 import { ContextAssembler } from '../memory/ContextAssembler.js';
 import { ShortTermMemory } from '../memory/ShortTermMemory.js';
 import { ChatRoomManager } from '../conversation/ChatRoomManager.js'; // Added import
-import type { AgentConfig, AgentStatus } from '../types.js';
+import { verifyCLI } from '../llm/CLIInvoker.js';
+import type { AgentConfig, AgentStatus, SupportedCLI } from '../types.js';
 
 const log = new Logger('AgentRegistry');
 
@@ -102,6 +103,37 @@ export class AgentRegistry {
             status: a.getStatus(),
             model: a.config.model.primary,
         }));
+    }
+
+    /**
+     * Verify the health of the primary model for all registered agents.
+     */
+    async verifyAllAgents(): Promise<Record<string, boolean>> {
+        const agents = this.getAll();
+        
+        // Find unique models to verify (to avoid redundant checks)
+        const uniqueModels = Array.from(new Set(agents.map(a => a.config.model.primary)));
+        const modelHealth: Record<string, boolean> = {};
+        
+        log.info(`Health check: Verifying unique models: ${uniqueModels.join(', ')}`);
+        
+        // Run health checks in parallel
+        const results = await Promise.all(uniqueModels.map(m => verifyCLI(m)));
+        uniqueModels.forEach((m, i) => {
+            modelHealth[m] = results[i];
+        });
+        
+        // Map back to agents
+        const agentHealth: Record<string, boolean> = {};
+        for (const agent of agents) {
+            const healthy = modelHealth[agent.config.model.primary];
+            agentHealth[agent.id] = healthy;
+            if (!healthy) {
+                log.warn(`Health check: Agent "${agent.id}" primary model "${agent.config.model.primary}" is NOT healthy.`);
+            }
+        }
+        
+        return agentHealth;
     }
 
     /**
