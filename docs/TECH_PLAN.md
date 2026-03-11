@@ -1,0 +1,51 @@
+# 技术实现方案 (TECH_PLAN): TDD 质量门禁集成
+
+## 1. 目标
+在 `dev-workflow` 的 Stage 6 (开发实现) 中集成 TDD 循环和自动化质量门禁，确保代码质量符合 90/80/80 指标。
+
+## 2. 关键任务与实现细节
+
+### 2.1 环境初始化与依赖管理
+- **文件**: `scripts/setup-tdd.sh`
+- **内容**: 
+  - 安装 `vitest`, `@vitest/coverage-v8`, `@stryker-mutator/core`, `@stryker-mutator/vitest-runner`, `@stryker-mutator/typescript-checker`。
+  - 初始化 `vitest.config.ts`：配置覆盖率输出路径为 `coverage/`，包含 `json-summary` 格式。
+  - 初始化 `stryker.config.json`：配置 `vitest` 作为 runner，并启用 `typescript-checker`。
+  - 更新 `package.json` 脚本：
+    - `"test:unit": "vitest run --dir src/tests/unit --coverage"`
+    - `"test:int": "vitest run --dir src/tests/integration --coverage"`
+    - `"test:mutation": "stryker run"`
+    - `"tdd:log": "node scripts/generate-tdd-log.js"`
+
+### 2.2 质量门禁验证脚本
+- **文件**: `scripts/check-quality-gates.sh`
+- **逻辑**:
+  1. 运行单元测试并提取 `coverage/coverage-summary.json` 中的 `statements` 覆盖率，校验是否 >= 90%。
+  2. 运行集成测试并校验覆盖率是否 >= 80%。
+  3. 运行变异测试并解析 `reports/mutation/mutation.json` 中的 `mutationScore`，校验是否 >= 80%。
+  4. 生成综合报告 `docs/QUALITY_REPORT.md`。
+
+### 2.3 TDD 日志自动化生成
+- **文件**: `scripts/generate-tdd-log.js`
+- **逻辑**: 使用 `simple-git` 或原生 `git log` 命令提取当前分支下带有 `tdd:red`, `tdd:green`, `tdd:refactor` 前缀的 commit，并按时间线汇总到 `docs/TDD_LOG.md`。
+
+### 2.4 工作流集成
+- **文件**: `skills/dev-workflow/scripts/handler.sh`
+- **修改**: 在 `action: next` 且 `CURRENT_STAGE == 6` 时：
+  1. 检查 `docs/TDD_LOG.md` 是否存在（由开发者在提交前手动或通过脚本生成）。
+  2. 执行 `bash scripts/check-quality-gates.sh`。
+  3. 若失败，报错并拦截推进。
+
+### 2.5 测试套件规范
+- 单元测试：`src/tests/unit/**/*.spec.ts`
+- 集成测试：`src/tests/integration/**/*.test.ts`
+- 排除项：`*.config.ts`, `node_modules/`, `dist/`, `types.ts` 等。
+
+## 3. 风险与应对
+- **变异测试耗时**: StrykerJS 在全量运行时非常慢。方案：在门禁检查时支持增量模式（只针对修改的文件）。
+- **环境隔离**: 确保 CI/本地环境中的门禁检查逻辑一致。
+
+## 4. 进度计划
+1. [ ] 完成脚本开发 (`setup-tdd.sh`, `check-quality-gates.sh`, `generate-tdd-log.js`)
+2. [ ] 修改 `handler.sh` 并进行单元测试
+3. [ ] 试点功能演示 (Stage 6 流程跑通)
