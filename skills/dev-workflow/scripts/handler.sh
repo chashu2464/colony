@@ -276,20 +276,39 @@ EOF
 
         # 3. Verify Quality Report Signature
         if [ -f "docs/QUALITY_REPORT.md" ]; then
-          # Extract signature from the last line
-          ACTUAL_SIG=$(grep "<!-- SIGNATURE:" docs/QUALITY_REPORT.md | sed 's/.*SIGNATURE: \([a-f0-9]*\) -->/\1/')
-          # Extract content (everything before the signature line)
-          # Command substitution $(...) automatically trims all trailing newlines
-          CALC_CONTENT=$(sed '/<!-- SIGNATURE:/,$d' docs/QUALITY_REPORT.md)
-          if [ ! -z "$ACTUAL_SIG" ]; then
-             # Calculate signature on the content (trimmed by $(...))
-             CALC_SIG=$(echo -n "$CALC_CONTENT" | shasum -a 256 | cut -d' ' -f1)
-             if [ "$ACTUAL_SIG" != "$CALC_SIG" ]; then
-               echo "{\"error\": \"Quality Report Verification Failed: Signature mismatch. Audit integrity compromised. Expected $CALC_SIG, got $ACTUAL_SIG\"}"
-               exit 1
+          # Ensure there is exactly one signature in the file
+          SIG_COUNT=$(grep -c "<!-- SIGNATURE:" docs/QUALITY_REPORT.md || true)
+          if [ "$SIG_COUNT" -ne 1 ]; then
+            echo "{\"error\": \"Quality Report Verification Failed: Exactly one signature line required. Found: $SIG_COUNT\"}"
+            exit 1
+          fi
+
+          # Extract the last line which should be the signature
+          # tail -n 1 returns the text of the last line whether or not it ends with a newline.
+          LAST_LINE=$(tail -n 1 docs/QUALITY_REPORT.md)
+          
+          # Strict check: signature must be exactly on the last line
+          SIG_REGEX="^<!-- SIGNATURE: ([a-f0-9]+) -->$"
+          if [[ "$LAST_LINE" =~ $SIG_REGEX ]]; then
+             ACTUAL_SIG="${BASH_REMATCH[1]}"
+             
+             # Extract content (everything before the signature line)
+             # Command substitution $(...) automatically trims all trailing newlines.
+             CALC_CONTENT=$(sed '$d' docs/QUALITY_REPORT.md)
+             
+             if [ ! -z "$ACTUAL_SIG" ]; then
+                # Calculate signature on the content
+                CALC_SIG=$(echo -n "$CALC_CONTENT" | shasum -a 256 | cut -d' ' -f1)
+                if [ "$ACTUAL_SIG" != "$CALC_SIG" ]; then
+                  echo "{\"error\": \"Quality Report Verification Failed: Signature mismatch. Audit integrity compromised. Expected $CALC_SIG, got $ACTUAL_SIG\"}"
+                  exit 1
+                fi
+             else
+                echo "{\"error\": \"Quality Report Verification Failed: Signature format invalid.\"}"
+                exit 1
              fi
           else
-             echo "{\"error\": \"Quality Report Verification Failed: Missing signature.\"}"
+             echo "{\"error\": \"Quality Report Verification Failed: Signature must be on the last line. Tampering detected after signature.\"}"
              exit 1
           fi
         fi

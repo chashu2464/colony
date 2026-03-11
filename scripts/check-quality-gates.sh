@@ -20,8 +20,9 @@ TASK_ID_VAL=${TASK_ID:-"N/A"}
 # Emergency Skip check
 if [ "$SKIP_QUALITY_GATES" = "true" ]; then
     echo "WARNING: SKIP_QUALITY_GATES is set to true. Bypassing gates."
-    # Log skip to report
-    CONTENT="# Quality Report
+    # Log skip to report (Use heredoc to avoid indentation issues)
+    cat > "$REPORT_FILE" <<EOF
+# Quality Report
 - **gate_status**: SKIPPED
 - **timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 - **task_id**: $TASK_ID_VAL
@@ -29,11 +30,12 @@ if [ "$SKIP_QUALITY_GATES" = "true" ]; then
 - **commit_hash**: $COMMIT
 - **quality_gates_skipped**: true
 - **skipped_by**: ${COLONY_AGENT_ID:-"manual"}
-- **reason**: SKIP_QUALITY_GATES=true"
+- **reason**: SKIP_QUALITY_GATES=true
+EOF
     
     # Calculate signature on the content itself
+    CONTENT=$(cat "$REPORT_FILE")
     SIGNATURE=$(echo -n "$CONTENT" | shasum -a 256 | cut -d' ' -f1)
-    echo "$CONTENT" > "$REPORT_FILE"
     echo -e "\n<!-- SIGNATURE: $SIGNATURE -->" >> "$REPORT_FILE"
     exit 0
 fi
@@ -128,7 +130,8 @@ echo "Mutation Score: $MUTATION_SCORE% [OK]"
 # 6. Generate Report with Signature
 echo "Generating Signed Quality Report..."
 
-CONTENT="# Quality Report
+cat > "$REPORT_FILE" <<EOF
+# Quality Report
 - **gate_status**: PASS
 - **timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 - **task_id**: $TASK_ID_VAL
@@ -138,11 +141,13 @@ CONTENT="# Quality Report
 - **unit_coverage**: $UNIT_COV%
 - **integration_coverage**: $INT_COV%
 - **mutation_score**: $MUTATION_SCORE%
-- **mutation_files_count**: $FILES_COUNT"
+- **mutation_files_count**: $FILES_COUNT
+EOF
+
 # Calculate signature on the content itself
+CONTENT=$(cat "$REPORT_FILE")
 SIGNATURE=$(echo -n "$CONTENT" | shasum -a 256 | cut -d' ' -f1)
 
-echo "$CONTENT" > "$REPORT_FILE"
 echo -e "\n<!-- SIGNATURE: $SIGNATURE -->" >> "$REPORT_FILE"
 
 echo "All Quality Gates PASSED. Report signed."
