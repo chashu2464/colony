@@ -24,14 +24,14 @@ if [ "$SKIP_QUALITY_GATES" = "true" ]; then
     CONTENT="# Quality Report
 - **gate_status**: SKIPPED
 - **timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-- **skipped_by**: $COLONY_AGENT_ID
-- **reason**: SKIP_QUALITY_GATES=true
 - **task_id**: $TASK_ID_VAL
 - **branch**: $BRANCH
 - **commit_hash**: $COMMIT
-- **quality_gates_skipped**: true"
+- **quality_gates_skipped**: true
+- **skipped_by**: ${COLONY_AGENT_ID:-"manual"}
+- **reason**: SKIP_QUALITY_GATES=true"
     
-    # Calculate signature on the content itself (no trailing newline for consistency)
+    # Calculate signature on the content itself
     SIGNATURE=$(echo -n "$CONTENT" | shasum -a 256 | cut -d' ' -f1)
     echo "$CONTENT" > "$REPORT_FILE"
     echo -e "\n<!-- SIGNATURE: $SIGNATURE -->" >> "$REPORT_FILE"
@@ -131,15 +131,14 @@ echo "Generating Signed Quality Report..."
 CONTENT="# Quality Report
 - **gate_status**: PASS
 - **timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-- **unit_coverage**: $UNIT_COV%
-- **integration_coverage**: $INT_COV%
-- **mutation_score**: $MUTATION_SCORE%
-- **mutation_files_count**: $FILES_COUNT
 - **task_id**: $TASK_ID_VAL
 - **branch**: $BRANCH
 - **commit_hash**: $COMMIT
-- **quality_gates_skipped**: false"
-
+- **quality_gates_skipped**: false
+- **unit_coverage**: $UNIT_COV%
+- **integration_coverage**: $INT_COV%
+- **mutation_score**: $MUTATION_SCORE%
+- **mutation_files_count**: $FILES_COUNT"
 # Calculate signature on the content itself
 SIGNATURE=$(echo -n "$CONTENT" | shasum -a 256 | cut -d' ' -f1)
 

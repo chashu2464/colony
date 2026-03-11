@@ -89,9 +89,15 @@ function generateTddLog(verifyOnly = false) {
         const signatureLine = `<!-- SIGNATURE: ${originalSignature} -->`;
         
         // Ensure nothing exists after the signature line (anti-tamper)
-        const parts = content.split(signatureLine);
-        if (parts.length > 2 || (parts[1] && parts[1].trim() !== '')) {
+        // Check if the trimmed content ends with exactly the signature line
+        if (!content.trim().endsWith(signatureLine)) {
             console.error('Error: TDD_LOG.md has been tampered with after the signature.');
+            process.exit(1);
+        }
+
+        const parts = content.split(signatureLine);
+        if (parts.length > 2) {
+            console.error('Error: TDD_LOG.md has multiple signature lines.');
             process.exit(1);
         }
 
@@ -122,11 +128,10 @@ function generateTddLog(verifyOnly = false) {
             }
 
             // 4. TDD Cycle Integrity Check (Red-Green-Refactor)
-            // Use log directly to avoid subject truncation issues if any
             const fullLog = execSync('git log --pretty=format:"%B" --grep="tdd:"').toString().toLowerCase();
-            const hasRed = fullLog.includes('tdd:red');
-            const hasGreen = fullLog.includes('tdd:green');
-            const hasRefactor = fullLog.includes('tdd:refactor');
+            const hasRed = /tdd:\s*red/i.test(fullLog);
+            const hasGreen = /tdd:\s*green/i.test(fullLog);
+            const hasRefactor = /tdd:\s*refactor/i.test(fullLog);
 
             if (!hasRed || !hasGreen || !hasRefactor) {
                 console.error('Error: TDD Cycle Incomplete. Stage 7 requires evidence of Red, Green, and Refactor phases.');
