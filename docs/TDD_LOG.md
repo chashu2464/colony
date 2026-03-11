@@ -1,5 +1,4 @@
 # TDD Log
-TAMPERED_LINE
 
 | Commit | Date | Status | Description |
 |---|---|---|---|
