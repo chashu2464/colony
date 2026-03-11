@@ -13,7 +13,11 @@ export interface WSEvent {
     roomId?: string;
 }
 
-export function useWebSocket(url: string, onEvent: (event: WSEvent) => void) {
+export function useWebSocket(
+    url: string,
+    onEvent: (event: WSEvent) => void,
+    currentRoomId?: string | null
+) {
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectTimer = useRef<number>(undefined);
 
@@ -28,6 +32,16 @@ export function useWebSocket(url: string, onEvent: (event: WSEvent) => void) {
         ws.onmessage = (e) => {
             try {
                 const event = JSON.parse(e.data) as WSEvent;
+
+                // Filter messages by roomId at WebSocket level to prevent cross-session contamination
+                if (currentRoomId && (event.type === 'message' || event.type === 'message_updated')) {
+                    const msg = event.data as { roomId?: string };
+                    if (msg.roomId && msg.roomId !== currentRoomId) {
+                        // Silently drop messages from other rooms
+                        return;
+                    }
+                }
+
                 onEvent(event);
             } catch {
                 console.warn('[WS] Invalid message:', e.data);
@@ -42,7 +56,7 @@ export function useWebSocket(url: string, onEvent: (event: WSEvent) => void) {
         ws.onerror = (err) => {
             console.error('[WS] Error:', err);
         };
-    }, [url, onEvent]);
+    }, [url, onEvent, currentRoomId]);
 
     useEffect(() => {
         connect();

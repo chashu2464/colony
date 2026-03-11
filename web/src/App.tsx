@@ -113,7 +113,7 @@ export default function App() {
     }
   }, [activeSession]);
 
-  useWebSocket('ws://localhost:3001', handleWSEvent);
+  useWebSocket('ws://localhost:3001', handleWSEvent, activeSession);
 
   // Auto-scroll to bottom
   useEffect(() => {

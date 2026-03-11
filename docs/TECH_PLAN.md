@@ -35,6 +35,12 @@
 - **文件**: `skills/dev-workflow/scripts/handler.sh`
 - **修改**: 在 `action: next` 逻辑中，针对 `CURRENT_STAGE == 6` 的处理块，插入以下强制指令：
   ```bash
+  # 支持紧急降级开关
+  if [ "$SKIP_QUALITY_GATES" = "true" ]; then
+    echo "Warning: Quality Gates skipped by environment variable. This action will be logged."
+    return 0
+  fi
+
   # 强制调用质量门禁脚本
   if ! bash scripts/check-quality-gates.sh; then
     echo "{\"error\": \"Quality Gate Failed: One or more metrics (90/80/70) are not met. Check docs/QUALITY_REPORT.md for details.\"}"
@@ -54,8 +60,9 @@
 - 排除项：`*.config.ts`, `node_modules/`, `dist/`, `types.ts` 等。
 
 ## 3. 风险与应对
-- **变异测试耗时**: StrykerJS 在全量运行时非常慢。方案：在门禁检查时支持增量模式（只针对修改的文件）。
+- **变异测试耗时 (SLA)**: StrykerJS 在全量运行时非常慢。方案：在门禁检查时强制执行增量模式（只针对修改的文件），确保单次检查在 **5 分钟** 内完成。
 - **环境隔离**: 确保 CI/本地环境中的门禁检查逻辑一致。
+- **紧急交付**: 通过 `SKIP_QUALITY_GATES` 环境变量提供逃生口，但审计报告中将明确标注“跳过门禁”状态。
 
 ## 4. 进度计划
 1. [ ] 完成脚本开发 (`setup-tdd.sh`, `check-quality-gates.sh`, `generate-tdd-log.js`)

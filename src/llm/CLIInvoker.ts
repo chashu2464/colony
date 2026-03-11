@@ -418,7 +418,8 @@ export async function invoke(
             const skillsPath = path.join(options.cwd, `.${cli}`, 'skills');
             if (!fs.existsSync(skillsPath)) {
                 throw new InvokeError(
-                    `Skills symlink not found: ${skillsPath}. CLI cannot access Colony skills.`,
+                    `Skills symlink not found: ${skillsPath} (CWD: ${options.cwd}). ` +
+                    `CLI cannot access Colony skills. Please ensure the Colony service is running and has permissions to create symlinks.`,
                     { type: 'spawn_error', cli }
                 );
             }

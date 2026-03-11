@@ -219,11 +219,9 @@ export class Agent {
             const sessionName = `agent-${this.id}-room-${message.roomId}`;
             let round = 0;
 
-            // Setup working directory and skills symlinks if needed
-            const workingDir = chatRoom.workingDir;
-            if (workingDir) {
-                await this.ensureSkillsSymlinks(workingDir);
-            }
+            // Setup working directory and skills symlinks
+            const workingDir = chatRoom.workingDir || process.cwd();
+            await this.ensureSkillsSymlinks(workingDir);
 
             // Use ContextAssembler to build the initial prompt
             let currentPrompt = await this.contextAssembler.assemble({
@@ -532,14 +530,12 @@ export class Agent {
 
         // Check if Colony skills directory exists
         if (!fs.existsSync(colonySkillsDir)) {
-            log.warn(`Colony skills directory not found: ${colonySkillsDir}`);
-            return;
+            throw new Error(`Colony skills directory not found: ${colonySkillsDir}. Cannot provide skills to agents.`);
         }
 
         // Ensure working directory exists
         if (!fs.existsSync(workingDir)) {
-            log.warn(`Working directory does not exist: ${workingDir}`);
-            return;
+            throw new Error(`Working directory does not exist: ${workingDir}. Cannot setup agent workspace.`);
         }
 
         // Create symlinks for all supported CLIs (Claude, Gemini, Codex)
