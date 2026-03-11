@@ -1,0 +1,2 @@
+{"/Users/casu/Documents/Colony/src/calculator.ts": {"path":"/Users/casu/Documents/Colony/src/calculator.ts","statementMap":{"0":{"start":{"line":2,"column":4},"end":{"line":2,"column":null}}},"fnMap":{"0":{"name":"add","decl":{"start":{"line":1,"column":16},"end":{"line":1,"column":20}},"loc":{"start":{"line":1,"column":50},"end":{"line":3,"column":null}},"line":1}},"branchMap":{},"s":{"0":1},"f":{"0":1},"b":{},"meta":{"lastBranch":0,"lastFunction":1,"lastStatement":1,"seen":{"f:1:16:1:20":0,"s:2:4:2:Infinity":0}}}
+}

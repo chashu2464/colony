@@ -459,8 +459,8 @@ export async function invoke(
             let lastActivity = Date.now();
             const resetActivity = () => { lastActivity = Date.now(); };
 
-            child.stdout.on('data', resetActivity);
-            child.stderr.on('data', resetActivity);
+            if (child.stdout) child.stdout.on('data', resetActivity);
+            if (child.stderr) child.stderr.on('data', resetActivity);
 
             const idleChecker = setInterval(() => {
                 if (Date.now() - lastActivity > idleTimeoutMs) {
@@ -515,6 +515,11 @@ export async function invoke(
                 else reject(value as InvokeError);
             }
 
+            if (!child.stdout) {
+                settle('reject', new InvokeError('Child process stdout is null', { type: 'exit_error', cli, stderr }));
+                return;
+            }
+
             // ── Parse stdout line by line ──────────────────────
             const rl = createInterface({ input: child.stdout });
 
@@ -554,7 +559,9 @@ export async function invoke(
             });
 
             // ── Collect stderr ─────────────────────────────────
-            child.stderr.on('data', (d) => { stderr += d.toString(); });
+            if (child.stderr) {
+                child.stderr.on('data', (d) => { stderr += d.toString(); });
+            }
 
             // ── Finalize ───────────────────────────────────────
             function tryFinalize(): void {
