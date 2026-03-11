@@ -12,18 +12,26 @@ TIME_GATE="2026-06-11"
 REPORT_FILE="docs/QUALITY_REPORT.md"
 TDD_LOG="docs/TDD_LOG.md"
 
+# Context variables
+BRANCH=$(git branch --show-current 2>/dev/null)
+COMMIT=$(git rev-parse HEAD 2>/dev/null)
+TASK_ID_VAL=${TASK_ID:-"N/A"}
+
 # Emergency Skip check
 if [ "$SKIP_QUALITY_GATES" = "true" ]; then
     echo "WARNING: SKIP_QUALITY_GATES is set to true. Bypassing gates."
     # Log skip to report
-    CONTENT="# Quality Report (Emergency Skip)
-- **Status**: SKIPPED
-- **Timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-- **Skipped By**: $COLONY_AGENT_ID
-- **Reason**: SKIP_QUALITY_GATES=true
-- **Task ID**: $TASK_ID
-- **Commit**: $(git rev-parse HEAD 2>/dev/null || echo "N/A")"
+    CONTENT="# Quality Report
+- **gate_status**: SKIPPED
+- **timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+- **skipped_by**: $COLONY_AGENT_ID
+- **reason**: SKIP_QUALITY_GATES=true
+- **task_id**: $TASK_ID_VAL
+- **branch**: $BRANCH
+- **commit_hash**: $COMMIT
+- **quality_gates_skipped**: true"
     
+    # Calculate signature on the content itself (no trailing newline for consistency)
     SIGNATURE=$(echo -n "$CONTENT" | shasum -a 256 | cut -d' ' -f1)
     echo "$CONTENT" > "$REPORT_FILE"
     echo -e "\n<!-- SIGNATURE: $SIGNATURE -->" >> "$REPORT_FILE"
@@ -48,7 +56,6 @@ fi
 # 3. Unit Test Coverage
 echo "Checking Unit Test Coverage..."
 rm -rf coverage/unit
-# We use --coverage.reportsDirectory to avoid overwriting
 npm run test:unit -- --coverage.reportsDirectory=coverage/unit > /dev/null 2>&1
 
 if [ ! -f "coverage/unit/coverage-summary.json" ]; then
@@ -68,20 +75,16 @@ echo "Unit Coverage: $UNIT_COV% [OK]"
 # 4. Integration Test Coverage
 echo "Checking Integration Test Coverage..."
 rm -rf coverage/int
-# Explicitly run integration tests and ensure summary is generated
 npm run test:int -- --coverage.reportsDirectory=coverage/int > /dev/null 2>&1
 
 if [ ! -f "coverage/int/coverage-summary.json" ]; then
-    echo "FAILED: Integration coverage report (coverage/int/coverage-summary.json) not generated."
-    # List directory to help diagnose
-    ls -R coverage/int 2>/dev/null
+    echo "FAILED: Integration coverage report not generated."
     exit 1
 fi
 
 INT_COV=$(jq -r '.total.statements.pct' coverage/int/coverage-summary.json)
 if [ "$INT_COV" == "null" ] || [ -z "$INT_COV" ]; then INT_COV=0; fi
 
-# QA reported INT_COV was hardcoded to 85. We ensure it's from jq.
 echo "Debug: Extracted Integration Coverage: $INT_COV%"
 
 if (( $(echo "$INT_COV < $INT_THRESHOLD" | bc -l) )); then
@@ -92,19 +95,16 @@ echo "Integration Coverage: $INT_COV% [OK]"
 
 # 5. Mutation Score
 echo "Checking Mutation Score..."
-# If reports/mutation/mutation.json exists but is old, we might want to rerun.
-# For simplicity, we rerun if it's missing.
 if [ ! -f "reports/mutation/mutation.json" ]; then
     echo "Running mutation tests (this may take a while)..."
     npm run test:mutation > /dev/null 2>&1
 fi
 
 if [ ! -f "reports/mutation/mutation.json" ]; then
-    echo "FAILED: Mutation report (reports/mutation/mutation.json) not generated."
+    echo "FAILED: Mutation report not generated."
     exit 1
 fi
 
-# Correct extraction of mutation score for Stryker JSON report
 MUTATION_STATS=$(jq '{files: (.files | keys | length), killed: ([.files[].mutants[] | select(.status=="Killed")] | length), timeout: ([.files[].mutants[] | select(.status=="Timeout")] | length), total: ([.files[].mutants[] | select(.status=="Killed" or .status=="Survived" or .status=="Timeout" or .status=="NoCoverage")] | length)}' reports/mutation/mutation.json)
 KILLED=$(echo "$MUTATION_STATS" | jq -r '.killed')
 TIMEOUT=$(echo "$MUTATION_STATS" | jq -r '.timeout')
@@ -112,7 +112,6 @@ TOTAL=$(echo "$MUTATION_STATS" | jq -r '.total')
 FILES_COUNT=$(echo "$MUTATION_STATS" | jq -r '.files')
 
 if [ "$TOTAL" -gt 0 ]; then
-    # Calculate score with 2 decimal places
     MUTATION_SCORE=$(echo "scale=2; ($KILLED + $TIMEOUT) / $TOTAL * 100" | bc -l)
 else
     MUTATION_SCORE=0
@@ -128,22 +127,20 @@ echo "Mutation Score: $MUTATION_SCORE% [OK]"
 
 # 6. Generate Report with Signature
 echo "Generating Signed Quality Report..."
-# Ensure TASK_ID and BRANCH are correctly identified
-BRANCH=$(git branch --show-current 2>/dev/null)
-COMMIT=$(git rev-parse HEAD 2>/dev/null)
-TASK_ID_VAL=${TASK_ID:-"N/A"}
 
 CONTENT="# Quality Report
-- **Status**: PASS
-- **Timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-- **Unit Coverage**: $UNIT_COV% (Threshold: $UNIT_THRESHOLD%)
-- **Integration Coverage**: $INT_COV% (Threshold: $INT_THRESHOLD%)
-- **Mutation Score**: $MUTATION_SCORE% (Threshold: $EFFECTIVE_MUTATION_THRESHOLD%)
-- **Mutation Files Count**: $FILES_COUNT
-- **Task ID**: $TASK_ID_VAL
-- **Branch**: $BRANCH
-- **Commit**: $COMMIT"
+- **gate_status**: PASS
+- **timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+- **unit_coverage**: $UNIT_COV%
+- **integration_coverage**: $INT_COV%
+- **mutation_score**: $MUTATION_SCORE%
+- **mutation_files_count**: $FILES_COUNT
+- **task_id**: $TASK_ID_VAL
+- **branch**: $BRANCH
+- **commit_hash**: $COMMIT
+- **quality_gates_skipped**: false"
 
+# Calculate signature on the content itself
 SIGNATURE=$(echo -n "$CONTENT" | shasum -a 256 | cut -d' ' -f1)
 
 echo "$CONTENT" > "$REPORT_FILE"

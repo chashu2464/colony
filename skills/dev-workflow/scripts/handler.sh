@@ -278,18 +278,19 @@ EOF
         if [ -f "docs/QUALITY_REPORT.md" ]; then
           # Extract signature from the last line
           ACTUAL_SIG=$(grep "<!-- SIGNATURE:" docs/QUALITY_REPORT.md | sed 's/.*SIGNATURE: \([a-f0-9]*\) -->/\1/')
-          # Extract content (all lines except the blank line and signature line at the end)
-          CALC_CONTENT=$(sed '/<!-- SIGNATURE:/,$d' docs/QUALITY_REPORT.md | sed '$d')
+          # Extract content (everything before the signature line)
+          # Command substitution $(...) automatically trims all trailing newlines
+          CALC_CONTENT=$(sed '/<!-- SIGNATURE:/,$d' docs/QUALITY_REPORT.md)
           if [ ! -z "$ACTUAL_SIG" ]; then
+             # Calculate signature on the content (trimmed by $(...))
              CALC_SIG=$(echo -n "$CALC_CONTENT" | shasum -a 256 | cut -d' ' -f1)
              if [ "$ACTUAL_SIG" != "$CALC_SIG" ]; then
-               # Try with a single newline at the end just in case
-               CALC_SIG_W_NL=$(echo "$CALC_CONTENT" | shasum -a 256 | cut -d' ' -f1)
-               if [ "$ACTUAL_SIG" != "$CALC_SIG_W_NL" ]; then
-                 echo "{\"error\": \"Quality Report Verification Failed: Signature mismatch. Audit integrity compromised.\"}"
-                 exit 1
-               fi
+               echo "{\"error\": \"Quality Report Verification Failed: Signature mismatch. Audit integrity compromised. Expected $CALC_SIG, got $ACTUAL_SIG\"}"
+               exit 1
              fi
+          else
+             echo "{\"error\": \"Quality Report Verification Failed: Missing signature.\"}"
+             exit 1
           fi
         fi
       fi

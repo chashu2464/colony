@@ -34,12 +34,13 @@ function verifyCommits(lines) {
 }
 
 function calculateSignature(content) {
-    return crypto.createHash('sha256').update(content).digest('hex');
+    // Trim to ensure consistent signature regardless of trailing newlines in file
+    return crypto.createHash('sha256').update(content.trim()).digest('hex');
 }
 
 function generateTableContent(log) {
     if (!log) return '';
-    const lines = log.split('\n');
+    const lines = log.split('\n').filter(l => l.trim());
     let tableContent = '# TDD Log\n\n| Commit | Date | Status | Description |\n|---|---|---|---|\n';
     
     lines.forEach(line => {
@@ -85,11 +86,22 @@ function generateTddLog(verifyOnly = false) {
         }
 
         const originalSignature = signatureMatch[1];
-        const contentWithoutSignature = content.split('<!-- SIGNATURE:')[0].trim();
+        const signatureLine = `<!-- SIGNATURE: ${originalSignature} -->`;
+        
+        // Ensure nothing exists after the signature line (anti-tamper)
+        const parts = content.split(signatureLine);
+        if (parts.length > 2 || (parts[1] && parts[1].trim() !== '')) {
+            console.error('Error: TDD_LOG.md has been tampered with after the signature.');
+            process.exit(1);
+        }
+
+        const contentWithoutSignature = parts[0].trim();
         const currentSignature = calculateSignature(contentWithoutSignature);
 
         if (originalSignature !== currentSignature) {
-            console.error('Error: TDD_LOG.md signature mismatch. Original:', originalSignature, 'Calculated:', currentSignature);
+            console.error('Error: TDD_LOG.md signature mismatch.');
+            console.error('Expected:', originalSignature);
+            console.error('Calculated:', currentSignature);
             process.exit(1);
         }
 
@@ -102,7 +114,7 @@ function generateTddLog(verifyOnly = false) {
 
         // 3. Commit existence check (Security)
         if (log) {
-            const lines = log.split('\n');
+            const lines = log.split('\n').filter(l => l.trim());
             const invalid = verifyCommits(lines);
             if (invalid.length > 0) {
                 console.error('Error: The following commits in TDD log are not in current branch history:', invalid.join(', '));
@@ -110,17 +122,16 @@ function generateTddLog(verifyOnly = false) {
             }
 
             // 4. TDD Cycle Integrity Check (Red-Green-Refactor)
-            const hasRed = lines.some(line => line.toLowerCase().includes('tdd:red'));
-            const hasGreen = lines.some(line => line.toLowerCase().includes('tdd:green'));
-            const hasRefactor = lines.some(line => line.toLowerCase().includes('tdd:refactor'));
+            // Use log directly to avoid subject truncation issues if any
+            const fullLog = execSync('git log --pretty=format:"%B" --grep="tdd:"').toString().toLowerCase();
+            const hasRed = fullLog.includes('tdd:red');
+            const hasGreen = fullLog.includes('tdd:green');
+            const hasRefactor = fullLog.includes('tdd:refactor');
 
-            if (!hasRed || !hasGreen) {
-                console.error('Error: TDD Cycle Incomplete. Missing Red or Green phase evidence.');
-                console.error('Current evidence:', { hasRed, hasGreen, hasRefactor });
+            if (!hasRed || !hasGreen || !hasRefactor) {
+                console.error('Error: TDD Cycle Incomplete. Stage 7 requires evidence of Red, Green, and Refactor phases.');
+                console.error('Status:', { hasRed, hasGreen, hasRefactor });
                 process.exit(1);
-            }
-            if (!hasRefactor) {
-                console.warn('Warning: No Refactor phase evidence found. While not blocking, refactoring is a core part of TDD.');
             }
         } else {
             console.error('Error: No TDD commits found in history. TDD evidence is mandatory.');
