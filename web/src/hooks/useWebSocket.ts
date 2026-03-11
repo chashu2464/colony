@@ -20,6 +20,13 @@ export function useWebSocket(
 ) {
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectTimer = useRef<number>(undefined);
+    // Use ref to avoid closure trap - always read the latest roomId without reconnecting
+    const roomIdRef = useRef(currentRoomId);
+
+    // Update ref when roomId changes, but don't reconnect WebSocket
+    useEffect(() => {
+        roomIdRef.current = currentRoomId;
+    }, [currentRoomId]);
 
     const connect = useCallback(() => {
         const ws = new WebSocket(url);
@@ -34,9 +41,10 @@ export function useWebSocket(
                 const event = JSON.parse(e.data) as WSEvent;
 
                 // Filter messages by roomId at WebSocket level to prevent cross-session contamination
-                if (currentRoomId && (event.type === 'message' || event.type === 'message_updated')) {
+                // Use ref to get the latest roomId value without closure trap
+                if (roomIdRef.current && (event.type === 'message' || event.type === 'message_updated')) {
                     const msg = event.data as { roomId?: string };
-                    if (msg.roomId && msg.roomId !== currentRoomId) {
+                    if (msg.roomId && msg.roomId !== roomIdRef.current) {
                         // Silently drop messages from other rooms
                         return;
                     }
@@ -56,7 +64,7 @@ export function useWebSocket(
         ws.onerror = (err) => {
             console.error('[WS] Error:', err);
         };
-    }, [url, onEvent, currentRoomId]);
+    }, [url, onEvent]);
 
     useEffect(() => {
         connect();
