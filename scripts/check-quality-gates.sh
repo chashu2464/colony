@@ -12,6 +12,26 @@ TIME_GATE="2026-06-11"
 REPORT_FILE="docs/QUALITY_REPORT.md"
 TDD_LOG="docs/TDD_LOG.md"
 
+# Emergency Skip check
+if [ "$SKIP_QUALITY_GATES" = "true" ]; then
+    echo "WARNING: SKIP_QUALITY_GATES is set to true. Bypassing gates."
+    # Log skip to report
+    CONTENT="# Quality Report (Emergency Skip)
+- **Status**: SKIPPED
+- **Timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
+- **Skipped By**: $COLONY_AGENT_ID
+- **Reason**: SKIP_QUALITY_GATES=true
+- **Task ID**: $TASK_ID
+- **Commit**: $(git rev-parse HEAD 2>/dev/null || echo "N/A")"
+    
+    SIGNATURE=$(echo -n "$CONTENT" | shasum -a 256 | cut -d' ' -f1)
+    echo "$CONTENT" > "$REPORT_FILE"
+    echo -e "\n<!-- SIGNATURE: $SIGNATURE -->" >> "$REPORT_FILE"
+    exit 0
+fi
+
+echo "Running Quality Gates Check..."
+
 # 1. Determine Effective Mutation Threshold
 CURRENT_DATE=$(date +%Y-%m-%d)
 EFFECTIVE_MUTATION_THRESHOLD=$MUTATION_THRESHOLD_PRE_JUNE
@@ -19,25 +39,7 @@ if [[ "$CURRENT_DATE" > "$TIME_GATE" || "$CURRENT_DATE" == "$TIME_GATE" ]]; then
     EFFECTIVE_MUTATION_THRESHOLD=$MUTATION_THRESHOLD_POST_JUNE
 fi
 
-# Emergency Skip check
-if [ "$SKIP_QUALITY_GATES" = "true" ]; then
-    echo "WARNING: SKIP_QUALITY_GATES is set to true. Bypassing gates."
-    # Log skip to report
-    cat > "$REPORT_FILE" <<EOF
-# Quality Report (Emergency Skip)
-- **Status**: SKIPPED
-- **Timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
-- **Skipped By**: $COLONY_AGENT_ID
-- **Reason**: SKIP_QUALITY_GATES=true
-- **Task ID**: $TASK_ID
-- **Commit**: $(git rev-parse HEAD 2>/dev/null || echo "N/A")
-EOF
-    exit 0
-fi
-
-echo "Running Quality Gates Check..."
-
-# 2. Check TDD Log
+# 2. Check TDD Log (Pre-verify)
 if [ ! -f "$TDD_LOG" ]; then
     echo "Error: TDD log ($TDD_LOG) is missing. TDD evidence is required."
     exit 1
@@ -45,26 +47,42 @@ fi
 
 # 3. Unit Test Coverage
 echo "Checking Unit Test Coverage..."
-if [ ! -f "coverage/coverage-summary.json" ]; then
-    echo "Running unit tests to generate coverage report..."
-    npm run test:unit > /dev/null 2>&1
+rm -rf coverage/unit
+# We use --coverage.reportsDirectory to avoid overwriting
+npm run test:unit -- --coverage.reportsDirectory=coverage/unit > /dev/null 2>&1
+
+if [ ! -f "coverage/unit/coverage-summary.json" ]; then
+    echo "FAILED: Unit coverage report not generated."
+    exit 1
 fi
 
-UNIT_COV=$(jq -r '.total.statements.pct' coverage/coverage-summary.json)
+UNIT_COV=$(jq -r '.total.statements.pct' coverage/unit/coverage-summary.json)
+if [ "$UNIT_COV" == "null" ] || [ -z "$UNIT_COV" ]; then UNIT_COV=0; fi
+
 if (( $(echo "$UNIT_COV < $UNIT_THRESHOLD" | bc -l) )); then
     echo "FAILED: Unit coverage ($UNIT_COV%) is below threshold ($UNIT_THRESHOLD%)"
     exit 1
 fi
+echo "Unit Coverage: $UNIT_COV% [OK]"
 
-# 4. Integration Test Coverage (Placeholder - implementation specific)
+# 4. Integration Test Coverage
 echo "Checking Integration Test Coverage..."
-# For now, we assume integration tests use the same coverage output or separate
-# Assuming 80% for now
-INT_COV=85 # Hardcoded placeholder or extract from separate run
+rm -rf coverage/int
+npm run test:int -- --coverage.reportsDirectory=coverage/int > /dev/null 2>&1
+
+if [ ! -f "coverage/int/coverage-summary.json" ]; then
+    echo "FAILED: Integration coverage report not generated."
+    exit 1
+fi
+
+INT_COV=$(jq -r '.total.statements.pct' coverage/int/coverage-summary.json)
+if [ "$INT_COV" == "null" ] || [ -z "$INT_COV" ]; then INT_COV=0; fi
+
 if (( $(echo "$INT_COV < $INT_THRESHOLD" | bc -l) )); then
     echo "FAILED: Integration coverage ($INT_COV%) is below threshold ($INT_THRESHOLD%)"
     exit 1
 fi
+echo "Integration Coverage: $INT_COV% [OK]"
 
 # 5. Mutation Score
 echo "Checking Mutation Score..."
@@ -73,9 +91,12 @@ if [ ! -f "reports/mutation/mutation.json" ]; then
     npm run test:mutation > /dev/null 2>&1
 fi
 
+if [ ! -f "reports/mutation/mutation.json" ]; then
+    echo "FAILED: Mutation report not generated."
+    exit 1
+fi
+
 # Correct extraction of mutation score for Stryker JSON report
-# We count Killed + Timeout out of (Killed + Timeout + Survived + NoCoverage)
-# We also count total number of files mutated
 MUTATION_STATS=$(jq '{files: (.files | keys | length), killed: ([.files[].mutants[] | select(.status=="Killed")] | length), timeout: ([.files[].mutants[] | select(.status=="Timeout")] | length), total: ([.files[].mutants[] | select(.status=="Killed" or .status=="Survived" or .status=="Timeout" or .status=="NoCoverage")] | length)}' reports/mutation/mutation.json)
 KILLED=$(echo "$MUTATION_STATS" | jq -r '.killed')
 TIMEOUT=$(echo "$MUTATION_STATS" | jq -r '.timeout')
@@ -92,11 +113,11 @@ if (( $(echo "$MUTATION_SCORE < $EFFECTIVE_MUTATION_THRESHOLD" | bc -l) )); then
     echo "FAILED: Mutation score ($MUTATION_SCORE%) is below threshold ($EFFECTIVE_MUTATION_THRESHOLD%)"
     exit 1
 fi
+echo "Mutation Score: $MUTATION_SCORE% [OK]"
 
-# 6. Generate Report
-echo "Generating Quality Report..."
-cat > "$REPORT_FILE" <<EOF
-# Quality Report
+# 6. Generate Report with Signature
+echo "Generating Signed Quality Report..."
+CONTENT="# Quality Report
 - **Status**: PASS
 - **Timestamp**: $(date -u +"%Y-%m-%dT%H:%M:%SZ")
 - **Unit Coverage**: $UNIT_COV% (Threshold: $UNIT_THRESHOLD%)
@@ -105,8 +126,12 @@ cat > "$REPORT_FILE" <<EOF
 - **Mutation Files Count**: $FILES_COUNT
 - **Task ID**: $TASK_ID
 - **Branch**: $(git branch --show-current 2>/dev/null)
-- **Commit**: $(git rev-parse HEAD 2>/dev/null)
-EOF
+- **Commit**: $(git rev-parse HEAD 2>/dev/null)"
 
-echo "All Quality Gates PASSED."
+SIGNATURE=$(echo -n "$CONTENT" | shasum -a 256 | cut -d' ' -f1)
+
+echo "$CONTENT" > "$REPORT_FILE"
+echo -e "\n<!-- SIGNATURE: $SIGNATURE -->" >> "$REPORT_FILE"
+
+echo "All Quality Gates PASSED. Report signed."
 exit 0
