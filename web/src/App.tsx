@@ -12,6 +12,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Paperclip, Send, X } from 'lucide-react';
 import { MonologueBlock } from './MonologueBlock';
+import { HumanInputRequest } from './HumanInputRequest';
 
 const USER_ID = 'human-user';
 const USER_NAME = '用户';
@@ -45,6 +46,7 @@ export default function App() {
   const [newSessionAgentIds, setNewSessionAgentIds] = useState<string[]>([]);
   const [showEditAgentsModal, setShowEditAgentsModal] = useState(false);
   const [editingSessionAgentIds, setEditingSessionAgentIds] = useState<string[]>([]);
+  const [submittedInputRequests, setSubmittedInputRequests] = useState<Set<string>>(new Set());
 
   // Load initial data
   useEffect(() => {
@@ -259,6 +261,23 @@ export default function App() {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   }
 
+  async function handleHumanInputSubmit(requestId: string, response: string) {
+    if (!activeSession) return;
+
+    try {
+      await sendMessage(activeSession, USER_ID, response, [], {
+        humanInputResponse: {
+          requestId,
+          response
+        }
+      });
+      setSubmittedInputRequests(prev => new Set(prev).add(requestId));
+    } catch (error) {
+      console.error('Failed to submit human input:', error);
+      alert('提交失败: ' + (error as Error).message);
+    }
+  }
+
   const activeSessionData = sessions.find(s => s.id === activeSession);
 
   const groupedMessages: { sender: Participant, messages: Message[], timestamp: string, id: string }[] = [];
@@ -391,7 +410,14 @@ export default function App() {
 
                       {group.messages.map((msg, idx) => (
                         <React.Fragment key={msg.id}>
-                          {msg.metadata?.isMonologue ? (
+                          {msg.metadata?.humanInputRequest ? (
+                            <HumanInputRequest
+                              requestId={msg.metadata.humanInputRequest.requestId}
+                              prompt={msg.metadata.humanInputRequest.prompt}
+                              onSubmit={handleHumanInputSubmit}
+                              isSubmitted={submittedInputRequests.has(msg.metadata.humanInputRequest.requestId)}
+                            />
+                          ) : msg.metadata?.isMonologue ? (
                             <MonologueBlock
                               text={msg.content}
                               toolCalls={msg.metadata.toolCalls}

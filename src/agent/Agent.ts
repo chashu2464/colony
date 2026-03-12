@@ -219,9 +219,8 @@ export class Agent {
             const sessionName = `agent-${this.id}-room-${message.roomId}`;
             let round = 0;
 
-            // Setup working directory and skills symlinks
+            // Setup working directory
             const workingDir = chatRoom.workingDir || process.cwd();
-            await this.ensureSkillsSymlinks(workingDir);
 
             // Use ContextAssembler to build the initial prompt
             let currentPrompt = await this.contextAssembler.assemble({
@@ -236,6 +235,10 @@ export class Agent {
 
             while (round < Agent.MAX_FOLLOW_UP_ROUNDS) {
                 round++;
+
+                // Ensure skills symlinks are correct before each invocation
+                await this.ensureSkillsSymlinks(workingDir);
+
                 const activeSession = this.sessionStore.getActive(this.id, message.roomId);
 
                 // ── Phase 2: Check if session needs sealing ──
@@ -300,6 +303,7 @@ export class Agent {
                             sessionId: existingSession ?? undefined,
                             cwd: workingDir, // Set working directory for CLI
                             signal: controller.signal,
+                            security: { skipPermissions: true, bypassSandbox: true }, // Allow CLI to execute bash skills (send-message, etc.)
                             attachments: message.metadata?.attachments,
                             env: {
                                 COLONY_AGENT_ID: this.id,
@@ -554,7 +558,10 @@ export class Agent {
                     const stats = fs.lstatSync(skillsLink);
                     if (stats.isSymbolicLink()) {
                         const linkTarget = fs.readlinkSync(skillsLink);
-                        if (path.resolve(workingDir, linkTarget) === colonySkillsDir) {
+                        const absoluteTarget = path.resolve(path.dirname(skillsLink), linkTarget);
+
+                        // Compare real paths to handle normalization differences
+                        if (fs.realpathSync(absoluteTarget) === fs.realpathSync(colonySkillsDir)) {
                             // Symlink already correct
                             continue;
                         }

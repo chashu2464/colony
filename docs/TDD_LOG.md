@@ -2,10 +2,11 @@
 
 | Commit | Date | Status | Description |
 |---|---|---|---|
-| `b170fe6` | 2026-03-12 | 🔴 RED | add calculator subtract test |
-| `ae8df77` | 2026-03-12 | 🔵 REFACTOR | qa-fixture refactor |
-| `d72b5a5` | 2026-03-12 | 🟢 GREEN | qa-fixture green |
-| `1e75ad8` | 2026-03-12 | 🔵 REFACTOR | qa-fixture refactor |
-| `0ccbd5e` | 2026-03-12 | 🟢 GREEN | qa-fixture green |
+| `7da16a6` | 2026-03-12 | 🟢 GREEN | fix BUG-INT-002: add missing InvokeOptions import in BaseCLIProvider |
+| `30f7ae8` | 2026-03-12 | 🔵 REFACTOR | fix BUG-SEC-002: remove shared instance state and pass options to buildArgs for thread safety |
+| `2e30167` | 2026-03-12 | 🟢 GREEN | fix BUG-INT-001 and BUG-SEC-001: add token validation and opt-in dangerous params |
+| `80e1320` | 2026-03-12 | 🔵 REFACTOR | migrate CLIInvoker to thin provider wrapper |
+| `e2d5936` | 2026-03-12 | 🟢 GREEN | implement provider-based LLM architecture |
+| `5fe2586` | 2026-03-12 | 🔴 RED | add unit test for unified LLM providers |
 
-<!-- SIGNATURE: 6907f86d75d6100f0f7f7013c752ab8c193183118fd4fd7dd2f64b42cf0b01a9 -->
+<!-- SIGNATURE: 9ed1d2f1745f1d7c538f8fd801d03ea4f78ecde766af5f044594ba8aaf193b6a -->

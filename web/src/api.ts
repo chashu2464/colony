@@ -38,6 +38,14 @@ export interface Message {
         toolCalls?: any[];
         error?: string;
         attachments?: { type: string; url: string }[];
+        humanInputRequest?: {
+            requestId: string;
+            prompt: string;
+        };
+        humanInputResponse?: {
+            requestId: string;
+            response: string;
+        };
         [key: string]: unknown;
     };
 }

@@ -94,6 +94,10 @@ export interface InvokeOptions {
     onToken?: (token: string) => void;
     onToolUse?: (tool: ToolUseEvent) => void;
     onError?: (error: Error) => void;
+    security?: {
+        skipPermissions?: boolean;
+        bypassSandbox?: boolean;
+    };
 }
 
 export interface InvokeResult {

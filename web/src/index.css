@@ -97,6 +97,100 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* ── Human Input Request ───────────────────────────────── */
+.human-input-request {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-top: 8px;
+  backdrop-filter: blur(10px);
+}
+
+.human-input-prompt {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.prompt-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.prompt-text {
+  flex: 1;
+  line-height: 1.5;
+}
+
+.human-input-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.human-input-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  min-height: 60px;
+  transition: border-color var(--transition-fast);
+}
+
+.human-input-textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.human-input-submit {
+  align-self: flex-end;
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  background: var(--accent-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.human-input-submit:hover:not(:disabled) {
+  background: var(--accent-primary-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
+}
+
+.human-input-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.human-input-submitted {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(52, 211, 153, 0.1);
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  border-radius: var(--radius-sm);
+  color: var(--status-idle);
+  font-size: 14px;
+  font-weight: 500;
+}
+
 /* ── Sidebar ───────────────────────────────────────────── */
 .sidebar {
   width: var(--sidebar-width);
@@ -1117,4 +1211,59 @@ body {
 .btn-stop:hover {
   background: #dc2626;
   color: white;
+}
+/* ── Human In Loop ── */
+.human-input-request {
+  background: #fff9db;
+  border: 1px solid #fab005;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 8px;
+  color: #333;
+}
+
+.human-input-request p {
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.human-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.human-input-field {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  font-size: 14px;
+  outline: none;
+  background: white;
+  color: #333;
+}
+
+.human-input-field:focus {
+  border-color: #fab005;
+}
+
+.human-input-submit {
+  background: #fab005;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 0 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.human-input-submit:hover {
+  background: #f08c00;
+}
+
+.human-input-submit:disabled {
+  background: #e9ecef;
+  color: #adb5bd;
+  cursor: not-allowed;
 }
