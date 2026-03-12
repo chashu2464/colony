@@ -10,6 +10,9 @@ Unlike traditional chatbot interfaces, Colony provides a structured **environmen
 - **Maintain Memory**: Leverage both session-based short-term memory and persistent long-term memory (via Mem0) to retain knowledge across sessions.
 - **Self-Govern**: Follow a strict, automated development workflow with mandatory branching and quality guardrails.
 
+<img width="1438" height="699" alt="image" src="https://github.com/user-attachments/assets/bbefe613-fe7b-4fb6-b3d1-549f87c44b52" />
+
+
 ---
 
 ## ✨ Key Features
