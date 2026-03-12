@@ -221,6 +221,7 @@ export class Agent {
 
             // Setup working directory
             const workingDir = chatRoom.workingDir || process.cwd();
+            await this.ensureSkillsSymlinks(workingDir);
 
             // Use ContextAssembler to build the initial prompt
             let currentPrompt = await this.contextAssembler.assemble({
@@ -235,9 +236,6 @@ export class Agent {
 
             while (round < Agent.MAX_FOLLOW_UP_ROUNDS) {
                 round++;
-
-                // Ensure skills symlinks are correct before each invocation
-                await this.ensureSkillsSymlinks(workingDir);
 
                 const activeSession = this.sessionStore.getActive(this.id, message.roomId);
 

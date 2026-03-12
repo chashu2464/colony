@@ -15,9 +15,11 @@ import { SessionManager } from './conversation/SessionManager.js';
 import { ShortTermMemory, ContextAssembler, ContextScheduler } from './memory/index.js';
 import { Mem0LongTermMemory } from './memory/Mem0LongTermMemory.js';
 import { DiscordManager } from './discord/index.js';
+import { SchedulerService } from './scheduler/SchedulerService.js';
 import type { Participant } from './types.js';
 import type { LongTermMemory } from './memory/types.js';
 import type { Mem0Config } from './memory/Mem0LongTermMemory.js';
+import type { ScheduledTask } from './scheduler/types.js';
 
 const log = new Logger('Colony');
 
@@ -41,6 +43,7 @@ export class Colony {
     readonly contextAssembler: ContextAssembler;
     readonly contextScheduler: ContextScheduler;
     readonly discordManager?: DiscordManager;
+    readonly schedulerService: SchedulerService;
 
     private modelRouter: ModelRouter;
 
@@ -117,6 +120,11 @@ export class Colony {
             }
         }
 
+        // Initialize scheduler service
+        this.schedulerService = new SchedulerService(dataDir, async (task: ScheduledTask) => {
+            await this.executeScheduledTask(task);
+        });
+
         // Forward rate limit events
         this.rateLimitManager.events.on('quota_exhausted', ({ model }) => {
             log.warn(`Quota exhausted for model: ${model}`);
@@ -135,6 +143,9 @@ export class Colony {
     async initialize(): Promise<void> {
         // Restore saved sessions
         await this.chatRoomManager.restoreAllSessions();
+
+        // Initialize scheduler service
+        await this.schedulerService.initialize();
 
         // Verify CLI health for all agents
         log.info('Environment check: Verifying CLI health for agents...');
