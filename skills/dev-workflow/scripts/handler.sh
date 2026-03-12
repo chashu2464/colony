@@ -245,6 +245,56 @@ EOF
       exit 0
     fi
 
+    # TDD Quality Gates (Stage 6 -> 7)
+    if [ "$CURRENT" -eq 6 ]; then
+      # Export TASK_ID and AGENT_ID for scripts
+      TASK_ID=$(jq -r '.task_id' "$WORKFLOW_FILE")
+      export TASK_ID
+      export COLONY_AGENT_ID
+
+      # Support emergency skip
+      if [ "$SKIP_QUALITY_GATES" = "true" ]; then
+        echo "{\"warning\": \"Quality Gates skipped by environment variable. This action is logged for audit.\"}"
+        # Ensure we still try to generate a skip report if the script supports it
+        bash scripts/check-quality-gates.sh || true
+      else
+        # 1. Verify TDD Log integrity and existence
+        if ! node scripts/generate-tdd-log.js --verify 2>/dev/null; then
+          # Try to generate it once if it's missing but commits exist
+          node scripts/generate-tdd-log.js > /dev/null 2>&1
+          if ! node scripts/generate-tdd-log.js --verify 2>/dev/null; then
+            echo "{\"error\": \"TDD Log Verification Failed: Log is missing, tampered, or commits are not in history. Stage 6 requires valid TDD evidence (Red, Green, Refactor commits).\"}"
+            exit 1
+          fi
+        fi
+
+        # 2. Run Quality Gates (Unit/Int/Mutation)
+        if ! bash scripts/check-quality-gates.sh; then
+          echo "{\"error\": \"Quality Gate Failed: One or more metrics (90/80/70) are not met. Check docs/QUALITY_REPORT.md for details.\"}"
+          exit 1
+        fi
+
+        # 3. Verify Quality Report Signature
+        if [ -f "docs/QUALITY_REPORT.md" ]; then
+          # Extract signature from the last line
+          ACTUAL_SIG=$(grep "<!-- SIGNATURE:" docs/QUALITY_REPORT.md | sed 's/.*SIGNATURE: \([a-f0-9]*\) -->/\1/')
+          # Extract content (all lines except the blank line and signature line at the end)
+          CALC_CONTENT=$(sed '/<!-- SIGNATURE:/,$d' docs/QUALITY_REPORT.md | sed '$d')
+          if [ ! -z "$ACTUAL_SIG" ]; then
+             CALC_SIG=$(echo -n "$CALC_CONTENT" | shasum -a 256 | cut -d' ' -f1)
+             if [ "$ACTUAL_SIG" != "$CALC_SIG" ]; then
+               # Try with a single newline at the end just in case
+               CALC_SIG_W_NL=$(echo "$CALC_CONTENT" | shasum -a 256 | cut -d' ' -f1)
+               if [ "$ACTUAL_SIG" != "$CALC_SIG_W_NL" ]; then
+                 echo "{\"error\": \"Quality Report Verification Failed: Signature mismatch. Audit integrity compromised.\"}"
+                 exit 1
+               fi
+             fi
+          fi
+        fi
+      fi
+    fi
+
     # Evidence Validation
     if [ ! -z "$EVIDENCE" ] && [ "$EVIDENCE" != "null" ]; then
       if [ ! -e "$EVIDENCE" ] && [ ! -d "$EVIDENCE" ]; then

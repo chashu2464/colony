@@ -1,0 +1,41 @@
+# Colony Memory System Configuration
+
+memory:
+  # Short-term memory settings
+  short_term:
+    window_size: 50              # Maximum number of messages to keep
+    max_tokens: 4000             # Maximum tokens before compression
+    compression_threshold: 0.8   # Compress when 80% full
+
+  # Long-term memory settings (Hindsight integration - TODO)
+  long_term:
+    provider: hindsight
+    endpoint: http://localhost:8080
+    embedding_model: text-embedding-3-small
+    vector_db: qdrant
+
+  # Context scheduling settings
+  scheduling:
+    default_policy: shared       # Default memory sharing policy: isolated | shared | selective
+    archive_after_days: 7        # Archive sessions after N days
+    cleanup_after_days: 30       # Delete archived sessions after N days
+
+  # Context assembly settings
+  assembly:
+    token_budget: 8000           # Total token budget for prompts
+    allocation:
+      fixed: 0.3                 # 30% for identity + skills
+      short_term: 0.4            # 40% for recent messages
+      long_term: 0.1             # 10% for historical context
+      reserved: 0.2              # 20% for output
+
+# Example: Selective memory sharing policy
+# memory_sharing_example:
+#   mode: selective
+#   rules:
+#     - from: architect
+#       to: [developer, qa]
+#       scope: decisions
+#     - from: developer
+#       to: [qa]
+#       scope: code_changes

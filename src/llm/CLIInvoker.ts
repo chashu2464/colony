@@ -172,14 +172,6 @@ export function getSession(name: string): SessionRecord | null {
     return loadSessions()[name] ?? null;
 }
 
-export function deleteSession(name: string): void {
-    ensureDataDir();
-    const sessions = loadSessions();
-    delete sessions[name];
-    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions, null, 2));
-    log.info(`Deleted CLI session cache: ${name}`);
-}
-
 // ── CLI Configurations ───────────────────────────────────
 
 interface CLIConfigEntry {
@@ -250,14 +242,11 @@ const CLI_CONFIG: Record<SupportedCLI, CLIConfigEntry> = {
 
     gemini: {
         buildArgs: (prompt, sessionId, files) => {
-            let finalPrompt = prompt;
-            if (files && files.length > 0) {
-                files.forEach((file) => {
-                    finalPrompt += `\n@${file}`;
-                });
-            }
-            const args = ['-p', finalPrompt, '--output-format', 'stream-json', '--yolo'];
+            const args = ['-p', prompt, '--output-format', 'stream-json', '--yolo'];
             if (sessionId) args.push('--resume', sessionId);
+            if (files && files.length > 0) {
+                log.warn(`Gemini CLI does not support --file parameter. Skipping ${files.length} attachment(s).`);
+            }
             return args;
         },
         extractText: (event) => {
@@ -413,18 +402,6 @@ export async function invoke(
     await acquireCLISlot(options.signal);
 
     try {
-        // Validate skills symlink exists before spawning CLI
-        if (options.cwd) {
-            const skillsPath = path.join(options.cwd, `.${cli}`, 'skills');
-            if (!fs.existsSync(skillsPath)) {
-                throw new InvokeError(
-                    `Skills symlink not found: ${skillsPath} (CWD: ${options.cwd}). ` +
-                    `CLI cannot access Colony skills. Please ensure the Colony service is running and has permissions to create symlinks.`,
-                    { type: 'spawn_error', cli }
-                );
-            }
-        }
-
         // Handle attachments
         if (options.attachments && options.attachments.length > 0) {
             tempFiles = options.attachments.map((att, idx) => saveTempImage(att.url, idx));
@@ -482,12 +459,8 @@ export async function invoke(
             let lastActivity = Date.now();
             const resetActivity = () => { lastActivity = Date.now(); };
 
-            if (child.stdout) {
-                child.stdout.on('data', resetActivity);
-            }
-            if (child.stderr) {
-                child.stderr.on('data', resetActivity);
-            }
+            if (child.stdout) child.stdout.on('data', resetActivity);
+            if (child.stderr) child.stderr.on('data', resetActivity);
 
             const idleChecker = setInterval(() => {
                 if (Date.now() - lastActivity > idleTimeoutMs) {
@@ -542,11 +515,12 @@ export async function invoke(
                 else reject(value as InvokeError);
             }
 
-            // ── Parse stdout line by line ──────────────────────
             if (!child.stdout) {
                 settle('reject', new InvokeError('Child process stdout is null', { type: 'exit_error', cli, stderr }));
                 return;
             }
+
+            // ── Parse stdout line by line ──────────────────────
             const rl = createInterface({ input: child.stdout });
 
             rl.on('line', (line) => {
