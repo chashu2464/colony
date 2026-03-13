@@ -142,6 +142,11 @@ export interface ContextLineage {
 
 export interface ContextAssembler {
     assemble(options: AssembleOptions): Promise<string>;
+    buildIdentitySection(config: any): string;
+    buildRulesSection(rules: string[]): string;
+    buildParticipantsSection(chatRoom: any): string;
+    buildGuidelinesSection(): string;
+    buildWorkflowStageSection(roomId: string, agentId: string): Promise<string>;
 }
 
 export interface AssembleOptions {

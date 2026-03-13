@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Logs
+logs/
+*.log
+colony-server.log
+
+# Data
+.data/
+
+# Environment
+.env
+.env.local
+
+# OS
+.DS_Store
+
+# Test artifacts
+tests/*.js
+repro.js
+verify_real.js
+
+# IDEs and Editors
+.vscode/
+.idea/
+.claude/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Database and state files
+*.sqlite3
+.mem0_test/
+.sessions.json
+evidence.txt
+.tmp/
+
+# Mac system files
+.DS_Store

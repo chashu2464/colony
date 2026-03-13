@@ -7,6 +7,22 @@ description: Manage the development workflow (Stages 0-8) for collaborative task
 
 Manage the development workflow (Stages 0-8) for collaborative tasks.
 
+## Robustness Features (v3.0)
+
+The `dev-workflow` skill includes several features to ensure reliability in concurrent agent environments:
+
+- **Concurrency Control**: mkdir-based atomic locking prevents multiple agents from corrupting the same workflow state simultaneously. Requests are queued with a 5-second timeout.
+- **Input Validation**: All JSON inputs are validated against schemas using `jq`. Invalid inputs (missing fields, absolute paths for evidence, etc.) are rejected with Exit 2.
+- **Atomic State Updates**: State changes use a "write-to-temp-then-rename" pattern, ensuring the `.json` file is never partially written.
+- **Automated Backups**: A `.backup` file is created before every state modification, allowing for recovery if the primary state file is corrupted.
+- **Standardized Error Codes**:
+    - `0`: Success
+    - `1`: General Logic Error
+    - `2`: Validation Error (Invalid Input)
+    - `3`: Lock Timeout (Concurrency Conflict)
+    - `4`: State Corruption (Invalid JSON in state file)
+    - `5`: System/Git Error
+
 ## Usage
 
 To update or query the workflow status, run the handler script with JSON parameters:

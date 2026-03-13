@@ -186,11 +186,11 @@ export class ContextAssembler implements IContextAssembler {
 
     // ── Section Builders ─────────────────────────────────
 
-    private buildIdentitySection(config: AgentConfig): string {
+    public buildIdentitySection(config: AgentConfig): string {
         return `# 你是 ${config.name}\n\n${config.personality}`;
     }
 
-    private buildRulesSection(rules: string[]): string {
+    public buildRulesSection(rules: string[]): string {
         const lines = ['## 规则'];
         for (const rule of rules) {
             lines.push(`- ${rule}`);
@@ -198,7 +198,7 @@ export class ContextAssembler implements IContextAssembler {
         return lines.join('\n');
     }
 
-    private buildParticipantsSection(chatRoom: ChatRoom): string {
+    public buildParticipantsSection(chatRoom: ChatRoom): string {
         const info = chatRoom.getInfo();
         const lines = ['## 房间参与者'];
         lines.push('当前房间内的参与者有：');
@@ -213,7 +213,7 @@ export class ContextAssembler implements IContextAssembler {
         return result;
     }
 
-    private buildGuidelinesSection(): string {
+    public buildGuidelinesSection(): string {
         return `## 【硬性要求】你的回复必须以调用 send-message 工具结束
 
 > **⚠️ 关键规则：你的思考内容对用户完全不可见。无论分析了什么、做了什么，如果你没有调用 send-message，用户将看不到任何输出。每次响应的最后一步必须是调用 send-message 发送你的回复或结果。**
@@ -389,7 +389,7 @@ export class ContextAssembler implements IContextAssembler {
         }
     }
 
-    private async buildWorkflowStageSection(roomId: string, agentId: string): Promise<string> {
+    public async buildWorkflowStageSection(roomId: string, agentId: string): Promise<string> {
         try {
             const workflowDir = path.join(process.cwd(), '.data/workflows');
             const workflowFile = path.join(workflowDir, `${roomId}.json`);

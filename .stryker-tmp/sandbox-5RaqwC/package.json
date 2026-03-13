@@ -1,0 +1,52 @@
+{
+  "name": "colony",
+  "version": "0.1.0",
+  "description": "Multi-LLM Agent Collaboration System",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc && cd web && npx vite build",
+    "build:server": "tsc",
+    "build:web": "cd web && npx vite build",
+    "dev": "tsc --watch",
+    "dev:web": "cd web && npx vite",
+    "start": "node dist/main.js",
+    "clean": "rm -rf dist web/dist",
+    "test": "vitest run",
+    "test:unit": "vitest run --dir src/tests/unit --coverage",
+    "test:int": "vitest run --dir src/tests/integration --coverage",
+    "test:mutation": "stryker run",
+    "tdd:log": "node scripts/generate-tdd-log.js"
+  },
+  "keywords": [
+    "llm",
+    "agent",
+    "multi-agent",
+    "collaboration"
+  ],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "uuid": "^13.0.0",
+    "ws": "^8.19.0",
+    "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@stryker-mutator/core": "^9.6.0",
+    "@stryker-mutator/typescript-checker": "^9.6.0",
+    "@stryker-mutator/vitest-runner": "^9.6.0",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.2.3",
+    "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.18.1",
+    "@vitest/coverage-v8": "^4.0.18",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  }
+}

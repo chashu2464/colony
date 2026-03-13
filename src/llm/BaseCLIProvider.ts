@@ -185,7 +185,15 @@ export abstract class BaseCLIProvider implements ILLMProvider {
                             const existing = toolCalls.find(t => t.id === toolUse.id);
                             if (existing) {
                                 // Merge result/error into existing call
-                                Object.assign(existing, toolUse);
+                                // BUG-FIX: Don't overwrite existing name/input with placeholders/empty values
+                                const { name, input, ...rest } = toolUse;
+                                if (name && name !== 'tool_result_placeholder') {
+                                    existing.name = name;
+                                }
+                                if (input && Object.keys(input).length > 0) {
+                                    existing.input = input;
+                                }
+                                Object.assign(existing, rest);
                                 continue;
                             }
                         }
