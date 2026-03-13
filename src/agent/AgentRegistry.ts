@@ -8,6 +8,7 @@ import { ModelRouter } from '../llm/ModelRouter.js';
 import { ContextAssembler } from '../memory/ContextAssembler.js';
 import { ShortTermMemory } from '../memory/ShortTermMemory.js';
 import { ChatRoomManager } from '../conversation/ChatRoomManager.js'; // Added import
+import { SkillManager } from './skills/SkillManager.js';
 import { verifyCLI } from '../llm/CLIInvoker.js';
 import type { AgentConfig, AgentStatus, SupportedCLI } from '../types.js';
 
@@ -19,17 +20,20 @@ export class AgentRegistry {
     private contextAssembler: ContextAssembler;
     private shortTermMemory: ShortTermMemory;
     private chatRoomManager: ChatRoomManager;
+    private skillManager: SkillManager;
 
     constructor(
         modelRouter: ModelRouter,
         contextAssembler: ContextAssembler,
         shortTermMemory: ShortTermMemory,
-        chatRoomManager: ChatRoomManager
+        chatRoomManager: ChatRoomManager,
+        skillManager: SkillManager
     ) {
         this.modelRouter = modelRouter;
         this.contextAssembler = contextAssembler;
         this.shortTermMemory = shortTermMemory;
         this.chatRoomManager = chatRoomManager;
+        this.skillManager = skillManager;
     }
 
     /**
@@ -44,7 +48,8 @@ export class AgentRegistry {
             this.modelRouter,
             this.contextAssembler,
             this.shortTermMemory,
-            this.chatRoomManager
+            this.chatRoomManager,
+            this.skillManager
         );
         this.agents.set(config.id, agent);
         log.info(`Created agent: ${config.id} (${config.name})`);

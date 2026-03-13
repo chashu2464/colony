@@ -172,9 +172,11 @@ export function createColonyServer(options: ServerOptions) {
         }
 
         try {
+            log.info(`Received agent message request for room ${req.params.id} from agent ${agentId}`);
             const message = room.sendAgentMessage(agentId, content, mentions);
             res.json({ message });
         } catch (err) {
+            log.error(`Failed to send agent message in room ${req.params.id}:`, err);
             res.status(400).json({ error: (err as Error).message });
         }
     });

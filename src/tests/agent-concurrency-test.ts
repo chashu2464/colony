@@ -4,6 +4,7 @@
 import { Agent } from '../agent/Agent.js';
 import { ShortTermMemory } from '../memory/ShortTermMemory.js';
 import { ContextAssembler } from '../memory/ContextAssembler.js';
+import { SkillManager } from '../agent/skills/SkillManager.js';
 import type { Message, AgentConfig, SupportedCLI, InvokeResult } from '../types.js';
 
 // ── Mocks ────────────────────────────────────────────────
@@ -69,7 +70,9 @@ async function runTests() {
         getRoom: (id: string) => ({
             id,
             workingDir: null,
-            getInfo: () => ({ participants: [] })
+            getInfo: () => ({ participants: [] }),
+            sendAgentMessage: (agentId: string, content: string, mentions: any, options: any) => ({ id: 'msg-' + Math.random() }),
+            updateMessage: (id: string, content: string, options: any) => { }
         })
     };
 
@@ -78,7 +81,8 @@ async function runTests() {
         mockRouter as any,
         assembler,
         stm,
-        mockChatRoomManager as any
+        mockChatRoomManager as any,
+        new SkillManager()
     );
 
     // 🧪 Scenario 1 & 2: Serial Processing & Cooldown

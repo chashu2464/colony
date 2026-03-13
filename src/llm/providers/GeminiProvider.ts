@@ -40,8 +40,17 @@ export class GeminiProvider extends BaseCLIProvider {
     protected extractToolUse(event: Record<string, unknown>): ToolCall[] {
         if (event.type === 'tool_use') {
             return [{
+                id: event.tool_id as string,
                 name: event.tool_name as string,
                 input: (event.parameters ?? {}) as Record<string, unknown>,
+            }];
+        } else if (event.type === 'tool_result') {
+            return [{
+                id: event.tool_id as string,
+                name: 'tool_result_placeholder', // Name will be overridden by merge if ID exists
+                result: event.output as string,
+                isError: event.status === 'error',
+                input: {} // Result doesn't have input, but interface requires it
             }];
         }
         return [];

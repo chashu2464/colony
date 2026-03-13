@@ -5,7 +5,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as yaml from 'yaml';
-import { randomUUID } from 'crypto';
 import { Logger } from './utils/Logger.js';
 import { RateLimitManager } from './llm/RateLimitManager.js';
 import { ModelRouter } from './llm/ModelRouter.js';
@@ -17,16 +16,17 @@ import { ShortTermMemory, ContextAssembler, ContextScheduler } from './memory/in
 import { Mem0LongTermMemory } from './memory/Mem0LongTermMemory.js';
 import { DiscordManager } from './discord/index.js';
 import { SchedulerService } from './scheduler/SchedulerService.js';
+import { SkillManager } from './agent/skills/SkillManager.js';
 import type { Participant, Message } from './types.js';
 import type { LongTermMemory } from './memory/types.js';
 import type { Mem0Config } from './memory/Mem0LongTermMemory.js';
-import type { ScheduledTask } from './scheduler/types.js';
 
 const log = new Logger('Colony');
 
 export interface ColonyOptions {
     agentConfigDir?: string;
     dataDir?: string;
+    skillsDir?: string;
     enableLongTermMemory?: boolean;
     mem0ConfigPath?: string;
     enableDiscord?: boolean;
@@ -87,6 +87,11 @@ export class Colony {
         this.messageBus = new MessageBus();
         this.sessionManager = new SessionManager(dataDir);
 
+        // Initialize and discover all skills globally
+        const skillManager = new SkillManager();
+        const skillsDir = options.skillsDir ?? path.join(process.cwd(), 'skills');
+        skillManager.discoverFromDirectory(skillsDir);
+
         // Initialize chatRoomManager first (needed by agentRegistry)
         this.chatRoomManager = new ChatRoomManager(
             this.messageBus,
@@ -94,12 +99,13 @@ export class Colony {
             this.sessionManager
         );
 
-        // Now initialize agentRegistry with chatRoomManager
+        // Now initialize agentRegistry with chatRoomManager and skillManager
         this.agentRegistry = new AgentRegistry(
             this.modelRouter,
             this.contextAssembler,
             this.shortTermMemory,
-            this.chatRoomManager
+            this.chatRoomManager,
+            skillManager
         );
 
         // Set agentRegistry in chatRoomManager
@@ -108,6 +114,15 @@ export class Colony {
         // Load agent configs
         const agents = this.agentRegistry.loadFromDirectory(agentConfigDir);
         log.info(`Colony initialized with ${agents.length} agents`);
+
+        // Initialize Scheduler
+        this.schedulerService = new SchedulerService(dataDir, async (task) => {
+            const room = this.chatRoomManager.getRoom(task.roomId);
+            if (room) {
+                log.info(`Executing scheduled task ${task.id} for agent ${task.agentId}`);
+                room.sendHumanMessage('system-scheduler', task.prompt, [task.agentId]);
+            }
+        });
 
         // Initialize Discord integration if enabled
         if (options.enableDiscord !== false && fs.existsSync(discordConfigPath)) {
@@ -120,11 +135,6 @@ export class Colony {
                 log.warn('Continuing without Discord integration');
             }
         }
-
-        // Initialize scheduler service
-        this.schedulerService = new SchedulerService(dataDir, async (task: ScheduledTask) => {
-            await this.executeScheduledTask(task);
-        });
 
         // Forward rate limit events
         this.rateLimitManager.events.on('quota_exhausted', ({ model }) => {
@@ -145,7 +155,7 @@ export class Colony {
         // Restore saved sessions
         await this.chatRoomManager.restoreAllSessions();
 
-        // Initialize scheduler service
+        // Initialize and start scheduler
         await this.schedulerService.initialize();
 
         // Verify CLI health for all agents
@@ -243,40 +253,6 @@ export class Colony {
             rooms: this.chatRoomManager.listRooms(),
             rateLimits: this.rateLimitManager.getAllStatus(),
         };
-    }
-
-    /**
-     * Execute a scheduled task by waking up the agent with the preset prompt.
-     */
-    private async executeScheduledTask(task: ScheduledTask): Promise<void> {
-        const room = this.chatRoomManager.getRoom(task.roomId);
-        if (!room) {
-            log.warn(`Cannot execute task ${task.id}: room ${task.roomId} not found`);
-            return;
-        }
-
-        const agent = this.agentRegistry.getByIdOrName(task.agentId);
-        if (!agent) {
-            log.warn(`Cannot execute task ${task.id}: agent ${task.agentId} not found`);
-            return;
-        }
-
-        log.info(`Executing scheduled task ${task.id} for agent ${task.agentId}`);
-
-        // Use sendSystemMessage which is safer and properly routes through the bus
-        room.sendSystemMessage(task.prompt, [task.agentId], {
-            scheduledTask: true,
-            taskId: task.id
-        });
-    }
-
-    /**
-     * Shutdown Colony and cleanup resources.
-     */
-    async shutdown(): Promise<void> {
-        log.info('Shutting down Colony...');
-        await this.schedulerService.shutdown();
-        log.info('Colony shut down');
     }
 }
 

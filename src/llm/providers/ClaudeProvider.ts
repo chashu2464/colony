@@ -60,15 +60,30 @@ export class ClaudeProvider extends BaseCLIProvider {
     }
 
     protected extractToolUse(event: Record<string, unknown>): ToolCall[] {
-        if (event.type !== 'assistant') return [];
-        const content = (event.message as Record<string, unknown>)?.content;
-        if (!Array.isArray(content)) return [];
-        return content
-            .filter((b: Record<string, unknown>) => b.type === 'tool_use')
-            .map((b: Record<string, unknown>) => ({
-                name: b.name as string,
-                input: b.input as Record<string, unknown>,
-            }));
+        if (event.type === 'assistant') {
+            const content = (event.message as Record<string, unknown>)?.content;
+            if (!Array.isArray(content)) return [];
+            return content
+                .filter((b: Record<string, unknown>) => b.type === 'tool_use')
+                .map((b: Record<string, unknown>) => ({
+                    id: b.id as string,
+                    name: b.name as string,
+                    input: b.input as Record<string, unknown>,
+                }));
+        } else if (event.type === 'user') {
+            const content = (event.message as Record<string, unknown>)?.content;
+            if (!Array.isArray(content)) return [];
+            return content
+                .filter((b: Record<string, unknown>) => b.type === 'tool_result')
+                .map((b: Record<string, unknown>) => ({
+                    id: b.tool_use_id as string,
+                    name: 'tool_result_placeholder', // Name will be overridden by merge if ID exists
+                    result: b.content as string,
+                    isError: b.is_error as boolean,
+                    input: {} // Result doesn't have input, but interface requires it
+                }));
+        }
+        return [];
     }
 
     protected extractTokenUsage(event: Record<string, unknown>): TokenUsage | null {

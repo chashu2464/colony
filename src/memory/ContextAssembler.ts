@@ -31,6 +31,7 @@ function estimateTokens(text: string): number {
 
 export class ContextAssembler implements IContextAssembler {
     private agentConfigs = new Map<string, AgentConfig>();
+    private skillManagers = new Map<string, SkillManager>();
     private shortTermMemory: ShortTermMemory;
     private longTermMemory?: LongTermMemory;
     private workflowProtocols?: Map<number, StageProtocol>;
@@ -43,8 +44,9 @@ export class ContextAssembler implements IContextAssembler {
     /**
      * Register an agent's configuration.
      */
-    registerAgent(config: AgentConfig, _skillManager: SkillManager): void {
+    registerAgent(config: AgentConfig, skillManager: SkillManager): void {
         this.agentConfigs.set(config.id, config);
+        this.skillManagers.set(config.id, skillManager);
     }
 
     /**
@@ -85,7 +87,19 @@ export class ContextAssembler implements IContextAssembler {
             });
         }
 
-        // Note: Manual 'skills' section is removed as CLI handles native tool discovery via .claude/skills
+        // 3. Skills (high priority)
+        const skillManager = this.skillManagers.get(options.agentId);
+        if (skillManager) {
+            const skillContent = skillManager.toPromptBlock();
+            if (skillContent) {
+                sections.push({
+                    name: 'skills',
+                    content: skillContent,
+                    priority: 85,
+                    tokenCount: 0,
+                });
+            }
+        }
 
         // 3.2. Workflow Stage (high priority, if enabled)
         if (options.includeWorkflow !== false) {

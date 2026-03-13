@@ -65,7 +65,8 @@ export class Agent {
         modelRouter: ModelRouter,
         contextAssembler: ContextAssembler,
         shortTermMemory: ShortTermMemory,
-        chatRoomManager: ChatRoomManager
+        chatRoomManager: ChatRoomManager,
+        globalSkillManager: SkillManager
     ) {
         this.id = config.id;
         this.name = config.name;
@@ -86,10 +87,13 @@ export class Agent {
         this.digestGenerator = new DigestGenerator(this.transcriptWriter);
         this.sessionBootstrap = new SessionBootstrap();
 
-        // Register this agent with the context assembler
-        // Note: SkillManager is still used for context assembly (skill descriptions)
-        // but actual skill execution is handled by CLI
+        // Load and register this agent's specific skills
         const skillManager = new SkillManager();
+        // Use all discovered metadata from the global manager to load local skills
+        (skillManager as any).allMetadata = globalSkillManager.getAllMetadata();
+        if (config.skills && config.skills.length > 0) {
+            skillManager.loadSkills(config.skills);
+        }
 
         this.contextAssembler.registerAgent(config, skillManager);
     }
@@ -370,11 +374,15 @@ export class Agent {
                         chatRoom.updateMessage(pendingId, '(无输出)', { isMonologue: true, isPending: false });
                     }
 
-                    // Check if CLI executed any tools
+                    // Check if CLI executed any tools successfully
                     const toolCalls = result.toolCalls || [];
                     const hasSendMessage = toolCalls.some(t => {
                         const name = t.name?.toLowerCase() ?? '';
                         const input = t.input ?? {};
+                        
+                        // If we have result info, and it's an error, this wasn't a successful send
+                        if (t.isError === true) return false;
+
                         // 1. Direct name match
                         if (name === 'send-message' || name === 'send_message') return true;
                         // 2. CLI 'Skill' wrapper — check known input field variants
@@ -417,8 +425,13 @@ export class Agent {
                     // Continue to next round to let LLM see tool outputs and potentially speak.
                     log.info(`[${this.name}] Tools called (${toolCalls.map(t => t.name).join(', ')}), continuing to round ${round + 1}...`);
 
-                    // Tell the agent why it's being re-invoked
-                    currentPrompt = `[系统提示] 你在上一轮执行了以下工具：${toolCalls.map(t => t.name).join(', ')}，但没有调用 send-message 发送回复。用户看不到你的内心独白，你必须调用 send-message 工具将你的分析结果或回复发送出去。请现在就调用 send-message。`;
+                    const failedTools = toolCalls.filter(t => t.isError).map(t => t.name);
+                    if (failedTools.length > 0) {
+                        currentPrompt = `[系统提示] 你在上一轮执行的以下工具失败了：${failedTools.join(', ')}。请根据工具执行结果分析原因并尝试重试。注意：如果你之前调用了 send-message 但失败了，用户并没有收到你的消息，你必须再次调用成功的 send-message 才能完成任务。`;
+                    } else {
+                        // Tell the agent why it's being re-invoked
+                        currentPrompt = `[系统提示] 你在上一轮执行了以下工具：${toolCalls.map(t => t.name).join(', ')}，但没有调用 send-message 发送回复。用户看不到你的内心独白，你必须调用 send-message 工具将你的分析结果或回复发送出去。请现在就调用 send-message。`;
+                    }
                     continue;
                 } catch (innerErr) {
                     const innerErrMsg = (innerErr as Error).message ?? '';

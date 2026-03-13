@@ -17,6 +17,8 @@ export interface AgentConfig {
     rules?: string[];
     /** If true, this agent receives messages when nobody is explicitly @mentioned. */
     isDefault?: boolean;
+    /** List of explicit skills to load for this agent. */
+    skills?: string[];
     /** Session management strategy config. */
     session?: {
         strategy?: 'handoff' | 'compress';
@@ -110,6 +112,8 @@ export interface InvokeResult {
 export interface ToolUseEvent {
     name: string;
     input: Record<string, unknown>;
+    result?: string;
+    isError?: boolean;
 }
 
 // ── Rate Limit Types ─────────────────────────────────────

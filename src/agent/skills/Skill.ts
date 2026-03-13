@@ -21,9 +21,22 @@ export abstract class Skill {
 
     /**
      * Render this skill's instructions for the LLM prompt.
-     * Returns the full SKILL.md body (instructions, parameters, examples).
+     * Returns the full SKILL.md body (instructions, parameters, examples),
+     * but with relative script paths (like "scripts/handler.sh") resolved to absolute paths.
      */
     toPromptDescription(): string {
-        return this.metadata.instructions;
+        let instructions = this.metadata.instructions;
+        const skillDir = this.metadata.directory;
+
+        // Replace "scripts/handler.sh" or similar with absolute path
+        // Matches: "scripts/handler.sh", "./scripts/handler.sh"
+        const scriptRegex = /([\s"'])(\.?\/)?scripts\/handler\.(sh|js|py|ts)([\s"'])/g;
+        
+        instructions = instructions.replace(scriptRegex, (match, p1, p2, p3, p4) => {
+            const absolutePath = `${skillDir}/scripts/handler.${p3}`;
+            return `${p1}${absolutePath}${p4}`;
+        });
+
+        return instructions;
     }
 }

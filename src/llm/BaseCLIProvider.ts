@@ -181,6 +181,14 @@ export abstract class BaseCLIProvider implements ILLMProvider {
 
                     const extractedTools = this.extractToolUse(event);
                     for (const toolUse of extractedTools) {
+                        if (toolUse.id) {
+                            const existing = toolCalls.find(t => t.id === toolUse.id);
+                            if (existing) {
+                                // Merge result/error into existing call
+                                Object.assign(existing, toolUse);
+                                continue;
+                            }
+                        }
                         toolCalls.push(toolUse);
                         options.onToolUse?.(toolUse);
                     }

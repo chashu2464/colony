@@ -190,8 +190,7 @@ export class SkillManager {
         if (skills.length === 0) return '';
 
         const header = `## 可用技能 (Available Skills)\n\n` +
-            `你可以通过输出 JSON 代码块来调用技能：\n` +
-            '```json\n{"skill": "<skill-name>", "params": {<parameters>}}\n```\n';
+            `你可以通过调用对应的工具或执行命令来使用这些技能。每个技能的具体用法如下：\n`;
 
         const descriptions = skills.map(s => s.toPromptDescription()).join('\n\n---\n\n');
 

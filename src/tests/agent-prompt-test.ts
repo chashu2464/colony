@@ -3,6 +3,7 @@ import { ModelRouter } from '../llm/ModelRouter.js';
 import { ContextAssembler } from '../memory/ContextAssembler.js';
 import { ShortTermMemory } from '../memory/ShortTermMemory.js';
 import { ChatRoomManager } from '../conversation/ChatRoomManager.js';
+import { SkillManager } from '../agent/skills/SkillManager.js';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -23,7 +24,7 @@ async function testAgentPrompt() {
     };
 
     // Instantiate Agent (this should trigger skill loading)
-    const agent = new Agent(config as any, router, assembler, stm, roomManager);
+    const agent = new Agent(config as any, router, assembler, stm, roomManager, new SkillManager());
 
     // Create a mock chat room and message
     const roomId = 'test-room';

@@ -51,6 +51,7 @@ export function loadAgentConfig(filePath: string): AgentConfig {
         personality: (parsed.personality as string).trim(),
         rules: parsed.rules as string[] | undefined,
         isDefault: (parsed.is_default as boolean | undefined) ?? false,
+        skills: parsed.skills as string[] | undefined,
     };
 
     log.info(`Loaded agent config: ${config.id} (${config.name})`);
