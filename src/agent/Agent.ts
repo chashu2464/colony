@@ -227,6 +227,13 @@ export class Agent {
             const workingDir = chatRoom.workingDir || process.cwd();
             await this.ensureSkillsSymlinks(workingDir);
 
+            // Setup environment isolation for CLI (BUG-CONCURRENCY-001)
+            // Use room-specific config directory to avoid sharing session cache across rooms
+            const sessionConfigDir = path.join(process.cwd(), '.data/sessions', message.roomId);
+            if (!fs.existsSync(sessionConfigDir)) {
+                fs.mkdirSync(sessionConfigDir, { recursive: true });
+            }
+
             // Use ContextAssembler to build the initial prompt
             let currentPrompt = await this.contextAssembler.assemble({
                 agentId: this.id,
@@ -312,6 +319,9 @@ export class Agent {
                                 COLONY_ROOM_ID: message.roomId,
                                 COLONY_API: process.env.COLONY_API ?? 'http://localhost:3001',
                                 CLAUDE_CODE_SESSION_ACCESS_TOKEN: process.env.CLAUDE_CODE_SESSION_ACCESS_TOKEN ?? '',
+                                // Isolation for CLI session cache and config
+                                XDG_CONFIG_HOME: sessionConfigDir,
+                                CLAUDE_CONFIG_DIR: sessionConfigDir,
                             },
                         },
                         this.config.model.fallback,
@@ -426,12 +436,22 @@ export class Agent {
                     log.info(`[${this.name}] Tools called (${toolCalls.map(t => t.name).join(', ')}), continuing to round ${round + 1}...`);
 
                     const failedTools = toolCalls.filter(t => t.isError).map(t => t.name);
+
+                    // --- Re-assemble prompt with identity and context for continuation rounds (BUG-CONTEXT-001) ---
+                    // This ensures the agent maintains its identity and room awareness even in deep tool-call loops.
+                    const identity = this.contextAssembler.buildIdentitySection(this.config);
+                    const workflow = await this.contextAssembler.buildWorkflowStageSection(message.roomId, this.id);
+                    const participants = this.contextAssembler.buildParticipantsSection(chatRoom);
+
+                    let systemHint = '';
                     if (failedTools.length > 0) {
-                        currentPrompt = `[系统提示] 你在上一轮执行的以下工具失败了：${failedTools.join(', ')}。请根据工具执行结果分析原因并尝试重试。注意：如果你之前调用了 send-message 但失败了，用户并没有收到你的消息，你必须再次调用成功的 send-message 才能完成任务。`;
+                        systemHint = `[系统提示] 你在上一轮执行的以下工具失败了：${failedTools.join(', ')}。请根据工具执行结果分析原因并尝试重试。注意：如果你之前调用了 send-message 但失败了，用户并没有收到你的消息，你必须再次调用成功的 send-message 才能完成任务。`;
                     } else {
                         // Tell the agent why it's being re-invoked
-                        currentPrompt = `[系统提示] 你在上一轮执行了以下工具：${toolCalls.map(t => t.name).join(', ')}，但没有调用 send-message 发送回复。用户看不到你的内心独白，你必须调用 send-message 工具将你的分析结果或回复发送出去。请现在就调用 send-message。`;
+                        systemHint = `[系统提示] 你在上一轮执行了以下工具：${toolCalls.map(t => t.name).join(', ')}，但没有调用 send-message 发送回复。用户看不到你的内心独白，你必须调用 send-message 工具将你的分析结果或回复发送出去。请现在就调用 send-message。`;
                     }
+
+                    currentPrompt = [identity, workflow, participants, systemHint].filter(Boolean).join('\n\n');
                     continue;
                 } catch (innerErr) {
                     const innerErrMsg = (innerErr as Error).message ?? '';

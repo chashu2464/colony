@@ -33,12 +33,17 @@ async function reproduce() {
         model: { primary: 'gemini' as any, fallback: [] },
     } as any;
 
+    const globalSkillManager = {
+        getAllMetadata: () => []
+    } as any;
+
     const agent = new Agent(
         agentConfig,
         modelRouter,
         contextAssembler,
         shortTermMemory,
-        chatRoomManager
+        chatRoomManager,
+        globalSkillManager
     );
 
     // Call the private method via casting to any
