@@ -1,0 +1,30 @@
+{
+  "$schema": "https://git.io/stryker-conf.schema.json",
+  "packageManager": "npm",
+  "reporters": ["html", "clear-text", "progress", "json"],
+  "testRunner": "vitest",
+  "coverageAnalysis": "perTest",
+  "vitest": {
+    "configFile": "vitest.config.ts"
+  },
+  "checkers": ["typescript"],
+  "tsconfigFile": "tsconfig.json",
+  "mutate": [
+    "src/calculator.ts"
+  ],
+  "ignorePatterns": [
+    ".codex/**",
+    ".claude/**",
+    ".gemini/**",
+    ".git/**",
+    ".data/**",
+    "logs/**",
+    "dist/**",
+    "coverage/**"
+  ],
+  "thresholds": {
+    "high": 80,
+    "low": 70,
+    "break": 60
+  }
+}

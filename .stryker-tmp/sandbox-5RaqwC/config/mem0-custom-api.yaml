@@ -1,0 +1,211 @@
+# Mem0 API Adapter Configuration
+
+# This configuration allows Mem0 to use unofficial/compatible API endpoints
+# that follow OpenAI's API format (e.g., local models, third-party providers)
+
+# ============================================================
+# LLM Configuration (for memory extraction)
+# ============================================================
+
+llm:
+  provider: openai  # Keep as 'openai' for API compatibility
+  config:
+    model: glm-4.7-flashx
+
+    # Custom API endpoint (OpenAI-compatible)
+    # Examples:
+    # - Local: http://localhost:8000/v1
+    # - Third-party: https://api.example.com/v1
+    # - Cloudflare Workers AI: https://api.cloudflare.com/client/v4/accounts/{account_id}/ai/v1
+    base_url: ${CUSTOM_LLM_BASE_URL:-https://api.openai.com/v1}
+
+    # API key for the custom endpoint
+    api_key: ${CUSTOM_LLM_API_KEY}
+
+    # Optional: Custom headers
+    # default_headers:
+    #   Authorization: "Bearer ${CUSTOM_LLM_API_KEY}"
+    #   X-Custom-Header: "value"
+
+    # Optional: Timeout settings
+    # timeout: 60
+    # max_retries: 3
+
+# ============================================================
+# Embedder Configuration (for vector search)
+# ============================================================
+
+embedder:
+  provider: openai  # Keep as 'openai' for API compatibility
+  config:
+    model: embedding-3
+
+    # Custom API endpoint (OpenAI-compatible)
+    base_url: ${CUSTOM_EMBEDDER_BASE_URL:-https://api.openai.com/v1}
+
+    # API key for the custom endpoint
+    api_key: ${CUSTOM_EMBEDDER_API_KEY}
+
+    # Embedding dimensions (must match the model)
+    embedding_dims: 1536
+
+    # Optional: Custom headers
+    # default_headers:
+    #   Authorization: "Bearer ${CUSTOM_EMBEDDER_API_KEY}"
+
+# ============================================================
+# Vector Store Configuration
+# ============================================================
+
+vector_store:
+  provider: qdrant
+  config:
+    host: ${QDRANT_HOST:-localhost}
+    port: ${QDRANT_PORT:-6333}
+    collection_name: colony_memories
+
+    # Optional: Qdrant API key (for cloud)
+    # api_key: ${QDRANT_API_KEY}
+    # url: ${QDRANT_URL}
+
+# ============================================================
+# Graph Store Configuration (Optional)
+# ============================================================
+
+graph_store:
+  provider: neo4j
+  config:
+    url: ${NEO4J_URL:-bolt://localhost:7687}
+    username: ${NEO4J_USERNAME:-neo4j}
+    password: ${NEO4J_PASSWORD}
+
+# ============================================================
+# Example Configurations for Popular Providers
+# ============================================================
+
+# --- Example 1: Ollama (Local) ---
+# llm:
+#   provider: openai
+#   config:
+#     model: llama3
+#     base_url: http://localhost:11434/v1
+#     api_key: ollama  # Ollama doesn't require a real key
+#
+# embedder:
+#   provider: openai
+#   config:
+#     model: nomic-embed-text
+#     base_url: http://localhost:11434/v1
+#     api_key: ollama
+#     embedding_dims: 768
+
+# --- Example 2: LM Studio (Local) ---
+# llm:
+#   provider: openai
+#   config:
+#     model: local-model
+#     base_url: http://localhost:1234/v1
+#     api_key: lm-studio
+#
+# embedder:
+#   provider: openai
+#   config:
+#     model: text-embedding-ada-002
+#     base_url: http://localhost:1234/v1
+#     api_key: lm-studio
+#     embedding_dims: 1536
+
+# --- Example 3: Azure OpenAI ---
+# llm:
+#   provider: azure_openai
+#   config:
+#     model: gpt-4
+#     api_key: ${AZURE_OPENAI_API_KEY}
+#     azure_endpoint: ${AZURE_OPENAI_ENDPOINT}
+#     api_version: "2024-02-15-preview"
+#     azure_deployment: your-deployment-name
+#
+# embedder:
+#   provider: azure_openai
+#   config:
+#     model: text-embedding-ada-002
+#     api_key: ${AZURE_OPENAI_API_KEY}
+#     azure_endpoint: ${AZURE_OPENAI_ENDPOINT}
+#     api_version: "2024-02-15-preview"
+#     azure_deployment: your-embedding-deployment
+
+# --- Example 4: Together AI ---
+# llm:
+#   provider: openai
+#   config:
+#     model: mistralai/Mixtral-8x7B-Instruct-v0.1
+#     base_url: https://api.together.xyz/v1
+#     api_key: ${TOGETHER_API_KEY}
+#
+# embedder:
+#   provider: openai
+#   config:
+#     model: togethercomputer/m2-bert-80M-8k-retrieval
+#     base_url: https://api.together.xyz/v1
+#     api_key: ${TOGETHER_API_KEY}
+#     embedding_dims: 768
+
+# --- Example 5: Groq ---
+# llm:
+#   provider: openai
+#   config:
+#     model: mixtral-8x7b-32768
+#     base_url: https://api.groq.com/openai/v1
+#     api_key: ${GROQ_API_KEY}
+
+# --- Example 6: Cloudflare Workers AI ---
+# llm:
+#   provider: openai
+#   config:
+#     model: "@cf/meta/llama-3-8b-instruct"
+#     base_url: https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/ai/v1
+#     api_key: ${CF_API_TOKEN}
+#     default_headers:
+#       Authorization: "Bearer ${CF_API_TOKEN}"
+
+# --- Example 7: OpenRouter ---
+# llm:
+#   provider: openai
+#   config:
+#     model: anthropic/claude-3-opus
+#     base_url: https://openrouter.ai/api/v1
+#     api_key: ${OPENROUTER_API_KEY}
+#     default_headers:
+#       HTTP-Referer: https://your-site.com
+#       X-Title: Colony
+#
+# embedder:
+#   provider: openai
+#   config:
+#     model: openai/text-embedding-3-small
+#     base_url: https://openrouter.ai/api/v1
+#     api_key: ${OPENROUTER_API_KEY}
+#     embedding_dims: 1536
+
+# ============================================================
+# Environment Variables Template
+# ============================================================
+
+# Create a .env file with these variables:
+#
+# # Custom LLM endpoint
+# CUSTOM_LLM_BASE_URL=http://localhost:11434/v1
+# CUSTOM_LLM_API_KEY=your-api-key
+#
+# # Custom Embedder endpoint
+# CUSTOM_EMBEDDER_BASE_URL=http://localhost:11434/v1
+# CUSTOM_EMBEDDER_API_KEY=your-api-key
+#
+# # Vector store
+# QDRANT_HOST=localhost
+# QDRANT_PORT=6333
+#
+# # Graph store (optional)
+# NEO4J_URL=bolt://localhost:7687
+# NEO4J_USERNAME=neo4j
+# NEO4J_PASSWORD=password

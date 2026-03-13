@@ -20,7 +20,9 @@
     ".data/**",
     "logs/**",
     "dist/**",
-    "coverage/**"
+    "coverage/**",
+    ".tmp/**",
+    ".stryker-tmp/**"
   ],
   "thresholds": {
     "high": 80,

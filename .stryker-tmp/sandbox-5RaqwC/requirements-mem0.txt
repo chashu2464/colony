@@ -1,0 +1,34 @@
+# Colony Mem0 Integration Requirements
+# Install with: pip install -r requirements-mem0.txt
+
+# Core Mem0
+mem0ai>=1.0.0
+
+# Vector stores (choose one or more)
+qdrant-client>=1.7.0  # Recommended for production
+chromadb>=0.4.0       # Good for development
+# pinecone-client>=2.2.0  # Cloud service
+# weaviate-client>=3.0.0  # Multi-modal support
+# faiss-cpu>=1.7.0        # Local, high-speed
+# pymilvus>=2.3.0         # Enterprise-grade
+
+# Graph stores (optional)
+neo4j>=5.0.0          # Recommended
+# kuzu>=0.1.0         # Embedded graph DB
+# memgraph>=1.0.0     # In-memory graph DB
+
+# LLM providers
+openai>=1.0.0         # OpenAI GPT models
+# anthropic>=0.7.0    # Claude models
+# google-generativeai>=0.3.0  # Gemini models
+
+# Embedders
+# sentence-transformers>=2.2.0  # HuggingFace models
+
+# Rerankers (optional, improves search quality)
+# cohere>=4.0.0
+# jina>=3.0.0
+
+# Utilities
+pyyaml>=6.0
+python-dotenv>=1.0.0

@@ -1,0 +1,178 @@
+// @ts-nocheck
+// ── Colony: Discord Manager ──────────────────────────────
+// Main entry point for Discord integration.
+
+import * as fs from 'fs';
+import * as yaml from 'yaml';
+import { Logger } from '../utils/Logger.js';
+import { DiscordBot } from './DiscordBot.js';
+import { DiscordBridge } from './DiscordBridge.js';
+import { NotificationManager } from './NotificationManager.js';
+import { ChannelSessionMapper } from './ChannelSessionMapper.js';
+import type { Colony } from '../Colony.js';
+import type { DiscordConfig } from './types.js';
+
+const log = new Logger('DiscordManager');
+
+export class DiscordManager {
+    private bot: DiscordBot;
+    private bridge: DiscordBridge;
+    private notifications: NotificationManager;
+    private mapper: ChannelSessionMapper;
+    private config: DiscordConfig;
+    private colony: Colony;
+
+    constructor(colony: Colony, configPath?: string) {
+        // Load configuration
+        const path = configPath || 'config/discord.yaml';
+        this.config = this.loadConfig(path);
+        this.colony = colony;
+
+        // Initialize components
+        this.mapper = new ChannelSessionMapper();
+        this.bot = new DiscordBot(this.config, colony, this.mapper);
+        this.bridge = new DiscordBridge(this.bot, colony, this.mapper);
+        this.notifications = new NotificationManager(this.bot, this.config);
+
+        log.info('Discord manager initialized');
+    }
+
+    /**
+     * Load Discord configuration.
+     */
+    private loadConfig(path: string): DiscordConfig {
+        try {
+            const content = fs.readFileSync(path, 'utf-8');
+            const config = yaml.parse(content) as DiscordConfig;
+
+            // Helper: replace ${VAR} placeholder with env value
+            const resolveEnv = (value: string | undefined): string | undefined => {
+                if (typeof value === 'string' && value.startsWith('${') && value.endsWith('}')) {
+                    const envVar = value.slice(2, -1);
+                    return process.env[envVar] ?? '';
+                }
+                return value;
+            };
+
+            // Substitute environment variables for all known string fields
+            config.bot.token = resolveEnv(config.bot.token) ?? '';
+            if (config.guild) {
+                config.guild.id = resolveEnv(config.guild.id) ?? config.guild.id;
+                if (config.guild.sessionCategory) {
+                    config.guild.sessionCategory = resolveEnv(config.guild.sessionCategory) ?? config.guild.sessionCategory;
+                }
+            }
+
+            if (!config.bot.token) {
+                throw new Error('Discord bot token not configured');
+            }
+
+            return config;
+        } catch (error) {
+            log.error('Failed to load Discord configuration:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Start Discord integration.
+     */
+    async start(): Promise<void> {
+        log.info('Starting Discord integration...');
+        await this.mapper.load();
+
+        // Prune orphan mappings (sessions that no longer exist)
+        const existingIds = new Set(this.colony.chatRoomManager.listRooms().map((r: any) => r.id as string));
+        const pruned = await this.mapper.pruneOrphans(existingIds);
+        if (pruned > 0) {
+            log.warn(`Pruned ${pruned} orphan channel mappings on startup`);
+        }
+
+        await this.bot.start();
+
+        // Backfill: create Discord channels for sessions that have no mapping
+        const guildId = this.config.guild?.id;
+        if (guildId) {
+            const allRooms = this.colony.chatRoomManager.listRooms();
+            const unmapped = allRooms.filter((r: any) => !this.mapper.getChannelBySession(r.id as string));
+            if (unmapped.length > 0) {
+                log.info(`Backfilling ${unmapped.length} session(s) with no Discord channel...`);
+                for (const room of unmapped) {
+                    const agentNames = (room.participants || [])
+                        .filter((p: any) => p.type === 'agent')
+                        .map((p: any) => p.name as string);
+                    await this.bot.createChannelForSession(room.id as string, room.name as string, agentNames, guildId)
+                        .catch((err: Error) => log.warn(`Failed to backfill channel for session "${room.name}": ${err.message}`));
+                }
+                log.info('Backfill complete');
+            }
+        }
+
+        log.info('Discord integration started');
+    }
+
+    /**
+     * Stop Discord integration.
+     */
+    async stop(): Promise<void> {
+        log.info('Stopping Discord integration...');
+        await this.bot.stop();
+        log.info('Discord integration stopped');
+    }
+
+    /**
+     * Get notification manager.
+     */
+    getNotificationManager(): NotificationManager {
+        return this.notifications;
+    }
+
+    /**
+     * Get bridge.
+     */
+    getBridge(): DiscordBridge {
+        return this.bridge;
+    }
+
+    /**
+     * Get bot.
+     */
+    getBot(): DiscordBot {
+        return this.bot;
+    }
+
+    /**
+     * Get mapper.
+     */
+    getMapper(): ChannelSessionMapper {
+        return this.mapper;
+    }
+
+    /**
+     * Create a Discord channel for an existing Colony session.
+     * Called by Colony.createSession() to sync Web/API-created sessions to Discord.
+     * Delegates to DiscordBot which holds the Discord client.
+     * Returns the created channel ID, or null if guild not configured or creation failed.
+     */
+    async createChannelForSession(sessionId: string, sessionName: string, agentNames: string[]): Promise<string | null> {
+        const guildId = this.config.guild?.id;
+        if (!guildId) {
+            log.debug('guild.id not configured, skipping Discord channel creation for session:', sessionId);
+            return null;
+        }
+        return this.bot.createChannelForSession(sessionId, sessionName, agentNames, guildId);
+    }
+
+    /**
+     * Delete the Discord channel bound to a Colony session (cascade on session deletion).
+     * No-op if no mapping exists or deletion fails.
+     */
+    async deleteChannelForSession(sessionId: string): Promise<void> {
+        const channelId = this.mapper.getChannelBySession(sessionId);
+        if (!channelId) {
+            log.debug(`No Discord channel mapped for session ${sessionId}, skipping deletion.`);
+            return;
+        }
+        await this.bot.deleteChannelForSession(channelId, sessionId);
+    }
+}

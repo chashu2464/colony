@@ -1,0 +1,63 @@
+# Discord Bot Configuration
+
+bot:
+  # Discord bot token (set via environment variable)
+  token: ${DISCORD_BOT_TOKEN}
+
+  # Command prefix
+  prefix: "/colony"
+
+# Guild/Server configuration (required for auto-channel creation)
+guild:
+  # Discord Server ID
+  id: ${DISCORD_GROUP_ID}
+
+  # Category ID where session channels will be created (optional)
+  sessionCategory: ${DISCORD_SESSION_CATEGORY}
+
+  # Direction B: Automatically create Colony Session when a Discord Channel is created
+  autoCreateOnChannelCreate: true
+
+  # Default agents to load if not specified in channel topic (Direction B)
+  # defaultAgents:
+  #   - architect
+  #   - developer
+
+  # Direction B: Whitelist of allowed working directories (for security)
+  # When a Discord channel topic includes "workdir: /path/to/project", the path
+  # must be in this whitelist (exact match or subdirectory) to be accepted.
+  # If not configured, all workdir requests will be ignored.
+  allowedWorkdirs:
+    - /Users/casu/Documents
+
+# Channel configuration (optional)
+channels:
+  # Default notification channel ID
+  # notifications: "1234567890"
+
+  # Session-specific channels (optional)
+  # sessions:
+  #   default: "1234567891"
+
+# Notification settings
+notifications:
+  enabled: true
+  events:
+    - milestone_completed
+    - task_finished
+    - error_occurred
+    - agent_response
+
+# Permission settings (optional)
+permissions:
+  # Allowed Discord server IDs (empty = all servers)
+  # allowedServers:
+  #   - "1234567890"
+
+  # Allowed role IDs (empty = all roles)
+  # allowedRoles:
+  #   - "1234567890"
+
+  # Allowed user IDs (empty = all users)
+  # allowedUsers:
+  #   - "1234567890"

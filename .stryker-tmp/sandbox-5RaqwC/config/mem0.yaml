@@ -1,0 +1,81 @@
+# Mem0 Configuration for Colony
+
+# Vector Store Configuration
+vector_store:
+  provider: qdrant  # Options: qdrant, chroma, pinecone, weaviate, faiss, milvus
+  config:
+    host: localhost
+    port: 6333
+    collection_name: colony_memories
+    # For local file-based stores (chroma, faiss):
+    # path: ./.mem0/vector_store
+
+# LLM Configuration (for memory extraction)
+llm:
+  provider: openai  # Options: openai, anthropic, google, ollama, azure_openai
+  config:
+    model: Pro/MiniMaxAI/MiniMax-M2.5 # gpt-4o-mini  # Cheaper model for memory extraction
+    api_key: 81278a2d760345e58c195c6b3346cb81.mwvOxbLu9HxAK8CC
+    # Note: Use OPENAI_API_BASE environment variable for custom endpoint
+
+# Embedder Configuration (for vector search)
+embedder:
+  provider: openai  # Options: openai, huggingface, ollama, azure_openai
+  config:
+    model: Qwen/Qwen3-Embedding-4B
+    api_key: 81278a2d760345e58c195c6b3346cb81.mwvOxbLu9HxAK8CC
+    embedding_dims: 1536
+    # Note: Use OPENAI_API_BASE environment variable for custom endpoint
+
+# Graph Store Configuration (optional, for entity relationships)
+# Disabled for now - uncomment and configure if needed
+# graph_store:
+#   provider: neo4j  # Options: neo4j, kuzu, memgraph
+#   config:
+#     url: bolt://localhost:7687
+#     username: neo4j
+#     password: ${NEO4J_PASSWORD}
+
+# Reranker Configuration (optional, improves search quality)
+# Disabled for now - uncomment and configure if needed
+# reranker:
+#   provider: cohere  # Options: cohere, jina
+#   config:
+#     api_key: ${COHERE_API_KEY}
+#     model: rerank-english-v2.0
+
+# Alternative configurations for different environments
+
+# Development (local, minimal dependencies)
+# vector_store:
+#   provider: chroma
+#   config:
+#     path: ./.mem0/chroma_db
+# llm:
+#   provider: ollama
+#   config:
+#     model: llama3
+#     base_url: http://localhost:11434
+# embedder:
+#   provider: ollama
+#   config:
+#     model: nomic-embed-text
+#     base_url: http://localhost:11434
+
+# Production (cloud services)
+# vector_store:
+#   provider: pinecone
+#   config:
+#     api_key: ${PINECONE_API_KEY}
+#     index_name: colony-prod
+#     environment: us-east-1
+# llm:
+#   provider: openai
+#   config:
+#     model: gpt-4o-mini
+#     api_key: ${OPENAI_API_KEY}
+# embedder:
+#   provider: openai
+#   config:
+#     model: text-embedding-3-small
+#     api_key: ${OPENAI_API_KEY}
