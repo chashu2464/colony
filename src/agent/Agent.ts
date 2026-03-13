@@ -267,7 +267,7 @@ export class Agent {
                                 chainIndex: activeSession.chainIndex + 1,
                                 id: 'pending',
                                 status: 'active',
-                                tokenUsage: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0, cumulative: 0 },
+                                tokenUsage: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0, cumulative: 0, currentContextLength: 0 },
                                 invocationCount: 0,
                                 createdAt: new Date().toISOString(),
                                 previousSessionId: activeSession.id,

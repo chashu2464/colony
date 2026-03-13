@@ -199,7 +199,7 @@ function createColonyServer(options) {
                 invocationCount: s.invocationCount,
                 tokenUsage: s.tokenUsage,
                 contextLimit: s.contextLimit,
-                fillRatio: s.contextLimit > 0 ? s.tokenUsage.cumulative / s.contextLimit : 0,
+                fillRatio: s.contextLimit > 0 ? s.tokenUsage.currentContextLength / s.contextLimit : 0,
                 createdAt: s.createdAt,
                 sealedAt: s.sealedAt,
                 digest: s.digest,
@@ -321,6 +321,67 @@ function createColonyServer(options) {
     // Overall status
     app.get('/api/status', (_req, res) => {
         res.json(colony.getStatus());
+    });
+    // ── REST: Scheduler ───────────────────────────────
+    // Schedule a new task
+    app.post('/api/scheduler/tasks', async (req, res) => {
+        const { agentId, roomId, prompt, mode, delayMs, repeatIntervalMs, maxExecutions } = req.body;
+        if (!agentId || !roomId || !prompt || !mode || !delayMs) {
+            res.status(400).json({ error: 'agentId, roomId, prompt, mode, and delayMs are required' });
+            return;
+        }
+        if (mode !== 'once' && mode !== 'repeat') {
+            res.status(400).json({ error: 'mode must be "once" or "repeat"' });
+            return;
+        }
+        if (mode === 'repeat' && !repeatIntervalMs) {
+            res.status(400).json({ error: 'repeatIntervalMs is required for repeat mode' });
+            return;
+        }
+        try {
+            const result = await colony.schedulerService.scheduleNewTask({
+                agentId,
+                roomId,
+                prompt,
+                mode,
+                delayMs,
+                repeatIntervalMs,
+                maxExecutions
+            });
+            res.json(result);
+        }
+        catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+    // Get a task by ID
+    app.get('/api/scheduler/tasks/:taskId', (req, res) => {
+        const task = colony.schedulerService.getTask(req.params.taskId);
+        if (!task) {
+            res.status(404).json({ error: 'Task not found' });
+            return;
+        }
+        res.json({ task });
+    });
+    // List tasks (optionally filtered by agentId or roomId)
+    app.get('/api/scheduler/tasks', (req, res) => {
+        const { agentId, roomId } = req.query;
+        const tasks = colony.schedulerService.listTasks(agentId, roomId);
+        res.json({ tasks });
+    });
+    // Cancel a task
+    app.delete('/api/scheduler/tasks/:taskId', async (req, res) => {
+        try {
+            const cancelled = await colony.schedulerService.cancelTask(req.params.taskId);
+            if (!cancelled) {
+                res.status(404).json({ error: 'Task not found' });
+                return;
+            }
+            res.json({ ok: true });
+        }
+        catch (err) {
+            res.status(500).json({ error: err.message });
+        }
     });
     // ── Static files (frontend) ───────────────────────
     const webDistPath = path_1.default.join(process.cwd(), 'web', 'dist');

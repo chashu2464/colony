@@ -34,6 +34,8 @@ export interface SessionRecord {
         cacheRead: number;
         cacheCreation: number;
         cumulative: number;
+        /** Token length of the current context window (latest turn) */
+        currentContextLength: number;
     };
     /** Context window limit for this CLI */
     contextLimit: number;
@@ -151,7 +153,7 @@ export class SessionStore {
             cli: params.cli,
             chainIndex,
             status: 'active',
-            tokenUsage: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0, cumulative: 0 },
+            tokenUsage: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0, cumulative: 0, currentContextLength: 0 },
             contextLimit: getContextLimit(params.cli, params.contextLimit),
             invocationCount: 0,
             createdAt: new Date().toISOString(),
@@ -184,8 +186,10 @@ export class SessionStore {
         target.tokenUsage.output += usage.output;
         target.tokenUsage.cacheRead += usage.cacheRead ?? 0;
         target.tokenUsage.cacheCreation += usage.cacheCreation ?? 0;
-        // ✅ Correct: only count tokens that occupy context window (exclude output)
+        // cumulative tracks all tokens processed in this session
         target.tokenUsage.cumulative += usage.input + (usage.cacheRead ?? 0) + (usage.cacheCreation ?? 0);
+        // currentContextLength tracks the size of the latest prompt
+        target.tokenUsage.currentContextLength = usage.input + (usage.cacheRead ?? 0) + (usage.cacheCreation ?? 0);
         target.invocationCount += 1;
         target.lastUsedAt = new Date().toISOString();
 

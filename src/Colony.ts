@@ -16,7 +16,7 @@ import { ShortTermMemory, ContextAssembler, ContextScheduler } from './memory/in
 import { Mem0LongTermMemory } from './memory/Mem0LongTermMemory.js';
 import { DiscordManager } from './discord/index.js';
 import { SchedulerService } from './scheduler/SchedulerService.js';
-import type { Participant } from './types.js';
+import type { Participant, Message } from './types.js';
 import type { LongTermMemory } from './memory/types.js';
 import type { Mem0Config } from './memory/Mem0LongTermMemory.js';
 import type { ScheduledTask } from './scheduler/types.js';
@@ -242,6 +242,51 @@ export class Colony {
             rooms: this.chatRoomManager.listRooms(),
             rateLimits: this.rateLimitManager.getAllStatus(),
         };
+    }
+
+    /**
+     * Execute a scheduled task by waking up the agent with the preset prompt.
+     */
+    private async executeScheduledTask(task: ScheduledTask): Promise<void> {
+        const room = this.chatRoomManager.getRoom(task.roomId);
+        if (!room) {
+            log.warn(`Cannot execute task ${task.id}: room ${task.roomId} not found`);
+            return;
+        }
+
+        const agent = this.agentRegistry.getByIdOrName(task.agentId);
+        if (!agent) {
+            log.warn(`Cannot execute task ${task.id}: agent ${task.agentId} not found`);
+            return;
+        }
+
+        log.info(`Executing scheduled task ${task.id} for agent ${task.agentId}`);
+
+        // Create a system message to wake up the agent
+        const message: Message = {
+            id: require('crypto').randomUUID(),
+            roomId: task.roomId,
+            sender: { id: 'scheduler', type: 'human', name: 'Scheduler' },
+            content: task.prompt,
+            mentions: [task.agentId],
+            timestamp: new Date(),
+            metadata: {
+                scheduledTask: true,
+                taskId: task.id
+            }
+        };
+
+        // Directly invoke the agent with the message
+        await agent.receiveMessage(message);
+    }
+
+    /**
+     * Shutdown Colony and cleanup resources.
+     */
+    async shutdown(): Promise<void> {
+        log.info('Shutting down Colony...');
+        await this.schedulerService.shutdown();
+        log.info('Colony shut down');
     }
 }
 

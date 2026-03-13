@@ -26,7 +26,7 @@ export interface HealthStatus {
  * Calculate the health status of a session based on its token usage.
  */
 export function getHealthStatus(session: SessionRecord): HealthStatus {
-    const tokensUsed = session.tokenUsage.cumulative;
+    const tokensUsed = session.tokenUsage.currentContextLength;
     const contextLimit = session.contextLimit;
     const fillRatio = contextLimit > 0 ? tokensUsed / contextLimit : 0;
 
