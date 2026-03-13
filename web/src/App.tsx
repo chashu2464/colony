@@ -56,10 +56,32 @@ export default function App() {
 
   // Load messages when session changes
   useEffect(() => {
+    let isCurrent = true;
     setMessages([]); // Clear immediately to prevent ghosting
+    
     if (activeSession) {
-      fetchMessages(activeSession).then(setMessages).catch(console.error);
+      fetchMessages(activeSession).then(fetchedMessages => {
+        if (!isCurrent) return;
+        
+        setMessages(prev => {
+          // Merge: fetched messages are the base, but we must preserve any 
+          // messages that arrived via WebSocket while the fetch was in flight.
+          const merged = [...fetchedMessages];
+          prev.forEach(p => {
+            if (!merged.some(m => m.id === p.id)) {
+              merged.push(p);
+            }
+          });
+
+          // Sort by timestamp to maintain correct chat order
+          return merged.sort((a, b) => 
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
+        });
+      }).catch(console.error);
     }
+    
+    return () => { isCurrent = false; };
   }, [activeSession]);
 
   // WebSocket for real-time updates

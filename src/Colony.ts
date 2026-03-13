@@ -5,6 +5,7 @@
 import * as path from 'path';
 import * as fs from 'fs';
 import * as yaml from 'yaml';
+import { randomUUID } from 'crypto';
 import { Logger } from './utils/Logger.js';
 import { RateLimitManager } from './llm/RateLimitManager.js';
 import { ModelRouter } from './llm/ModelRouter.js';
@@ -262,22 +263,11 @@ export class Colony {
 
         log.info(`Executing scheduled task ${task.id} for agent ${task.agentId}`);
 
-        // Create a system message to wake up the agent
-        const message: Message = {
-            id: require('crypto').randomUUID(),
-            roomId: task.roomId,
-            sender: { id: 'scheduler', type: 'human', name: 'Scheduler' },
-            content: task.prompt,
-            mentions: [task.agentId],
-            timestamp: new Date(),
-            metadata: {
-                scheduledTask: true,
-                taskId: task.id
-            }
-        };
-
-        // Directly invoke the agent with the message
-        await agent.receiveMessage(message);
+        // Use sendSystemMessage which is safer and properly routes through the bus
+        room.sendSystemMessage(task.prompt, [task.agentId], {
+            scheduledTask: true,
+            taskId: task.id
+        });
     }
 
     /**

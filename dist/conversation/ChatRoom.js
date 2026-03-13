@@ -191,7 +191,7 @@ class ChatRoom {
     /**
      * Send a system notification message into this room.
      */
-    sendSystemMessage(content, mentions) {
+    sendSystemMessage(content, mentions, metadata) {
         let resolvedMentionIds = [];
         if (mentions && mentions.length > 0) {
             for (const m of mentions) {
@@ -209,6 +209,7 @@ class ChatRoom {
             timestamp: new Date(),
             metadata: {
                 isSystem: true,
+                ...metadata,
             },
         };
         this.messageBus.publish(message);

@@ -104,6 +104,7 @@ export class SchedulerService {
         } catch (err) {
             log.error(`Task ${taskId} execution failed:`, err);
             task.status = 'pending';
+            await this.persist();
         }
     }
 

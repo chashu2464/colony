@@ -20,15 +20,29 @@ export function useWebSocket(
 ) {
     const wsRef = useRef<WebSocket | null>(null);
     const reconnectTimer = useRef<number>(undefined);
-    // Use ref to avoid closure trap - always read the latest roomId without reconnecting
+    // Use ref to avoid closure trap - always read the latest values without reconnecting
     const roomIdRef = useRef(currentRoomId);
+    const onEventRef = useRef(onEvent);
 
-    // Update ref when roomId changes, but don't reconnect WebSocket
-    useEffect(() => {
-        roomIdRef.current = currentRoomId;
-    }, [currentRoomId]);
+    // Update refs immediately during render to avoid race conditions
+    // This ensures that any incoming message processed after the render started
+    // will use the latest roomId and event handler.
+    roomIdRef.current = currentRoomId;
+    onEventRef.current = onEvent;
 
     const connect = useCallback(() => {
+        // Clear any existing timer
+        if (reconnectTimer.current) {
+            window.clearTimeout(reconnectTimer.current);
+            reconnectTimer.current = undefined;
+        }
+
+        // Close existing connection if any
+        if (wsRef.current) {
+            wsRef.current.onclose = null;
+            wsRef.current.close();
+        }
+
         const ws = new WebSocket(url);
         wsRef.current = ws;
 
@@ -41,16 +55,14 @@ export function useWebSocket(
                 const event = JSON.parse(e.data) as WSEvent;
 
                 // Filter messages by roomId at WebSocket level to prevent cross-session contamination
-                // Use ref to get the latest roomId value without closure trap
                 if (roomIdRef.current && (event.type === 'message' || event.type === 'message_updated')) {
                     const msg = event.data as { roomId?: string };
                     if (msg.roomId && msg.roomId !== roomIdRef.current) {
-                        // Silently drop messages from other rooms
                         return;
                     }
                 }
 
-                onEvent(event);
+                onEventRef.current(event);
             } catch {
                 console.warn('[WS] Invalid message:', e.data);
             }
@@ -64,13 +76,19 @@ export function useWebSocket(
         ws.onerror = (err) => {
             console.error('[WS] Error:', err);
         };
-    }, [url, onEvent]);
+    }, [url]); // Only depend on url now
 
     useEffect(() => {
         connect();
         return () => {
-            clearTimeout(reconnectTimer.current);
-            wsRef.current?.close();
+            if (reconnectTimer.current) {
+                window.clearTimeout(reconnectTimer.current);
+            }
+            if (wsRef.current) {
+                wsRef.current.onclose = null; // Prevent reconnect on intentional close
+                wsRef.current.close();
+                wsRef.current = null;
+            }
         };
     }, [connect]);
 

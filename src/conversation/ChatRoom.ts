@@ -217,7 +217,7 @@ export class ChatRoom {
     /**
      * Send a system notification message into this room.
      */
-    sendSystemMessage(content: string, mentions?: string[]): Message {
+    sendSystemMessage(content: string, mentions?: string[], metadata?: Message['metadata']): Message {
         let resolvedMentionIds: string[] = [];
         if (mentions && mentions.length > 0) {
             for (const m of mentions) {
@@ -235,6 +235,7 @@ export class ChatRoom {
             timestamp: new Date(),
             metadata: {
                 isSystem: true,
+                ...metadata,
             },
         };
 
