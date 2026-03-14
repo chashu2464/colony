@@ -19,9 +19,9 @@ This creates a `feature/quick-{id}` branch and switches to it.
 
 ### Complete a task
 ```bash
-echo '{"action": "done"}' | bash scripts/handler.sh
+echo '{"action": "done", "description": "Implement feature X and fix bug Y"}' | bash scripts/handler.sh
 ```
-This squash-merges your changes into master and deletes the branch.
+This squash-merges your changes into master and deletes the branch. **The description is mandatory and will be used as the commit message.**
 
 ### Check status
 ```bash
@@ -34,6 +34,8 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 |-----------|------|----------|-------------|
 | `action` | string | ✅ | `start`, `done`, `status` |
 | `task_name` | string | ❌ | Name of the task (required for `start`) |
+| `description` | string | ❌ | Description of changes (required for `done`) |
+
 
 ## Guidelines
 - Use this for minor changes (级别 0 & 1).

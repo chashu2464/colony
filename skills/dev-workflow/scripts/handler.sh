@@ -253,7 +253,7 @@ case "$ACTION" in
   next)
     STATE=$(load_state) || exit $?
     
-    NOTES=$(echo "$INPUT" | jq -r '.notes // ""')
+    NOTES=$(echo "$INPUT" | jq -r '.notes // empty' | xargs)
     EVIDENCE=$(echo "$INPUT" | jq -r '.evidence // empty' | xargs)
     CURRENT=$(echo "$STATE" | jq -r '.current_stage')
     NEXT=$((CURRENT + 1))
@@ -261,6 +261,16 @@ case "$ACTION" in
     if [ $NEXT -ge ${#STAGES[@]} ]; then
       echo "{\"error\": \"Workflow already completed\", \"exit_code\": $EXIT_GENERAL}"
       exit $EXIT_GENERAL
+    fi
+
+    # Notes Validation (Mandatory for all stages)
+    if [ -z "$NOTES" ] || [ "$NOTES" == "null" ]; then
+      echo "{\"error\": \"Progress notes (notes) are mandatory for advancing stage. Please describe what was accomplished.\", \"exit_code\": $EXIT_VALIDATION}"
+      exit $EXIT_VALIDATION
+    fi
+    if [ ${#NOTES} -lt 10 ]; then
+      echo "{\"error\": \"Progress notes are too brief (min 10 characters). Please provide more detail about the changes.\", \"exit_code\": $EXIT_VALIDATION}"
+      exit $EXIT_VALIDATION
     fi
 
     # Evidence Validation
@@ -331,12 +341,14 @@ case "$ACTION" in
 
     if [ "$NEXT" -eq 9 ]; then
       # Completion logic (Merge)
-      do_git_commit "$CURRENT" "${STAGES[$CURRENT]}" "Final changes before merge"
+      do_git_commit "$CURRENT" "${STAGES[$CURRENT]}" "$NOTES"
       MAIN=$(get_main_branch)
       if [ ! -z "$MAIN" ]; then
         git checkout "$MAIN" >/dev/null 2>&1
+        TASK_NAME=$(echo "$STATE" | jq -r '.task_name')
         if git merge --squash "$BRANCH_NAME" >/dev/null 2>&1; then
-          git commit -m "feat: complete task $(echo "$STATE" | jq -r '.task_id')" --no-verify >/dev/null 2>&1
+          # Use task_name as subject and last notes as body
+          git commit -m "feat: $TASK_NAME" -m "$NOTES" --no-verify >/dev/null 2>&1
           git branch -D "$BRANCH_NAME" >/dev/null 2>&1
         else
           git merge --abort >/dev/null 2>&1

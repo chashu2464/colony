@@ -38,7 +38,7 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 | `action`  | string | ✅ | `init`, `next`, `prev`, `backtrack`, `submit-review`, `status`, `update` |
 | `task_name` | string | ❌ | Name of the task (required for `init`) |
 | `description` | string | ❌ | Task description |
-| `notes` | string | ❌ | Progress notes for `next` stage |
+| `notes` | string | ❌ | Progress notes (required for `next`, min 10 chars) |
 | `assignments` | object | ❌ | Map of roles to agent IDs: `{"architect": "", "tech_lead": "", "qa_lead": "", "developer": ""}` (also accepts `roles` as alias) |
 | `evidence` | string | ❌ | Path to a file or directory as proof of work for `next` |
 | `status` | string | ❌ | `approved` or `rejected` (required for `submit-review`) |

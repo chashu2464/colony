@@ -54,6 +54,12 @@ EOF
       exit 1
     fi
     
+    DESCRIPTION=$(echo "$INPUT" | jq -r '.description // empty')
+    if [ -z "$DESCRIPTION" ] || [ "$DESCRIPTION" == "null" ]; then
+        echo '{"error": "Missing required field: description. Please describe what was changed."}'
+        exit 1
+    fi
+
     BRANCH_NAME=$(jq -r '.branch' "$STATE_FILE")
     TASK_NAME=$(jq -r '.task_name' "$STATE_FILE")
     TASK_ID=$(jq -r '.task_id' "$STATE_FILE")
@@ -77,7 +83,7 @@ EOF
       git checkout "$MAIN_BRANCH" >/dev/null 2>&1
       
       if git merge --squash "$BRANCH_NAME" >/dev/null 2>&1; then
-        git commit -m "feat: complete quick task $TASK_ID - $TASK_NAME" --no-verify >/dev/null 2>&1
+        git commit -m "feat: $DESCRIPTION" --no-verify >/dev/null 2>&1
         git branch -D "$BRANCH_NAME" >/dev/null 2>&1
         rm "$STATE_FILE"
         echo "{\"success\": true, \"message\": \"Task $TASK_ID completed and merged to $MAIN_BRANCH\"}"
