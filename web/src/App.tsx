@@ -13,6 +13,7 @@ import remarkGfm from 'remark-gfm';
 import { Paperclip, Send, X } from 'lucide-react';
 import { MonologueBlock } from './MonologueBlock';
 import { HumanInputRequest } from './HumanInputRequest';
+import { getSessionDisplayNumber, shouldRefreshSessionsForEvent } from './sessionHealth';
 
 const USER_ID = 'human-user';
 const USER_NAME = '用户';
@@ -95,8 +96,6 @@ export default function App() {
         if (prev.some(m => m.id === msg.id)) return prev;
         return [...prev, msg];
       });
-      // Refresh sessions list for message count
-      fetchSessions().then(setSessions).catch(console.error);
     }
 
     if (event.type === 'message_updated' && event.data) {
@@ -134,6 +133,10 @@ export default function App() {
           )
         );
       }
+    }
+
+    if (shouldRefreshSessionsForEvent(event)) {
+      fetchSessions().then(setSessions).catch(console.error);
     }
   }, [activeSession]);
 
@@ -586,7 +589,7 @@ export default function App() {
                   {health && (
                     <div className="agent-card-health" style={{ marginTop: 8, fontSize: 11, color: '#888' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span>Session #{health.chainIndex}</span>
+                        <span>Session #{getSessionDisplayNumber(participant)}</span>
                         <span title={`${health.tokensUsed} / ${health.contextLimit} tokens`}>
                           {health.label} ({(health.fillRatio * 100).toFixed(0)}%)
                         </span>
