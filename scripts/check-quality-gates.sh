@@ -12,6 +12,28 @@ TIME_GATE="2026-06-11"
 REPORT_FILE="docs/QUALITY_REPORT.md"
 TDD_LOG="docs/TDD_LOG.md"
 
+# 0. Physical Path Integrity Check [P1-QA-002]
+CURRENT_PWD=$(pwd)
+if [[ "$CURRENT_PWD" == *"/.worktrees/"* ]]; then
+    # We are in a worktree path, we MUST have a valid matching TASK_ID
+    if [ -z "$TASK_ID" ] || [[ "$TASK_ID" == "N/A" ]]; then
+        echo "ERROR: Quality Gate execution within .worktrees/ requires a valid TASK_ID context."
+        exit 1
+    fi
+    EXPECTED_SUBPATH=".worktrees/task-$TASK_ID"
+    if [[ "$CURRENT_PWD" != *"$EXPECTED_SUBPATH"* ]]; then
+        echo "ERROR: Quality Gate must be executed within the CORRECT worktree sandbox ($EXPECTED_SUBPATH)."
+        echo "Current Path: $CURRENT_PWD"
+        exit 1
+    fi
+else
+    # We are NOT in a worktree. 
+    # Per project policy (Stage 7/8 isolation), execution must happen in a sandbox.
+    echo "ERROR: Quality Gate must be executed within a worktree sandbox per project isolation policy."
+    echo "Host execution is blocked to prevent environment pollution."
+    exit 1
+fi
+
 # Emergency Skip check
 if [ "$SKIP_QUALITY_GATES" = "true" ]; then
     echo "WARNING: SKIP_QUALITY_GATES is set to true. Bypassing gates."
@@ -142,7 +164,8 @@ CONTENT="# Quality Report
 - **Mutation Files Count**: $FILES_COUNT
 - **Task ID**: $TASK_ID_VAL
 - **Branch**: $BRANCH
-- **Commit**: $COMMIT"
+- **Commit**: $COMMIT
+- **Workspace Path**: $CURRENT_PWD"
 
 SIGNATURE=$(echo -n "$CONTENT" | shasum -a 256 | cut -d' ' -f1)
 

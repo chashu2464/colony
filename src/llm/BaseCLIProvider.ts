@@ -136,6 +136,7 @@ export abstract class BaseCLIProvider implements ILLMProvider {
                 let stderr = '';
                 let tokenUsage: TokenUsage | undefined;
                 const toolCalls: ToolCall[] = [];
+                let cliErrorMsg = '';
 
                 // Idle timeout
                 let lastActivity = Date.now();
@@ -169,6 +170,17 @@ export abstract class BaseCLIProvider implements ILLMProvider {
                     if (!line.trim()) return;
                     let event: Record<string, unknown>;
                     try { event = JSON.parse(line); } catch { return; }
+
+                    // Capture CLI errors sent as JSON
+                    if (event.errors && Array.isArray(event.errors)) {
+                        cliErrorMsg += event.errors.join('; ') + '\n';
+                    } else if (event.error && typeof event.error === 'string') {
+                        cliErrorMsg += event.error + '\n';
+                    } else if (event.type === 'error' && event.message) {
+                        cliErrorMsg += event.message + '\n';
+                    } else if (event.type === 'result' && event.is_error === true && typeof event.result === 'string') {
+                        cliErrorMsg += event.result + '\n';
+                    }
 
                     const sid = this.extractSessionId(event);
                     if (sid) capturedSessionId = sid;
@@ -212,7 +224,8 @@ export abstract class BaseCLIProvider implements ILLMProvider {
                 const finalize = () => {
                     if (childExitCode === null || !rlClosed) return;
                     if (childExitCode !== 0) {
-                        settle('reject', new Error(`${this.name} exited with code ${childExitCode}: ${stderr}`));
+                        const fullError = [stderr, cliErrorMsg, textChunks.join('')].filter(Boolean).join(' | ').trim();
+                        settle('reject', new Error(`${this.name} exited with code ${childExitCode}: ${fullError}`));
                         return;
                     }
 
@@ -264,7 +277,7 @@ export abstract class BaseCLIProvider implements ILLMProvider {
 
     private cleanupTempFiles(files: string[]): void {
         for (const file of files) {
-            try { if (fs.existsSync(file)) fs.unlinkSync(file); } catch {}
+            try { if (fs.existsSync(file)) fs.unlinkSync(file); } catch { }
         }
     }
 

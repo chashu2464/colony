@@ -194,7 +194,125 @@ function ensure_feature_branch() {
   fi
 }
 
+# --- Worktree Sandbox Helpers ---
+
+function resolve_workspace_context() {
+  local current_pwd=$(pwd)
+  # Extract the directory name immediately following .worktrees/
+  local worktree_dir=$(echo "$current_pwd" | sed -n 's|.*\.worktrees/\([^/]*\).*|\1|p')
+  local task_id_regex="^task-([a-f0-9]{8})$"
+  
+  if [[ "$worktree_dir" =~ $task_id_regex ]]; then
+    local extracted_id="${BASH_REMATCH[1]}"
+    echo "$extracted_id"
+    return 0
+  fi
+  return 1
+}
+
+function create_sandbox() {
+  local task_id=$1
+  local branch=$2
+  local worktree_root="$PROJ_ROOT/.worktrees"
+  local sandbox_path="$worktree_root/task-$task_id"
+
+  if [ -d "$sandbox_path" ]; then
+    return 0 # Already exists
+  fi
+
+  mkdir -p "$worktree_root"
+  if ! git worktree add "$sandbox_path" "$branch" >/dev/null 2>&1; then
+    echo "{\"error\": \"Failed to create git worktree for $task_id\"}" >&2
+    return 1
+  fi
+
+  # Symlink node_modules
+  # Dynamically calculate relative path from sandbox to host node_modules [P1-ENV-002]
+  local host_node_modules="$PROJ_ROOT/node_modules"
+  local rel_node_modules=$(python3 -c "import os; print(os.path.relpath('$host_node_modules', '$sandbox_path'))" 2>/dev/null)
+  
+  if [ -z "$rel_node_modules" ]; then
+    # Fallback to standard 2-level depth if python fails
+    rel_node_modules="../../node_modules"
+  fi
+  
+  (cd "$sandbox_path" && ln -s "$rel_node_modules" node_modules)
+  
+  # Validation
+  if [ ! -L "$sandbox_path/node_modules" ] || [ ! -d "$sandbox_path/node_modules" ]; then
+    echo "{\"error\": \"Sandbox environment check failed (Broken node_modules link). ROLLING BACK...\"}" >&2
+    git worktree remove "$sandbox_path" --force >/dev/null 2>&1
+    rm -rf "$sandbox_path" 2>/dev/null
+    return 1
+  fi
+  return 0
+}
+
+function cleanup_sandbox() {
+  local task_id=$1
+  local sandbox_path="$PROJ_ROOT/.worktrees/task-$task_id"
+
+  if [ ! -d "$sandbox_path" ]; then
+    return 0
+  fi
+
+  # Safety Checks
+  if [ -n "$(cd "$sandbox_path" && git status --porcelain 2>/dev/null)" ]; then
+    echo "{\"error\": \"Cleanup blocked: Worktree $task_id has uncommitted changes.\", \"audit\": \"Please commit or stash changes before Stage 9 completion.\"}" >&2
+    return 1
+  fi
+
+  # Ahead check
+  local branch="feature/task-$task_id"
+  # Check if branch has upstream
+  if ! (cd "$sandbox_path" && git rev-parse --abbrev-ref @{u} >/dev/null 2>&1); then
+     # No upstream. If we are merging to main, we might still want to be careful.
+     # But if we are in Stage 9, it means it's already merged.
+     # However, ARCH-Ahead-01 says: If upstream missing, Fail-Closed.
+     echo "{\"error\": \"Cleanup blocked: Worktree $task_id has no upstream tracking branch.\", \"audit\": \"Branch state unknown. Push to remote or merge manually.\"}" >&2
+     return 1
+  fi
+
+  local ahead=$(cd "$sandbox_path" && git rev-list @{u}..HEAD 2>/dev/null)
+  if [ -n "$ahead" ]; then
+    echo "{\"error\": \"Cleanup blocked: Worktree $task_id has unpushed commits.\", \"audit\": \"Ensure all work is merged and pushed before removal.\"}" >&2
+    return 1
+  fi
+
+  if ! git worktree remove "$sandbox_path" >/dev/null 2>&1; then
+    # Fallback to force if regular remove fails (but we already did safety checks)
+    git worktree remove "$sandbox_path" --force >/dev/null 2>&1
+  fi
+  return 0
+}
+
 # --- Main Logic ---
+
+# Context Resolution [P1-SEC-002]
+CURRENT_PWD=$(pwd)
+if [[ "$CURRENT_PWD" == *"/.worktrees/"* ]]; then
+  AUTO_TASK_ID=$(resolve_workspace_context)
+  if [ -z "$AUTO_TASK_ID" ]; then
+    echo "{\"error\": \"Security Violation: Execution within invalid worktree directory structure detected.\", \"audit\": \"Path: $CURRENT_PWD\"}" >&2
+    exit $EXIT_SYSTEM
+  fi
+  
+  # If we are in a worktree, ensure ROOM_ID matches if not explicitly set
+  if [ "$ROOM_ID" == "default" ]; then
+     # We don't have a direct map from task_id to ROOM_ID here, 
+     # but usually ROOM_ID is used to find the workflow file.
+     # In our system, TASK_ID is in the workflow file.
+     # Let's see if we can find the workflow file that has this task_id.
+     for f in "$WORKFLOW_DIR"/*.json; do
+       if [ -f "$f" ] && jq -e --arg tid "$AUTO_TASK_ID" '.task_id == $tid' "$f" >/dev/null 2>&1; then
+         ROOM_ID=$(basename "$f" .json)
+         WORKFLOW_FILE="$f"
+         LOCK_DIR="$WORKFLOW_FILE.lock"
+         break
+       fi
+     done
+  fi
+fi
 
 # Read and validate JSON input
 INPUT=$(cat)
@@ -236,6 +354,9 @@ case "$ACTION" in
     if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       git checkout -b "$BRANCH_NAME" >/dev/null 2>&1 || git checkout "$BRANCH_NAME" >/dev/null 2>&1
     fi
+
+    # Create sandbox worktree immediately on init to support parallel work from start
+    create_sandbox "$TASK_ID" "$BRANCH_NAME" || exit $?
 
     STATE=$(jq -n --arg id "$TASK_ID" --arg name "$TASK_NAME" --arg desc "$DESCRIPTION" --argjson assign "$ASSIGNMENTS" --arg stage_name "${STAGES[0]}" \
       '{task_id: $id, task_name: $name, description: $desc, current_stage: 0, stage_name: $stage_name, status: "active", assignments: $assign, artifacts: [], reviews: [], history: []}')
@@ -336,11 +457,21 @@ case "$ACTION" in
     fi
 
     # Advance Stage
-    BRANCH_NAME="feature/task-$(echo "$STATE" | jq -r '.task_id')"
+    TASK_ID=$(echo "$STATE" | jq -r '.task_id')
+    BRANCH_NAME="feature/task-$TASK_ID"
+    
+    # Ensure sandbox exists for implementation stages (Stage 6)
+    if [ "$NEXT" -ge 6 ] && [ "$NEXT" -le 8 ]; then
+      create_sandbox "$TASK_ID" "$BRANCH_NAME" || exit $?
+    fi
+
     if [ "$NEXT" -le 7 ]; then ensure_feature_branch "$BRANCH_NAME"; fi
 
     if [ "$NEXT" -eq 9 ]; then
       # Completion logic (Merge)
+      # 1. Perform safety check before merge (this also checks the worktree if it exists)
+      cleanup_sandbox "$TASK_ID" || exit $?
+
       do_git_commit "$CURRENT" "${STAGES[$CURRENT]}" "$NOTES"
       MAIN=$(get_main_branch)
       if [ ! -z "$MAIN" ]; then

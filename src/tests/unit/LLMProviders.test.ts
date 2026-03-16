@@ -129,5 +129,22 @@ describe('LLM Providers & Utilities', () => {
             expect(result.sessionId).toBe('new-sid');
             expect(result.tokenUsage?.input).toBe(10);
         });
+
+        it('should surface structured result errors when CLI exits non-zero', async () => {
+            const invokePromise = provider.invoke({ prompt: 'test error path' });
+
+            await new Promise(resolve => setTimeout(resolve, 0));
+
+            mockRl.emit('line', JSON.stringify({
+                type: 'result',
+                is_error: true,
+                result: 'Not logged in · Please run /login',
+            }));
+
+            mockRl.emit('close');
+            mockChild.emit('close', 1);
+
+            await expect(invokePromise).rejects.toThrow('Not logged in');
+        });
     });
 });

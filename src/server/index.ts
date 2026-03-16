@@ -401,6 +401,44 @@ export function createColonyServer(options: ServerOptions) {
         }
     });
 
+    // ── REST: Memory ──────────────────────────────────
+
+    // Store a memory to long-term storage (Mem0)
+    app.post('/api/memory/retain', async (req, res) => {
+        const { content, metadata } = req.body;
+
+        if (!content) {
+            res.status(400).json({ error: 'content is required' });
+            return;
+        }
+
+        if (!metadata || !metadata.agentId || !metadata.roomId) {
+            res.status(400).json({ error: 'metadata.agentId and metadata.roomId are required' });
+            return;
+        }
+
+        try {
+            // Get long-term memory instance from colony
+            const longTermMemory = colony.longTermMemory;
+            if (!longTermMemory) {
+                res.status(503).json({ error: 'Long-term memory not enabled' });
+                return;
+            }
+
+            // Store the memory
+            const memoryId = await longTermMemory.retain({
+                content,
+                metadata,
+                timestamp: new Date(),
+            });
+
+            res.json({ success: true, memoryId });
+        } catch (err) {
+            log.error('Failed to store memory:', err);
+            res.status(500).json({ error: (err as Error).message });
+        }
+    });
+
     // ── Static files (frontend) ───────────────────────
     const webDistPath = path.join(process.cwd(), 'web', 'dist');
     if (fs.existsSync(webDistPath)) {

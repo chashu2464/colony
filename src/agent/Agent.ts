@@ -3,6 +3,7 @@
 // invokes LLM via CLI (which handles tool execution natively).
 
 import * as fs from 'fs';
+import * as os from 'os';
 import * as path from 'path';
 import { Logger } from '../utils/Logger.js';
 import { EventBus } from '../utils/EventBus.js';
@@ -208,6 +209,37 @@ export class Agent {
      */
     private static readonly MAX_FOLLOW_UP_ROUNDS = 5;
 
+    /**
+     * Keep per-room session isolation while avoiding per-room auth isolation.
+     * Room-scoped CLAUDE_CONFIG_DIR breaks auth if the directory has no login state.
+     */
+    private resolveClaudeConfigDir(sessionConfigDir: string): string {
+        if (process.env.COLONY_CLAUDE_AUTH_CONFIG_DIR) {
+            return process.env.COLONY_CLAUDE_AUTH_CONFIG_DIR;
+        }
+
+        const inheritedClaudeConfigDir = process.env.CLAUDE_CONFIG_DIR;
+        if (inheritedClaudeConfigDir) {
+            const normalizePath = (value: string): string => (
+                path.resolve(value).replace(/\\/g, '/').replace(/\/$/, '')
+            );
+            const normalizedSessionRoot = normalizePath(path.join(process.cwd(), '.data/sessions'));
+            const normalizedSessionDir = normalizePath(sessionConfigDir);
+            const normalizedInheritedDir = normalizePath(inheritedClaudeConfigDir);
+
+            const isRoomIsolatedDir = normalizedInheritedDir.startsWith(`${normalizedSessionRoot}/`)
+                || normalizedInheritedDir === normalizedSessionDir;
+
+            if (!isRoomIsolatedDir) {
+                return inheritedClaudeConfigDir;
+            }
+
+            log.warn(`[${this.name}] Ignoring room-scoped CLAUDE_CONFIG_DIR (${inheritedClaudeConfigDir}) to preserve shared Claude auth.`);
+        }
+
+        return path.join(os.homedir(), '.claude');
+    }
+
     private async handleMessage(message: Message): Promise<void> {
         this.setStatus('thinking');
 
@@ -233,6 +265,7 @@ export class Agent {
             if (!fs.existsSync(sessionConfigDir)) {
                 fs.mkdirSync(sessionConfigDir, { recursive: true });
             }
+            const claudeConfigDir = this.resolveClaudeConfigDir(sessionConfigDir);
 
             // Use ContextAssembler to build the initial prompt
             let currentPrompt = await this.contextAssembler.assemble({
@@ -318,10 +351,11 @@ export class Agent {
                                 COLONY_AGENT_ID: this.id,
                                 COLONY_ROOM_ID: message.roomId,
                                 COLONY_API: process.env.COLONY_API ?? 'http://localhost:3001',
-                                CLAUDE_CODE_SESSION_ACCESS_TOKEN: process.env.CLAUDE_CODE_SESSION_ACCESS_TOKEN ?? '',
-                                // Isolation for CLI session cache and config
+                                ...(process.env.CLAUDE_CODE_SESSION_ACCESS_TOKEN ? { CLAUDE_CODE_SESSION_ACCESS_TOKEN: process.env.CLAUDE_CODE_SESSION_ACCESS_TOKEN } : {}),
+                                // Room-isolated session cache for CLI state.
                                 XDG_CONFIG_HOME: sessionConfigDir,
-                                CLAUDE_CONFIG_DIR: sessionConfigDir,
+                                // Keep Claude auth shared (global or explicit override) to avoid room-scoped login loss.
+                                CLAUDE_CONFIG_DIR: claudeConfigDir,
                             },
                         },
                         this.config.model.fallback,
@@ -389,7 +423,7 @@ export class Agent {
                     const hasSendMessage = toolCalls.some(t => {
                         const name = t.name?.toLowerCase() ?? '';
                         const input = t.input ?? {};
-                        
+
                         // If we have result info, and it's an error, this wasn't a successful send
                         if (t.isError === true) return false;
 
@@ -419,15 +453,14 @@ export class Agent {
 
                     if (hasSendMessage) {
                         // Agent has spoken - done with this message
-                        await this.storeToLongTermMemory(message, result.text);
+                        // Note: Agent now uses 'remember' skill to actively store important memories
                         break;
                     }
 
                     if (toolCalls.length === 0) {
-                        // No tools called AND no message sent? 
+                        // No tools called AND no message sent?
                         // This usually means the LLM just gave a text response without using send-message.
                         // We'll consider this done to avoid infinite loops, though ideally they should speak.
-                        await this.storeToLongTermMemory(message, result.text);
                         break;
                     }
 

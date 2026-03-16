@@ -221,7 +221,7 @@ export class ContextAssembler implements IContextAssembler {
 ## 协作指南
 
 ### 元规则 (Meta Rules)
-1. **消息不可见原则**：你在此处写的所有内容都是内心独白，只有通过调用 send-message 工具，你的话才会被用户或其他 Agent 看到。
+1. **消息不可见原则**：你直接响应的所有内容都是内心独白，只有通过调用 send-message 工具，你的话才会被用户或其他 Agent 看到。
 2. 不确定就提问：遇到不清楚的需求时，先调用 send-message 向用户提问，不要硬猜。
 3. 要 @提及其他 agent，必须通过 send-message 的 mentions 参数传入（在消息正文里写 @ 无效）。仅在需要对方操作介入时才 @。
 4. 禁止表演性同意：有疑虑或更好的建议必须明确说出来。
@@ -250,11 +250,11 @@ export class ContextAssembler implements IContextAssembler {
         // --- Context Compression Strategy (Direction 2) ---
         // Level 1: Recent 10 messages (Intact)
         const recentHistory = history.slice(-10);
-        
+
         // Level 2: Messages 11-30 (Placeholder for LLM Summary)
         // Note: In a real implementation, this would fetch a cached summary from SessionManager
         const middleHistory = history.length > 10 ? history.slice(-30, -10) : [];
-        
+
         // Level 3: Messages 30+ (Pruned/Indexed)
         const oldHistoryCount = history.length > 30 ? history.length - 30 : 0;
 
@@ -306,17 +306,17 @@ export class ContextAssembler implements IContextAssembler {
             // --- Enhanced Query Context (Phase 2) ---
             // Get recent 3 messages for semantic context
             const recentMessages = this.shortTermMemory.get(roomId).slice(-3);
-            
+
             // Clean content to remove noise (JSON, code blocks)
             const cleanedCurrent = this.cleanMessageForQuery(query);
             const cleanedRecent = recentMessages.map(m => this.cleanMessageForQuery(m.content));
-            
+
             // Combine for a richer query
             const contextQuery = [...cleanedRecent, cleanedCurrent].join(' ').trim();
 
             // --- Enhanced Filters (Phase 2) ---
             const workflowStage = await this.getCurrentWorkflowStage(roomId);
-            
+
             const memories = await this.longTermMemory.recall(contextQuery, 5, {
                 agentId,
                 roomId,
@@ -376,7 +376,7 @@ export class ContextAssembler implements IContextAssembler {
         try {
             const workflowDir = path.join(process.cwd(), '.data/workflows');
             const workflowFile = path.join(workflowDir, `${roomId}.json`);
-            
+
             if (!existsSync(workflowFile)) {
                 return undefined;
             }
