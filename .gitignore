@@ -42,3 +42,10 @@ evidence.txt
 
 # Mac system files
 .DS_Store
+
+# Worktree directories (dev-workflow isolation)
+.worktrees/
+
+# Temporary shell scripts
+.at_*.sh
+.tmp_*.sh
