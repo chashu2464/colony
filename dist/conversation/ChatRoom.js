@@ -122,9 +122,20 @@ class ChatRoom {
     /**
      * Send a message from a human into this room (publishes through bus).
      * The `mentions` param can contain agent names OR IDs — both work.
+     *
+     * Special handling: 'colony-system' is a system role that can send messages
+     * to any room without being a participant.
      */
     sendHumanMessage(senderId, content, mentions, metadata) {
-        const sender = this.humanParticipants.get(senderId);
+        let sender = this.humanParticipants.get(senderId);
+        // Allow colony-system to send messages without being a participant
+        if (!sender && senderId === 'colony-system') {
+            sender = {
+                id: 'colony-system',
+                type: 'human',
+                name: 'Colony System'
+            };
+        }
         if (!sender) {
             throw new Error(`Human "${senderId}" is not in this room`);
         }

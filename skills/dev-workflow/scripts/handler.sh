@@ -16,7 +16,12 @@ EXIT_LOCK_TIMEOUT=3
 EXIT_STATE_CORRUPT=4
 EXIT_SYSTEM=5
 
-PROJ_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+GIT_COMMON_DIR=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+if [ -n "$GIT_COMMON_DIR" ]; then
+  PROJ_ROOT=$(cd "$GIT_COMMON_DIR/.." 2>/dev/null && pwd)
+else
+  PROJ_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+fi
 WORKFLOW_DIR="$PROJ_ROOT/.data/workflows"
 mkdir -p "$WORKFLOW_DIR"
 
@@ -160,13 +165,14 @@ function do_git_commit() {
   local stage_num=$1
   local stage_name=$2
   local msg=$3
-  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  local git_dir="${4:-$PROJ_ROOT}"
+  if git -C "$git_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     local has_changes=false
-    if ! git diff-index --quiet HEAD -- 2>/dev/null; then has_changes=true; fi
-    if [ -n "$(git ls-files --others --exclude-standard 2>/dev/null)" ]; then has_changes=true; fi
+    if ! git -C "$git_dir" diff-index --quiet HEAD -- 2>/dev/null; then has_changes=true; fi
+    if [ -n "$(git -C "$git_dir" ls-files --others --exclude-standard 2>/dev/null)" ]; then has_changes=true; fi
     if [ "$has_changes" = true ]; then
-      git add . 2>/dev/null
-      if ! git commit -m "chore(workflow): Advance to stage $stage_num - $stage_name" -m "Notes: $msg" --no-verify >/dev/null 2>&1; then
+      git -C "$git_dir" add . 2>/dev/null
+      if ! git -C "$git_dir" commit -m "chore(workflow): Advance to stage $stage_num - $stage_name" -m "Notes: $msg" --no-verify >/dev/null 2>&1; then
         echo "Warning: git commit failed (stage $stage_num), continuing without commit" >&2
       fi
     fi
@@ -175,20 +181,32 @@ function do_git_commit() {
 
 function ensure_feature_branch() {
   local branch=$1
-  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    local current=$(git branch --show-current)
+  local branch_task_id=$(echo "$branch" | sed -n 's|^feature/task-\([a-f0-9]\{8\}\)$|\1|p')
+  local sandbox_path="$PROJ_ROOT/.worktrees/task-$branch_task_id"
+
+  if [ -n "$branch_task_id" ] && [ -d "$sandbox_path" ] && [[ "$PWD" != "$sandbox_path"* ]]; then
+    return 0
+  fi
+
+  local git_dir="$PROJ_ROOT"
+  if [ -n "$branch_task_id" ] && [[ "$PWD" == "$sandbox_path"* ]]; then
+    git_dir="$sandbox_path"
+  fi
+
+  if git -C "$git_dir" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    local current=$(git -C "$git_dir" branch --show-current)
     if [ "$current" != "$branch" ]; then
       local stashed=false
-      if [ ! -z "$(git status --porcelain 2>/dev/null)" ]; then
-        git stash push -m "workflow-auto-stash" --quiet 2>/dev/null && stashed=true
+      if [ ! -z "$(git -C "$git_dir" status --porcelain 2>/dev/null)" ]; then
+        git -C "$git_dir" stash push -m "workflow-auto-stash" --quiet 2>/dev/null && stashed=true
       fi
-      if ! git checkout "$branch" >/dev/null 2>&1; then
-        if ! git checkout -b "$branch" >/dev/null 2>&1; then
+      if ! git -C "$git_dir" checkout "$branch" >/dev/null 2>&1; then
+        if ! git -C "$git_dir" checkout -b "$branch" >/dev/null 2>&1; then
           echo "Warning: Failed to switch to branch $branch, staying on $current" >&2
         fi
       fi
       if [ "$stashed" = true ]; then
-        git stash pop --quiet 2>/dev/null || echo "Warning: Failed to restore stashed changes" >&2
+        git -C "$git_dir" stash pop --quiet 2>/dev/null || echo "Warning: Failed to restore stashed changes" >&2
       fi
     fi
   fi
@@ -221,9 +239,24 @@ function create_sandbox() {
   fi
 
   mkdir -p "$worktree_root"
-  if ! git worktree add "$sandbox_path" "$branch" >/dev/null 2>&1; then
-    echo "{\"error\": \"Failed to create git worktree for $task_id\"}" >&2
-    return 1
+  if git show-ref --verify --quiet "refs/heads/$branch"; then
+    if ! git worktree add "$sandbox_path" "$branch" >/dev/null 2>&1; then
+      echo "{\"error\": \"Failed to create git worktree for $task_id\"}" >&2
+      return 1
+    fi
+  else
+    local base_branch=$(get_main_branch)
+    if [ -z "$base_branch" ]; then
+      base_branch=$(git branch --show-current)
+    fi
+    if [ -z "$base_branch" ]; then
+      echo "{\"error\": \"Failed to determine base branch for sandbox creation\"}" >&2
+      return 1
+    fi
+    if ! git worktree add -b "$branch" "$sandbox_path" "$base_branch" >/dev/null 2>&1; then
+      echo "{\"error\": \"Failed to create git worktree for $task_id\"}" >&2
+      return 1
+    fi
   fi
 
   # Symlink node_modules
@@ -350,10 +383,6 @@ case "$ACTION" in
 
     TASK_ID="$(uuidgen 2>/dev/null | tr '[:upper:]' '[:lower:]' | cut -c1-8 || echo $RANDOM-$RANDOM)"
     BRANCH_NAME="feature/task-${TASK_ID}"
-    
-    if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-      git checkout -b "$BRANCH_NAME" >/dev/null 2>&1 || git checkout "$BRANCH_NAME" >/dev/null 2>&1
-    fi
 
     # Create sandbox worktree immediately on init to support parallel work from start
     create_sandbox "$TASK_ID" "$BRANCH_NAME" || exit $?
@@ -441,15 +470,20 @@ case "$ACTION" in
     if [ "$CURRENT" -eq 6 ]; then
       export TASK_ID=$(echo "$STATE" | jq -r '.task_id')
       export COLONY_AGENT_ID
+      SANDBOX_PATH="$PROJ_ROOT/.worktrees/task-$TASK_ID"
+      if [ ! -d "$SANDBOX_PATH" ]; then
+        echo "{\"error\": \"Sandbox missing for task $TASK_ID\", \"exit_code\": $EXIT_SYSTEM}" >&2
+        exit $EXIT_SYSTEM
+      fi
       if [ "$SKIP_QUALITY_GATES" != "true" ]; then
-        if ! node scripts/generate-tdd-log.js --verify >/dev/null 2>&1; then
-          node scripts/generate-tdd-log.js > /dev/null 2>&1
-          if ! node scripts/generate-tdd-log.js --verify >/dev/null 2>&1; then
+        if ! (cd "$SANDBOX_PATH" && node scripts/generate-tdd-log.js --verify >/dev/null 2>&1); then
+          (cd "$SANDBOX_PATH" && node scripts/generate-tdd-log.js > /dev/null 2>&1)
+          if ! (cd "$SANDBOX_PATH" && node scripts/generate-tdd-log.js --verify >/dev/null 2>&1); then
             echo "{\"error\": \"TDD Log Verification Failed\", \"exit_code\": $EXIT_GENERAL}"
             exit $EXIT_GENERAL
           fi
         fi
-        if ! bash scripts/check-quality-gates.sh >/dev/null 2>&1; then
+        if ! (cd "$SANDBOX_PATH" && TASK_ID="$TASK_ID" COLONY_AGENT_ID="$COLONY_AGENT_ID" SKIP_QUALITY_GATES="$SKIP_QUALITY_GATES" bash scripts/check-quality-gates.sh >/dev/null 2>&1); then
           echo "{\"error\": \"Quality Gate Failed (metrics not met)\", \"exit_code\": $EXIT_GENERAL}"
           exit $EXIT_GENERAL
         fi
@@ -459,6 +493,10 @@ case "$ACTION" in
     # Advance Stage
     TASK_ID=$(echo "$STATE" | jq -r '.task_id')
     BRANCH_NAME="feature/task-$TASK_ID"
+    COMMIT_WORKSPACE="$PROJ_ROOT/.worktrees/task-$TASK_ID"
+    if [ ! -d "$COMMIT_WORKSPACE" ]; then
+      COMMIT_WORKSPACE="$PROJ_ROOT"
+    fi
     
     # Ensure sandbox exists for implementation stages (Stage 6)
     if [ "$NEXT" -ge 6 ] && [ "$NEXT" -le 8 ]; then
@@ -472,7 +510,7 @@ case "$ACTION" in
       # 1. Perform safety check before merge (this also checks the worktree if it exists)
       cleanup_sandbox "$TASK_ID" || exit $?
 
-      do_git_commit "$CURRENT" "${STAGES[$CURRENT]}" "$NOTES"
+      do_git_commit "$CURRENT" "${STAGES[$CURRENT]}" "$NOTES" "$COMMIT_WORKSPACE"
       MAIN=$(get_main_branch)
       if [ ! -z "$MAIN" ]; then
         git checkout "$MAIN" >/dev/null 2>&1
@@ -489,7 +527,7 @@ case "$ACTION" in
         fi
       fi
     else
-      do_git_commit "$NEXT" "${STAGES[$NEXT]}" "$NOTES"
+      do_git_commit "$NEXT" "${STAGES[$NEXT]}" "$NOTES" "$COMMIT_WORKSPACE"
     fi
 
     # Update State

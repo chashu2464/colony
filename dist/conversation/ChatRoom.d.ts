@@ -53,6 +53,9 @@ export declare class ChatRoom {
     /**
      * Send a message from a human into this room (publishes through bus).
      * The `mentions` param can contain agent names OR IDs — both work.
+     *
+     * Special handling: 'colony-system' is a system role that can send messages
+     * to any room without being a participant.
      */
     sendHumanMessage(senderId: string, content: string, mentions?: string[], metadata?: Message['metadata']): Message;
     /**

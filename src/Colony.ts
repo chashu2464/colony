@@ -120,7 +120,7 @@ export class Colony {
             const room = this.chatRoomManager.getRoom(task.roomId);
             if (room) {
                 log.info(`Executing scheduled task ${task.id} for agent ${task.agentId}`);
-                room.sendHumanMessage('system-scheduler', task.prompt, [task.agentId]);
+                room.sendHumanMessage('colony-system', task.prompt, [task.agentId]);
             }
         });
 
