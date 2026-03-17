@@ -448,25 +448,51 @@ export default function App() {
                               toolCalls={msg.metadata.toolCalls}
                               error={msg.metadata.error}
                               isPending={msg.metadata.isPending}
+                              cliType={msg.metadata.cliType}
                             />
                           ) : (
                             // Only render the message content if it actually has text or attachments
                             (msg.content.trim() || (msg.metadata?.attachments && msg.metadata.attachments.length > 0)) ? (
-                              <div className="message-content" style={{ marginTop: idx > 0 ? 8 : 0 }}>
-                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                  {msg.content}
-                                </ReactMarkdown>
+                              <>
+                                <div className="message-content" style={{ marginTop: idx > 0 ? 8 : 0 }}>
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                    {msg.content}
+                                  </ReactMarkdown>
 
-                                {msg.metadata?.attachments && msg.metadata.attachments.length > 0 && (
-                                  <div className="attachment-preview">
-                                    {msg.metadata.attachments.map((att, attIdx) => (
-                                      <div key={attIdx} className="attachment-thumbnail">
-                                        <img src={att.url} alt="attachment" />
-                                      </div>
-                                    ))}
+                                  {msg.metadata?.attachments && msg.metadata.attachments.length > 0 && (
+                                    <div className="attachment-preview">
+                                      {msg.metadata.attachments.map((att, attIdx) => (
+                                        <div key={attIdx} className="attachment-thumbnail">
+                                          <img src={att.url} alt="attachment" />
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                {/* Message metadata footer */}
+                                {(msg.metadata?.cliType || msg.mentions?.length > 0) && (
+                                  <div style={{
+                                    fontSize: '10px',
+                                    color: '#888',
+                                    marginTop: '4px',
+                                    display: 'flex',
+                                    gap: '12px',
+                                    fontFamily: 'monospace'
+                                  }}>
+                                    {msg.metadata?.cliType && (
+                                      <span>CLI: {msg.metadata.cliType}</span>
+                                    )}
+                                    {msg.mentions && msg.mentions.length > 0 && (
+                                      <span>
+                                        @: {msg.mentions.map(id => {
+                                          const agent = agents.find(a => a.id === id);
+                                          return agent?.name ?? id;
+                                        }).join(', ')}
+                                      </span>
+                                    )}
                                   </div>
                                 )}
-                              </div>
+                              </>
                             ) : null
                           )}
                         </React.Fragment>

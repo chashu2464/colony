@@ -68,6 +68,17 @@ export function createColonyServer(options: ServerOptions) {
         }
     });
 
+    // Wire agent status changes to WebSocket broadcast
+    for (const agent of colony.agentRegistry.getAll()) {
+        agent.events.on('status_change', ({ agentId, status }) => {
+            broadcast({
+                type: 'agent_status',
+                agentId,
+                status,
+            });
+        });
+    }
+
     // ── REST: Sessions ────────────────────────────────
 
     // List all active rooms
@@ -161,10 +172,11 @@ export function createColonyServer(options: ServerOptions) {
             res.status(404).json({ error: 'Session not found' });
             return;
         }
-        const { agentId, content, mentions } = req.body as {
+        const { agentId, content, mentions, metadata } = req.body as {
             agentId: string;
             content: string;
             mentions?: string[];
+            metadata?: Record<string, any>;
         };
         if (!agentId || !content) {
             res.status(400).json({ error: 'agentId and content are required' });
@@ -173,7 +185,7 @@ export function createColonyServer(options: ServerOptions) {
 
         try {
             log.info(`Received agent message request for room ${req.params.id} from agent ${agentId}`);
-            const message = room.sendAgentMessage(agentId, content, mentions);
+            const message = room.sendAgentMessage(agentId, content, mentions, metadata);
             res.json({ message });
         } catch (err) {
             log.error(`Failed to send agent message in room ${req.params.id}:`, err);

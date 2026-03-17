@@ -3,11 +3,12 @@ import { ChevronRight, ChevronDown, Terminal, Loader } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
-export function MonologueBlock({ text, toolCalls, error, isPending }: {
+export function MonologueBlock({ text, toolCalls, error, isPending, cliType }: {
   text?: string;
   toolCalls?: any[];
   error?: string;
   isPending?: boolean;
+  cliType?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -31,6 +32,11 @@ export function MonologueBlock({ text, toolCalls, error, isPending }: {
         <span className="monologue-title">
           {error ? 'Agent Error' : `心里话: ${toolCalls?.length ? `调用了 ${toolCalls.length} 个工具` : '内部推理'}`}
         </span>
+        {cliType && (
+          <span style={{ marginLeft: 'auto', fontSize: '10px', color: '#888', fontFamily: 'monospace' }}>
+            {cliType}
+          </span>
+        )}
       </div>
 
       {expanded && (

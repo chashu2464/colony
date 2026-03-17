@@ -412,10 +412,15 @@ export class Agent {
                             isMonologue: true,
                             isPending: false,
                             toolCalls: result.toolCalls || [],
+                            cliType: result.actualModel ?? this.config.model.primary,
                         });
                     } else {
                         // No content — just clear pending state
-                        chatRoom.updateMessage(pendingId, '(无输出)', { isMonologue: true, isPending: false });
+                        chatRoom.updateMessage(pendingId, '(无输出)', {
+                            isMonologue: true,
+                            isPending: false,
+                            cliType: result.actualModel ?? this.config.model.primary,
+                        });
                     }
 
                     // Check if CLI executed any tools successfully
