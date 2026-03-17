@@ -247,16 +247,15 @@ export class ContextAssembler implements IContextAssembler {
             return '';
         }
 
-        // --- Context Compression Strategy (Direction 2) ---
-        // Level 1: Recent 10 messages (Intact)
-        const recentHistory = history.slice(-10);
+        // --- Enhanced Context Strategy (方案1) ---
+        // Level 1: Recent 20 messages (Intact) - increased from 10
+        const recentHistory = history.slice(-20);
 
-        // Level 2: Messages 11-30 (Placeholder for LLM Summary)
-        // Note: In a real implementation, this would fetch a cached summary from SessionManager
-        const middleHistory = history.length > 10 ? history.slice(-30, -10) : [];
+        // Level 2: Messages 21-40 (Compressed)
+        const middleHistory = history.length > 20 ? history.slice(-40, -20) : [];
 
-        // Level 3: Messages 30+ (Pruned/Indexed)
-        const oldHistoryCount = history.length > 30 ? history.length - 30 : 0;
+        // Level 3: Messages 40+ (Pruned/Indexed)
+        const oldHistoryCount = history.length > 40 ? history.length - 40 : 0;
 
         const lines = ['## 最近对话'];
 
@@ -265,18 +264,109 @@ export class ContextAssembler implements IContextAssembler {
             lines.push(`_（早期 ${oldHistoryCount} 条消息已被归档，可使用 get-session-history 查阅）_`);
         }
 
-        // Level 2 Info (Simple version: list topic or placeholder)
+        // Level 2: Compressed middle history
         if (middleHistory.length > 0) {
-            lines.push(`### 中期对话摘要 (共 ${middleHistory.length} 条)`);
-            lines.push(`- **关键内容**: 包含早期的方案讨论和初步反馈。详细摘要正在后台生成中...`);
+            const compressed = this.compressOldMessages(middleHistory);
+            if (compressed) {
+                lines.push(`### 中期对话摘要 (${middleHistory.length} 条消息)`);
+                lines.push(compressed);
+                lines.push('');
+            }
+        }
+
+        // Tool use summary for recent history
+        const toolSummary = this.summarizeToolUse(recentHistory);
+        if (toolSummary) {
+            lines.push('### 工具使用摘要');
+            lines.push(toolSummary);
             lines.push('');
         }
 
-        // Level 1 (Intact History)
+        // Level 1 (Intact Recent History)
         for (const msg of recentHistory) {
             const time = msg.timestamp.toLocaleTimeString();
             const mentions = msg.mentions.length > 0 ? ` @[${msg.mentions.join(', ')}]` : '';
             lines.push(`**[${time}] ${msg.sender.name}${mentions}**: ${msg.content}`);
+        }
+
+        return lines.join('\n');
+    }
+
+    /**
+     * Compress older messages by extracting key information
+     * 方案1: 智能消息压缩
+     */
+    private compressOldMessages(messages: Message[]): string {
+        if (messages.length === 0) return '';
+
+        const keyPoints: string[] = [];
+
+        // Extract key information from messages
+        for (const msg of messages) {
+            // Include messages with mentions (likely important)
+            if (msg.mentions.length > 0) {
+                const preview = msg.content.slice(0, 100);
+                keyPoints.push(`- ${msg.sender.name} → @${msg.mentions.join(', @')}: ${preview}${msg.content.length > 100 ? '...' : ''}`);
+            }
+
+            // Include messages with tool calls (actions taken)
+            if (msg.metadata?.toolCalls && msg.metadata.toolCalls.length > 0) {
+                const toolNames = msg.metadata.toolCalls.map((tc: any) => tc.name || 'unknown').join(', ');
+                keyPoints.push(`- ${msg.sender.name} 使用工具: ${toolNames}`);
+            }
+        }
+
+        // If no key points found, provide a simple summary
+        if (keyPoints.length === 0) {
+            const participants = new Set(messages.map(m => m.sender.name));
+            return `- 包含 ${participants.size} 位参与者的一般性讨论`;
+        }
+
+        return keyPoints.join('\n');
+    }
+
+    /**
+     * Summarize tool usage in recent messages
+     * 方案1: 添加tool use摘要
+     */
+    private summarizeToolUse(messages: Message[]): string {
+        const toolUsage: Map<string, number> = new Map();
+        const fileOperations: Set<string> = new Set();
+
+        for (const msg of messages) {
+            if (msg.metadata?.toolCalls) {
+                for (const toolCall of msg.metadata.toolCalls) {
+                    const toolName = toolCall.name || 'unknown';
+                    toolUsage.set(toolName, (toolUsage.get(toolName) || 0) + 1);
+
+                    // Track file operations
+                    if (toolName === 'read-file' || toolName === 'write-file' || toolName === 'edit-file') {
+                        const filePath = toolCall.parameters?.file_path || toolCall.parameters?.path;
+                        if (filePath) {
+                            fileOperations.add(filePath);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (toolUsage.size === 0) {
+            return '';
+        }
+
+        const lines: string[] = [];
+
+        // Summarize tool usage
+        const toolSummary = Array.from(toolUsage.entries())
+            .map(([tool, count]) => `${tool}(${count}次)`)
+            .join(', ');
+        lines.push(`- 工具调用: ${toolSummary}`);
+
+        // List files that were accessed
+        if (fileOperations.size > 0) {
+            const fileList = Array.from(fileOperations).slice(0, 5).join(', ');
+            const more = fileOperations.size > 5 ? ` 等${fileOperations.size}个文件` : '';
+            lines.push(`- 访问的文件: ${fileList}${more}`);
         }
 
         return lines.join('\n');

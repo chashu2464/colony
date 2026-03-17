@@ -228,14 +228,45 @@ function resolve_workspace_context() {
   return 1
 }
 
+function is_registered_worktree_path() {
+  local path="$1"
+  git worktree list --porcelain | grep -Fx "worktree $path" >/dev/null 2>&1
+}
+
 function create_sandbox() {
   local task_id=$1
   local branch=$2
   local worktree_root="$PROJ_ROOT/.worktrees"
   local sandbox_path="$worktree_root/task-$task_id"
 
+  local host_node_modules="$PROJ_ROOT/node_modules"
+  local rel_node_modules=$(python3 -c "import os; print(os.path.relpath('$host_node_modules', '$sandbox_path'))" 2>/dev/null)
+  if [ -z "$rel_node_modules" ]; then
+    # Fallback to standard 2-level depth if python fails
+    rel_node_modules="../../node_modules"
+  fi
+
   if [ -d "$sandbox_path" ]; then
-    return 0 # Already exists
+    if is_registered_worktree_path "$sandbox_path"; then
+      local existing_branch=$(git -C "$sandbox_path" branch --show-current 2>/dev/null || true)
+      if [ -n "$existing_branch" ] && [ "$existing_branch" != "$branch" ]; then
+        echo "{\"error\": \"Sandbox branch mismatch for $task_id: expected $branch, got $existing_branch\"}" >&2
+        return 1
+      fi
+
+      if [ ! -L "$sandbox_path/node_modules" ] || [ ! -d "$sandbox_path/node_modules" ]; then
+        rm -f "$sandbox_path/node_modules" 2>/dev/null || true
+        (cd "$sandbox_path" && ln -s "$rel_node_modules" node_modules)
+      fi
+      if [ ! -L "$sandbox_path/node_modules" ] || [ ! -d "$sandbox_path/node_modules" ]; then
+        echo "{\"error\": \"Sandbox environment check failed (Broken node_modules link).\"}" >&2
+        return 1
+      fi
+      return 0
+    fi
+
+    echo "{\"error\": \"Sandbox path exists but is not a registered git worktree: $sandbox_path\"}" >&2
+    return 1
   fi
 
   mkdir -p "$worktree_root"
@@ -261,14 +292,6 @@ function create_sandbox() {
 
   # Symlink node_modules
   # Dynamically calculate relative path from sandbox to host node_modules [P1-ENV-002]
-  local host_node_modules="$PROJ_ROOT/node_modules"
-  local rel_node_modules=$(python3 -c "import os; print(os.path.relpath('$host_node_modules', '$sandbox_path'))" 2>/dev/null)
-  
-  if [ -z "$rel_node_modules" ]; then
-    # Fallback to standard 2-level depth if python fails
-    rel_node_modules="../../node_modules"
-  fi
-  
   (cd "$sandbox_path" && ln -s "$rel_node_modules" node_modules)
   
   # Validation
@@ -469,10 +492,12 @@ case "$ACTION" in
     # TDD Quality Gates (Stage 6 -> 7)
     if [ "$CURRENT" -eq 6 ]; then
       export TASK_ID=$(echo "$STATE" | jq -r '.task_id')
+      BRANCH_NAME="feature/task-$TASK_ID"
       export COLONY_AGENT_ID
       SANDBOX_PATH="$PROJ_ROOT/.worktrees/task-$TASK_ID"
-      if [ ! -d "$SANDBOX_PATH" ]; then
-        echo "{\"error\": \"Sandbox missing for task $TASK_ID\", \"exit_code\": $EXIT_SYSTEM}" >&2
+      create_sandbox "$TASK_ID" "$BRANCH_NAME" || exit $?
+      if ! is_registered_worktree_path "$SANDBOX_PATH"; then
+        echo "{\"error\": \"Sandbox invalid for task $TASK_ID\", \"exit_code\": $EXIT_SYSTEM}" >&2
         exit $EXIT_SYSTEM
       fi
       if [ "$SKIP_QUALITY_GATES" != "true" ]; then

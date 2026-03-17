@@ -1,7 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-PROJ_ROOT=$(git rev-parse --show-toplevel)
+COMMON_DIR=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+if [ -n "$COMMON_DIR" ]; then
+  PROJ_ROOT=$(cd "$COMMON_DIR/.." && pwd)
+else
+  PROJ_ROOT=$(git rev-parse --show-toplevel)
+fi
 HANDLER="$PROJ_ROOT/skills/dev-workflow/scripts/handler.sh"
 ORIGINAL_BRANCH=$(git -C "$PROJ_ROOT" branch --show-current)
 ROOM_ID="worktree-init-test-$(date +%s)"
