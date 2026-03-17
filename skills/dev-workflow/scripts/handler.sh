@@ -112,11 +112,15 @@ function get_next_actor_role() {
     3|6) echo "developer" ;;
     4|5|7) echo "qa_lead" ;;
     8) 
+      # Stage 8 approval owner migrated to architect; keep tech_lead fallback for legacy states.
+      local ar=$(jq -r '.assignments["architect"] // .roles["architect"] // empty' "$WORKFLOW_FILE")
       local tl=$(jq -r '.assignments["tech_lead"] // .roles["tech_lead"] // empty' "$WORKFLOW_FILE")
-      if [ -z "$tl" ] || [ "$tl" == "null" ]; then
-        echo "developer"
-      else
+      if [ ! -z "$ar" ] && [ "$ar" != "null" ]; then
+        echo "architect"
+      elif [ ! -z "$tl" ] && [ "$tl" != "null" ]; then
         echo "tech_lead"
+      else
+        echo "developer"
       fi
       ;;
     *) echo "developer" ;;
@@ -395,7 +399,7 @@ case "$ACTION" in
     fi
     
     DESCRIPTION=$(echo "$INPUT" | jq -r '.description // ""')
-    ASSIGNMENTS=$(echo "$INPUT" | jq -c '.assignments // .roles // {"architect":null,"tech_lead":null,"qa_lead":null,"developer":null}')
+    ASSIGNMENTS=$(echo "$INPUT" | jq -c '.assignments // .roles // {"architect":null,"qa_lead":null,"developer":null}')
     
     # Simple ID validation
     INVALID_ID=$(echo "$ASSIGNMENTS" | jq -r 'to_entries[] | select(.value != null) | select(.value | contains("/") or contains("@")) | .key')
@@ -480,10 +484,10 @@ case "$ACTION" in
             exit $EXIT_GENERAL
           fi
         fi
-        TL_ACTOR=$(echo "$STATE" | jq -r '.assignments["tech_lead"] // .assignments["developer"] // empty')
-        APPROVED=$(echo "$STATE" | jq --arg stage "$CURRENT" --arg tl "$TL_ACTOR" '.reviews | map(select(.stage == ($stage|tonumber) and .status == "approved" and .reviewer == $tl)) | length')
+        LEAD_ACTOR=$(echo "$STATE" | jq -r '.assignments["architect"] // .assignments["tech_lead"] // .assignments["developer"] // empty')
+        APPROVED=$(echo "$STATE" | jq --arg stage "$CURRENT" --arg lead "$LEAD_ACTOR" '.reviews | map(select(.stage == ($stage|tonumber) and .status == "approved" and .reviewer == $lead)) | length')
         if [ "$APPROVED" -eq 0 ]; then
-          echo "{\"error\": \"Stage 8 requires approval from the assigned leader ($TL_ACTOR)\", \"exit_code\": $EXIT_GENERAL}"
+          echo "{\"error\": \"Stage 8 requires approval from the assigned architect/leader ($LEAD_ACTOR)\", \"exit_code\": $EXIT_GENERAL}"
           exit $EXIT_GENERAL
         fi
         ;;

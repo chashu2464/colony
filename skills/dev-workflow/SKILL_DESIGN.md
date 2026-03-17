@@ -14,7 +14,6 @@ The `dev-workflow` skill manages the 8-stage development lifecycle for Colony ag
   "stage_name": "string",
   "roles": {
     "architect": "agent_id",
-    "tech_lead": "agent_id", // New
     "developer": "agent_id",
     "qa_lead": "agent_id"
   },
@@ -37,11 +36,11 @@ The `dev-workflow` skill manages the 8-stage development lifecycle for Colony ag
 | ID | Stage Name | Owner | Input (Prereq) | Output (Evidence) | Reviewer (Sign-off) |
 |----|------------|-------|----------------|-------------------|---------------------|
 | 0 | Brainstorming | All | None | Concept Note | None |
-| 1 | Initial Requirements (IR) | Architect | Concept | `docs/IR.md` | Tech Lead |
-| 2 | System Design (AR/SR) | Architect | IR | `docs/AR.md` | Tech Lead |
-| 3 | Forward Briefing | Tech Lead | AR | `docs/plan.md` | Developer |
-| 4 | Reverse Briefing | Developer | Plan | `docs/task_breakdown.md` | Tech Lead |
-| 5 | Test Case Design | QA Lead | Plan | `docs/test_cases.md` | Tech Lead |
+| 1 | Initial Requirements (IR) | Architect | Concept | `docs/IR.md` | Architect |
+| 2 | System Design (AR/SR) | Architect | IR | `docs/AR.md` | Architect |
+| 3 | Forward Briefing | Developer | AR | `docs/plan.md` | QA Lead |
+| 4 | Reverse Briefing | Developer | Plan | `docs/task_breakdown.md` | Architect |
+| 5 | Test Case Design | QA Lead | Plan | `docs/test_cases.md` | Architect |
 | 6 | Implementation | Developer | Test Cases | Source Code | None |
 | 7 | Integration Testing | QA Lead | Code | `docs/test_report.md` | Developer |
 | 8 | Go-Live Review | All | Test Report | Release Tag | All |
@@ -83,4 +82,4 @@ The `dev-workflow` skill manages the 8-stage development lifecycle for Colony ag
 1. Update `handler.sh` to support `prev` action.
 2. Add evidence validation logic.
 3. Update `STAGES` array to match the 8-stage standard.
-4. Add `roles` object support including `tech_lead`.
+4. Add `roles` object support with `architect/developer/qa_lead`.

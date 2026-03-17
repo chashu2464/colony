@@ -37,7 +37,7 @@
    - Must use **Given-When-Then** format.
    - Must cover normal, exceptional, and boundary conditions.
 2. **Review**:
-   - Must be `approved` by Tech Lead (Architect).
+   - Must be `approved` by Architect.
 3. **Evidence**:
    - `docs/TEST_CASES.md` must exist.
 

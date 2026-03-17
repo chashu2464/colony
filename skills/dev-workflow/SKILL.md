@@ -39,7 +39,7 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 | `task_name` | string | ❌ | Name of the task (required for `init`) |
 | `description` | string | ❌ | Task description |
 | `notes` | string | ❌ | Progress notes (required for `next`, min 10 chars) |
-| `assignments` | object | ❌ | Map of roles to agent IDs: `{"architect": "", "tech_lead": "", "qa_lead": "", "developer": ""}` (also accepts `roles` as alias) |
+| `assignments` | object | ❌ | Map of roles to agent IDs: `{"architect": "", "qa_lead": "", "developer": ""}` (also accepts `roles` as alias; legacy `tech_lead` is still recognized for compatibility) |
 | `evidence` | string | ❌ | Path to a file or directory as proof of work for `next` |
 | `status` | string | ❌ | `approved` or `rejected` (required for `submit-review`) |
 | `comments` | string | ❌ | Optional feedback when using `submit-review` |
@@ -64,14 +64,14 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 | Stage | 阶段名称 | 主要负责人 | 协作角色 | 阶段指引 |
 |-------|---------|-----------|---------|----------|
 | 0 | Brainstorming | architect | developer, qa_lead | 讨论任务方向，明确目标和范围。架构师主导，其他角色提供输入。 |
-| 1 | Initial Requirements | architect | tech_lead | 起草需求文档，进行五方评审。架构师负责文档化，技术负责人审查可行性。 |
+| 1 | Initial Requirements | architect | architect | 起草需求文档并进行可行性自审。 |
 | 2 | System/Architectural Design | architect | - | 完成系统设计和架构方案，输出设计文档。架构师独立完成。 |
 | 3 | Forward Briefing | developer | qa_lead | 开发者向 QA 解释设计意图，确保 QA 理解实现方案。 |
 | 4 | Reverse Briefing | qa_lead | developer | QA 向开发者复述设计，验证理解一致性. |
 | 5 | Test Case Design | qa_lead | - | QA 编写测试用例，覆盖功能和边界场景。 |
 | 6 | Development Implementation | developer | - | 开发者根据设计和测试用例实现功能。 |
 | 7 | Integration Testing | qa_lead | developer | QA 执行集成测试，开发者修复发现的问题。 |
-| 8 | Go-Live Review | tech_lead | architect, developer, qa_lead | 四方最终评审，确认交付质量。必须由 Tech Lead 批准。 |
+| 8 | Go-Live Review | architect | developer, qa_lead | 三方最终评审，确认交付质量。必须由 Architect 批准。 |
 | 9 | Completed | - | - | 任务已完成并合并到主分支。 |
 
 
@@ -112,8 +112,8 @@ Stage X → Stage Y 交接
 | 4 Reverse Briefing | qa_lead | QA负责人（自身继续推进至 Stage 5）|
 | 5 Test Case Design | qa_lead | 开发者 |
 | 6 Implementation | developer | QA负责人 |
-| 7 Integration Testing | qa_lead | tech_lead（或开发者）|
-| 8 Go-Live Review | tech_lead | （完成）|
+| 7 Integration Testing | qa_lead | architect（或开发者）|
+| 8 Go-Live Review | architect | （完成）|
 
 ## Important Actions
 
@@ -121,7 +121,7 @@ Stage X → Stage Y 交接
 Moves the workflow to the next stage.
 - **Evidence**: Mandatory for all stages beyond 0. Must be a valid file or directory path.
 - **Approvals**: Stages 2, 3, 4, 5, 7, and 8 require at least one approved review.
-- **Stage 8 Guardrail**: Completion (moving from 8 to completion) strictly requires an approval from the assigned **tech_lead**.
+- **Stage 8 Guardrail**: Completion (moving from 8 to completion) strictly requires an approval from the assigned **architect** (legacy `tech_lead` reviewer is still accepted for old workflow states).
 
 ### Backtracking (prev & backtrack)
 - **prev**: Backtracks exactly one stage.
