@@ -188,8 +188,8 @@ export class SessionStore {
         target.tokenUsage.cacheCreation += usage.cacheCreation ?? 0;
         // cumulative tracks all tokens processed in this session
         target.tokenUsage.cumulative += usage.input + (usage.cacheRead ?? 0) + (usage.cacheCreation ?? 0);
-        // currentContextLength tracks the size of the latest prompt
-        target.tokenUsage.currentContextLength = usage.input + (usage.cacheRead ?? 0) + (usage.cacheCreation ?? 0);
+        // currentContextLength tracks actual context window usage (excludes cacheRead as it doesn't occupy new context space)
+        target.tokenUsage.currentContextLength = usage.input + (usage.cacheCreation ?? 0);
         target.invocationCount += 1;
         target.lastUsedAt = new Date().toISOString();
 

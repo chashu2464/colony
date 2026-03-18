@@ -678,15 +678,28 @@ export class DiscordBot {
         const sessionId = this.mapper.getSessionByChannel(channelId);
 
         if (sessionId) {
-            log.info(`Channel ${channelId} deleted. Triggering cascade deletion for session ${sessionId}`);
-            
+            log.info(`Channel ${channelId} deleted. Checking worktree status for session ${sessionId}`);
+
             try {
-                // Delete the session from Colony
+                // Check worktree status before deletion
+                const worktreeStatus = this.colony.chatRoomManager.checkWorktreeStatus(sessionId);
+
+                if (worktreeStatus.exists && !worktreeStatus.canSafelyDelete) {
+                    // Worktree has uncommitted changes - preserve session and worktree
+                    log.warn(`Cannot delete session ${sessionId}: ${worktreeStatus.blockingReason}`);
+                    log.info(`Session ${sessionId} and worktree preserved due to uncommitted changes`);
+
+                    // Unbind the mapping but keep the session
+                    await this.mapper.unbind(channelId);
+                    return;
+                }
+
+                // Safe to delete - proceed with deletion
                 await this.colony.chatRoomManager.deleteRoom(sessionId);
-                
+
                 // Unbind the mapping
                 await this.mapper.unbind(channelId);
-                
+
                 log.info(`Successfully deleted session ${sessionId} after channel ${channelId} was deleted.`);
             } catch (error) {
                 log.error(`Failed to delete session ${sessionId} during channel ${channelId} deletion:`, error);

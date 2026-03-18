@@ -16,7 +16,6 @@ import { ShortTermMemory, ContextAssembler, ContextScheduler } from './memory/in
 import { Mem0LongTermMemory } from './memory/Mem0LongTermMemory.js';
 import { DiscordManager } from './discord/index.js';
 import { SchedulerService } from './scheduler/SchedulerService.js';
-import { SkillManager } from './agent/skills/SkillManager.js';
 import type { Participant, Message } from './types.js';
 import type { LongTermMemory } from './memory/types.js';
 import type { Mem0Config } from './memory/Mem0LongTermMemory.js';
@@ -87,11 +86,6 @@ export class Colony {
         this.messageBus = new MessageBus();
         this.sessionManager = new SessionManager(dataDir);
 
-        // Initialize and discover all skills globally
-        const skillManager = new SkillManager();
-        const skillsDir = options.skillsDir ?? path.join(process.cwd(), 'skills');
-        skillManager.discoverFromDirectory(skillsDir);
-
         // Initialize chatRoomManager first (needed by agentRegistry)
         this.chatRoomManager = new ChatRoomManager(
             this.messageBus,
@@ -99,13 +93,12 @@ export class Colony {
             this.sessionManager
         );
 
-        // Now initialize agentRegistry with chatRoomManager and skillManager
+        // Now initialize agentRegistry with chatRoomManager
         this.agentRegistry = new AgentRegistry(
             this.modelRouter,
             this.contextAssembler,
             this.shortTermMemory,
-            this.chatRoomManager,
-            skillManager
+            this.chatRoomManager
         );
 
         // Set agentRegistry in chatRoomManager
@@ -192,14 +185,15 @@ export class Colony {
 
     /**
      * Delete a session and cascade-delete the bound Discord channel (if any).
+     * @param force - If true, force delete worktree even if it has uncommitted changes
      */
-    async deleteSession(sessionId: string): Promise<boolean> {
+    async deleteSession(sessionId: string, force: boolean = false): Promise<boolean> {
         // Cascade: delete Discord channel first, before removing session record
         if (this.discordManager) {
             await this.discordManager.deleteChannelForSession(sessionId)
                 .catch(err => log.warn(`Discord channel cleanup failed for session "${sessionId}":`, err));
         }
-        return this.chatRoomManager.deleteRoom(sessionId);
+        return this.chatRoomManager.deleteRoom(sessionId, force);
     }
 
     /**

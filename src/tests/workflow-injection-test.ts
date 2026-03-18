@@ -46,12 +46,7 @@ async function testWorkflowInjection() {
         rules: ['遵循代码规范']
     };
 
-    // Mock SkillManager
-    const mockSkillManager: any = {
-        toPromptBlock: () => '## Skills\n- write-file\n- read-file'
-    };
-
-    assembler.registerAgent(agentConfig, mockSkillManager);
+    assembler.registerAgent(agentConfig);
     console.log('✓ Assembler initialized and agent registered\n');
 
     // 3. Assemble prompt

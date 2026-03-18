@@ -88,10 +88,22 @@ export async function stopSession(sessionId: string): Promise<void> {
     await fetch(`${API_BASE}/sessions/${sessionId}/stop`, { method: 'POST' });
 }
 
-export async function deleteSession(sessionId: string): Promise<boolean> {
-    const res = await fetch(`${API_BASE}/sessions/${sessionId}`, { method: 'DELETE' });
+export async function deleteSession(sessionId: string, force: boolean = false): Promise<{ deleted: boolean; requiresConfirmation?: boolean; worktreeStatus?: any; error?: string }> {
+    const url = force ? `${API_BASE}/sessions/${sessionId}?force=true` : `${API_BASE}/sessions/${sessionId}`;
+    const res = await fetch(url, { method: 'DELETE' });
     const data = await res.json();
-    return data.deleted;
+
+    if (res.status === 409) {
+        // Worktree has uncommitted changes - requires confirmation
+        return {
+            deleted: false,
+            requiresConfirmation: true,
+            worktreeStatus: data.worktreeStatus,
+            error: data.error
+        };
+    }
+
+    return { deleted: data.deleted };
 }
 
 export async function updateSessionAgents(sessionId: string, agentIds: string[]): Promise<Session> {

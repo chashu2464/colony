@@ -7,6 +7,7 @@ import { MessageBus } from './MessageBus.js';
 import { SessionManager } from './SessionManager.js';
 import { SessionStore } from '../session/SessionRecord.js';
 import { TranscriptWriter } from '../session/TranscriptWriter.js';
+import { checkWorktreeStatus, forceDeleteWorktree, type WorktreeStatus } from '../utils/WorktreeUtils.js';
 import type { AgentRegistry } from '../agent/AgentRegistry.js';
 import type { ChatRoomInfo, Participant, Message } from '../types.js';
 
@@ -78,11 +79,46 @@ export class ChatRoomManager {
     }
 
     /**
-     * Delete a room.
+     * Check worktree status for a room.
+     * Returns worktree status information including whether it can be safely deleted.
      */
-    async deleteRoom(roomId: string): Promise<boolean> {
+    checkWorktreeStatus(roomId: string): WorktreeStatus {
+        return checkWorktreeStatus(roomId);
+    }
+
+    /**
+     * Delete a room.
+     * @param force - If true, force delete worktree even if it has uncommitted changes
+     */
+    async deleteRoom(roomId: string, force: boolean = false): Promise<boolean> {
         const room = this.rooms.get(roomId);
         if (!room) return false;
+
+        // Check worktree status before deletion
+        const worktreeStatus = checkWorktreeStatus(roomId);
+
+        if (worktreeStatus.exists) {
+            if (!worktreeStatus.canSafelyDelete && !force) {
+                log.warn(`Cannot delete room ${roomId}: ${worktreeStatus.blockingReason}`);
+                throw new Error(`Cannot delete session: ${worktreeStatus.blockingReason}`);
+            }
+
+            // Delete worktree if it exists
+            if (worktreeStatus.path) {
+                if (force && !worktreeStatus.canSafelyDelete) {
+                    log.info(`Force deleting worktree for room ${roomId}`);
+                    const deleted = forceDeleteWorktree(worktreeStatus.path);
+                    if (!deleted) {
+                        log.error(`Failed to force delete worktree for room ${roomId}`);
+                        throw new Error('Failed to delete worktree');
+                    }
+                } else {
+                    // Safe deletion - use the dev-workflow cleanup mechanism
+                    log.info(`Worktree for room ${roomId} can be safely deleted`);
+                }
+            }
+        }
+
         room.destroy();
         this.rooms.delete(roomId);
 

@@ -4,7 +4,6 @@
 import { Agent } from '../agent/Agent.js';
 import { ShortTermMemory } from '../memory/ShortTermMemory.js';
 import { ContextAssembler } from '../memory/ContextAssembler.js';
-import { SkillManager } from '../agent/skills/SkillManager.js';
 import type { Message, AgentConfig, SupportedCLI, InvokeResult } from '../types.js';
 
 // ── Mocks ────────────────────────────────────────────────
@@ -81,8 +80,7 @@ async function runTests() {
         mockRouter as any,
         assembler,
         stm,
-        mockChatRoomManager as any,
-        new SkillManager()
+        mockChatRoomManager as any
     );
 
     // 🧪 Scenario 1 & 2: Serial Processing & Cooldown

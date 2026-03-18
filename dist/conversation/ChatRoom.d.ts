@@ -93,6 +93,7 @@ export declare class ChatRoom {
     serialize(): object;
     /**
      * Restore message history (used when loading from persistence).
+     * Cleans up any pending messages that were left in an incomplete state.
      */
     restoreMessages(messages: Message[]): void;
     /**

@@ -422,9 +422,27 @@ export class ChatRoom {
 
     /**
      * Restore message history (used when loading from persistence).
+     * Cleans up any pending messages that were left in an incomplete state.
      */
     restoreMessages(messages: Message[]): void {
-        this.messageHistory = [...messages];
+        // Clean up any pending messages from previous session
+        const cleanedMessages = messages.map(msg => {
+            if (msg.metadata?.isPending) {
+                log.warn(`Cleaning up stale pending message ${msg.id} from ${msg.sender.name}`);
+                return {
+                    ...msg,
+                    content: msg.content || '(执行被中断)',
+                    metadata: {
+                        ...msg.metadata,
+                        isPending: false,
+                        error: 'Session was interrupted',
+                    },
+                };
+            }
+            return msg;
+        });
+
+        this.messageHistory = cleanedMessages;
         log.info(`Restored ${messages.length} messages to room "${this.name}"`);
     }
 

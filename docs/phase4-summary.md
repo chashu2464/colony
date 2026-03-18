@@ -6,10 +6,12 @@
 - **Document**: `docs/memory-system-design.md`
 - **Type Definitions**: `src/memory/types.ts`
 - Comprehensive architecture covering all four layers:
-  - Layer 1: Context Indexing (planned for future)
+  - Layer 1: Context Indexing (**由底层 CLI 工具提供**，如 claude-code、codex)
   - Layer 2: Memory Retrieval (implemented)
   - Layer 3: Context Assembly (implemented)
   - Layer 4: Context Scheduling (implemented)
+
+**重要说明**：Layer 1 不在 Colony 代码库中实现，而是由底层 CLI 工具（claude-code、codex 等）提供。这些工具内置了语义理解、代码解析、上下文检索等能力。Colony 专注于在这些能力之上构建多 Agent 协作层（Layer 2-4）。
 
 ### 2. Short-Term Memory ✅
 - **File**: `src/memory/ShortTermMemory.ts`
@@ -82,23 +84,21 @@
 
 ## Pending Work
 
-### Long-Term Memory (Hindsight Integration)
-- **Status**: Not implemented (marked as TODO)
-- **Reason**: Requires external service setup (Docker/Python SDK)
+### Long-Term Memory (Mem0 Integration)
+- **Status**: Partially implemented (Mem0LongTermMemory.ts exists)
+- **Current Issues**: Timeout problems, needs optimization
 - **Next Steps**:
-  1. Research Hindsight deployment options
-  2. Set up vector database (Qdrant/Milvus)
-  3. Implement `LongTermMemory` class
-  4. Add retain/recall/reflect operations
-  5. Integrate with ContextAssembler
+  1. Implement timeout degradation strategy
+  2. Add retry logic with exponential backoff
+  3. Optimize embedding and retrieval performance
 
 ### Context Indexing (Layer 1)
-- **Status**: Designed but not implemented
-- **Components**:
-  - Semantic embedder
-  - Code parser
-  - Knowledge graph
-- **Reason**: Lower priority, can be added incrementally
+- **Status**: Provided by underlying CLI tools (claude-code, codex, etc.)
+- **Colony's Role**: Leverage CLI capabilities, no need to reimplement
+- **Rationale**:
+  - CLI tools already have semantic understanding, code parsing, and context retrieval
+  - Colony focuses on multi-agent collaboration layer (Layer 2-4)
+  - Avoid reinventing the wheel
 
 ## Architecture Improvements
 
@@ -186,6 +186,8 @@ short_term:
 4. **Context Lineage**: Designed but not implemented
    - Cannot track message ancestry
    - No "why was this decision made?" queries
+
+**Note on Layer 1**: Layer 1 capabilities (semantic embedding, code parsing, knowledge graph) are provided by the underlying CLI tools (claude-code, codex, etc.), not by Colony itself. Colony leverages these existing capabilities rather than reimplementing them.
 
 ## Next Steps
 

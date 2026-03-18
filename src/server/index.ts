@@ -270,8 +270,33 @@ export function createColonyServer(options: ServerOptions) {
     // Delete a room
     app.delete('\/api\/sessions\/:id', async (req, res) => {
         try {
-            const deleted = await colony.deleteSession(req.params.id);
+            const force = req.query.force === 'true';
+
+            // Check worktree status first
+            const worktreeStatus = colony.chatRoomManager.checkWorktreeStatus(req.params.id);
+
+            if (worktreeStatus.exists && !worktreeStatus.canSafelyDelete && !force) {
+                // Return warning that requires user confirmation
+                res.status(409).json({
+                    error: 'Worktree has uncommitted changes',
+                    worktreeStatus,
+                    requiresConfirmation: true
+                });
+                return;
+            }
+
+            const deleted = await colony.deleteSession(req.params.id, force);
             res.json({ deleted });
+        } catch (err) {
+            res.status(500).json({ error: (err as Error).message });
+        }
+    });
+
+    // Check worktree status for a session
+    app.get('/api/sessions/:id/worktree-status', (req, res) => {
+        try {
+            const status = colony.chatRoomManager.checkWorktreeStatus(req.params.id);
+            res.json({ status });
         } catch (err) {
             res.status(500).json({ error: (err as Error).message });
         }

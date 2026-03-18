@@ -7,7 +7,6 @@ import * as os from 'os';
 import * as path from 'path';
 import { Logger } from '../utils/Logger.js';
 import { EventBus } from '../utils/EventBus.js';
-import { SkillManager } from './skills/SkillManager.js';
 import { ModelRouter } from '../llm/ModelRouter.js';
 import { ContextAssembler } from '../memory/ContextAssembler.js';
 import { ShortTermMemory } from '../memory/ShortTermMemory.js';
@@ -66,8 +65,7 @@ export class Agent {
         modelRouter: ModelRouter,
         contextAssembler: ContextAssembler,
         shortTermMemory: ShortTermMemory,
-        chatRoomManager: ChatRoomManager,
-        globalSkillManager: SkillManager
+        chatRoomManager: ChatRoomManager
     ) {
         this.id = config.id;
         this.name = config.name;
@@ -88,15 +86,7 @@ export class Agent {
         this.digestGenerator = new DigestGenerator(this.transcriptWriter);
         this.sessionBootstrap = new SessionBootstrap();
 
-        // Load and register this agent's specific skills
-        const skillManager = new SkillManager();
-        // Use all discovered metadata from the global manager to load local skills
-        (skillManager as any).allMetadata = globalSkillManager.getAllMetadata();
-        if (config.skills && config.skills.length > 0) {
-            skillManager.loadSkills(config.skills);
-        }
-
-        this.contextAssembler.registerAgent(config, skillManager);
+        this.contextAssembler.registerAgent(config);
     }
 
     // ── Public API ───────────────────────────────────────
@@ -252,8 +242,11 @@ export class Agent {
         }
 
         try {
+            // Wrap entire processing in try-finally to ensure status is always reset
+            try {
             const sessionName = `agent-${this.id}-room-${message.roomId}`;
             let round = 0;
+            let lastPendingId: string | null = null; // Track the last pending message for cleanup
 
             // Setup working directory
             const workingDir = chatRoom.workingDir || process.cwd();
@@ -332,6 +325,7 @@ export class Agent {
                     isPending: true,
                 });
                 const pendingId = pendingMsg.id;
+                lastPendingId = pendingId; // Track for cleanup
 
                 const controller = new AbortController();
                 this.activeInvocations.set(message.roomId, controller);
@@ -414,6 +408,7 @@ export class Agent {
                             toolCalls: result.toolCalls || [],
                             cliType: result.actualModel ?? this.config.model.primary,
                         });
+                        lastPendingId = null; // Message updated, no cleanup needed
                     } else {
                         // No content — just clear pending state
                         chatRoom.updateMessage(pendingId, '(无输出)', {
@@ -421,6 +416,7 @@ export class Agent {
                             isPending: false,
                             cliType: result.actualModel ?? this.config.model.primary,
                         });
+                        lastPendingId = null; // Message updated, no cleanup needed
                     }
 
                     // Check if CLI executed any tools successfully
@@ -500,36 +496,51 @@ export class Agent {
                         // Clear stale session so next message starts fresh
                         // Session aborted — don't delete, let it resume next time
                         chatRoom.updateMessage(pendingId, `⏹️ 已停止执行`, { isMonologue: true, isPending: false });
-                        this.setStatus('idle');
-                        return;
+                        lastPendingId = null; // Message updated, no cleanup needed
+                        // Don't set status here - let finally block handle it
+                        break; // Exit the while loop, finally will reset status
                     }
 
                     if (innerErrMsg.includes('exhausted') || innerErrMsg.includes('rate') || innerErrMsg.includes('429') || innerErrMsg.includes('capacity')) {
                         chatRoom.updateMessage(pendingId, `⚠️ 模型调用受限: ${innerErrMsg}`, { isMonologue: true, isPending: false, error: innerErrMsg });
-                        this.setStatus('rate_limited');
-                        return;
+                        lastPendingId = null; // Message updated, no cleanup needed
+                        // Don't set status here - let finally block handle it
+                        break; // Exit the while loop, finally will reset status
                     }
 
                     // Other errors — update pending and re-throw to outer catch
                     chatRoom.updateMessage(pendingId, `❌ 调用出错: ${innerErrMsg}`, { isMonologue: true, isPending: false, error: innerErrMsg });
+                    lastPendingId = null; // Message updated, no cleanup needed
                     throw innerErr;
                 } finally {
                     this.activeInvocations.delete(message.roomId);
                 }
             }
-        } catch (err) {
-            log.error(`[${this.name}] Error handling message:`, err);
-            this.setStatus('error');
 
-            const errMsg = (err as Error).message ?? '';
-            chatRoom?.sendAgentMessage(this.id, `❌ 调用出错: ${errMsg}`, [], {
-                isMonologue: true,
-                error: errMsg,
-            } as any);
-            return;
+            // Clean up any pending message that wasn't updated (e.g., if MAX_FOLLOW_UP_ROUNDS was reached)
+            if (lastPendingId) {
+                log.warn(`[${this.name}] Cleaning up pending message ${lastPendingId} after loop exit`);
+                chatRoom.updateMessage(lastPendingId, '⚠️ 达到最大轮次限制', {
+                    isMonologue: true,
+                    isPending: false,
+                    error: 'MAX_FOLLOW_UP_ROUNDS reached',
+                });
+            }
+            } catch (err) {
+                log.error(`[${this.name}] Error handling message:`, err);
+
+                const errMsg = (err as Error).message ?? '';
+                chatRoom?.sendAgentMessage(this.id, `❌ 调用出错: ${errMsg}`, [], {
+                    isMonologue: true,
+                    error: errMsg,
+                } as any);
+                // Don't return here - let finally block run to reset status
+            }
+        } finally {
+            // Always reset status to idle when processing completes (success or error)
+            // This ensures the "thinking" indicator is always cleared in the UI
+            this.setStatus('idle');
         }
-
-        this.setStatus('idle');
     }
 
     /**

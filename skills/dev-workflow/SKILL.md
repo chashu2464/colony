@@ -63,8 +63,8 @@ echo '{"action": "status"}' | bash scripts/handler.sh
 
 | Stage | 阶段名称 | 主要负责人 | 协作角色 | 阶段指引 |
 |-------|---------|-----------|---------|----------|
-| 0 | Brainstorming | architect | developer, qa_lead | 讨论任务方向，明确目标和范围。架构师主导，其他角色提供输入。 |
-| 1 | Initial Requirements | architect | architect | 起草需求文档并进行可行性自审。 |
+| 0 | Brainstorming | architect | developer, qa_lead | 讨论任务方向，明确目标和范围。架构师主导，其他角色提供输入。如有疑问，逐个提问澄清（目标与范围、约束条件、成功标准、技术栈偏好）；如需求已清晰，可直接进入方案设计。 |
+| 1 | Initial Requirements | architect | architect | 起草需求文档并进行可行性自审。文档必须包含「验收标准」章节（明确可验证的规范）。采用分段呈现：先呈现核心架构，确认后再呈现详细设计。如有多种可行方案，探索2-3个备选方案并说明权衡（非强制）。文档保存到 docs/workflow/task-<ID>/ 目录。 |
 | 2 | System/Architectural Design | architect | - | 完成系统设计和架构方案，输出设计文档。架构师独立完成。 |
 | 3 | Forward Briefing | developer | qa_lead | 开发者向 QA 解释设计意图，确保 QA 理解实现方案。 |
 | 4 | Reverse Briefing | qa_lead | developer | QA 向开发者复述设计，验证理解一致性. |

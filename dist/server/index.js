@@ -87,6 +87,16 @@ function createColonyServer(options) {
             broadcast(event);
         }
     });
+    // Wire agent status changes to WebSocket broadcast
+    for (const agent of colony.agentRegistry.getAll()) {
+        agent.events.on('status_change', ({ agentId, status }) => {
+            broadcast({
+                type: 'agent_status',
+                agentId,
+                status,
+            });
+        });
+    }
     // ── REST: Sessions ────────────────────────────────
     // List all active rooms
     app.get('/api/sessions', (_req, res) => {
@@ -169,14 +179,14 @@ function createColonyServer(options) {
             res.status(404).json({ error: 'Session not found' });
             return;
         }
-        const { agentId, content, mentions } = req.body;
+        const { agentId, content, mentions, metadata } = req.body;
         if (!agentId || !content) {
             res.status(400).json({ error: 'agentId and content are required' });
             return;
         }
         try {
             log.info(`Received agent message request for room ${req.params.id} from agent ${agentId}`);
-            const message = room.sendAgentMessage(agentId, content, mentions);
+            const message = room.sendAgentMessage(agentId, content, mentions, metadata);
             res.json({ message });
         }
         catch (err) {
@@ -256,8 +266,30 @@ function createColonyServer(options) {
     // Delete a room
     app.delete('\/api\/sessions\/:id', async (req, res) => {
         try {
-            const deleted = await colony.deleteSession(req.params.id);
+            const force = req.query.force === 'true';
+            // Check worktree status first
+            const worktreeStatus = colony.chatRoomManager.checkWorktreeStatus(req.params.id);
+            if (worktreeStatus.exists && !worktreeStatus.canSafelyDelete && !force) {
+                // Return warning that requires user confirmation
+                res.status(409).json({
+                    error: 'Worktree has uncommitted changes',
+                    worktreeStatus,
+                    requiresConfirmation: true
+                });
+                return;
+            }
+            const deleted = await colony.deleteSession(req.params.id, force);
             res.json({ deleted });
+        }
+        catch (err) {
+            res.status(500).json({ error: err.message });
+        }
+    });
+    // Check worktree status for a session
+    app.get('/api/sessions/:id/worktree-status', (req, res) => {
+        try {
+            const status = colony.chatRoomManager.checkWorktreeStatus(req.params.id);
+            res.json({ status });
         }
         catch (err) {
             res.status(500).json({ error: err.message });

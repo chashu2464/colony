@@ -9,7 +9,6 @@ import { MarkdownParser, type StageProtocol } from '../utils/MarkdownParser.js';
 import type { AgentConfig, Message, Participant } from '../types.js';
 import type { ShortTermMemory } from './ShortTermMemory.js';
 import type { LongTermMemory } from './types.js';
-import type { SkillManager } from '../agent/skills/SkillManager.js';
 import type { ChatRoom } from '../conversation/ChatRoom.js';
 import type {
     ContextAssembler as IContextAssembler,
@@ -31,7 +30,6 @@ function estimateTokens(text: string): number {
 
 export class ContextAssembler implements IContextAssembler {
     private agentConfigs = new Map<string, AgentConfig>();
-    private skillManagers = new Map<string, SkillManager>();
     private shortTermMemory: ShortTermMemory;
     private longTermMemory?: LongTermMemory;
     private workflowProtocols?: Map<number, StageProtocol>;
@@ -44,9 +42,8 @@ export class ContextAssembler implements IContextAssembler {
     /**
      * Register an agent's configuration.
      */
-    registerAgent(config: AgentConfig, skillManager: SkillManager): void {
+    registerAgent(config: AgentConfig): void {
         this.agentConfigs.set(config.id, config);
-        this.skillManagers.set(config.id, skillManager);
     }
 
     /**
@@ -87,21 +84,7 @@ export class ContextAssembler implements IContextAssembler {
             });
         }
 
-        // 3. Skills (high priority)
-        const skillManager = this.skillManagers.get(options.agentId);
-        if (skillManager) {
-            const skillContent = skillManager.toPromptBlock();
-            if (skillContent) {
-                sections.push({
-                    name: 'skills',
-                    content: skillContent,
-                    priority: 85,
-                    tokenCount: 0,
-                });
-            }
-        }
-
-        // 3.2. Workflow Stage (high priority, if enabled)
+        // 3. Workflow Stage (high priority, if enabled)
         if (options.includeWorkflow !== false) {
             const workflowContent = await this.buildWorkflowStageSection(options.roomId, options.agentId);
             if (workflowContent) {

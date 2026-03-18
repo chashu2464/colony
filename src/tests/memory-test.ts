@@ -92,14 +92,7 @@ async function runTests() {
 
     // Register a test agent
     const agentConfig = createTestAgentConfig('agent1', 'Test Agent');
-    const mockSkillManager = {
-        toPromptBlock: () => '## Available Skills\n- send-message: Send a message\n- get-messages: Get recent messages',
-        get: () => null,
-        getAll: () => [],
-        loadSkills: () => { },
-        discoverFromDirectory: () => { },
-    };
-    assembler.registerAgent(agentConfig, mockSkillManager as any);
+    assembler.registerAgent(agentConfig);
 
     // Add some history
     for (let i = 1; i <= 3; i++) {

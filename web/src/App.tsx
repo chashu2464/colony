@@ -255,7 +255,35 @@ export default function App() {
     if (!confirm('确定要删除这个会话吗？所有消息历史将被永久删除。')) return;
 
     try {
-      await deleteSession(sessionId);
+      const result = await deleteSession(sessionId);
+
+      if (result.requiresConfirmation) {
+        // Worktree has uncommitted changes - show warning and ask for confirmation
+        const worktreeInfo = result.worktreeStatus;
+        const reasons = [];
+        if (worktreeInfo.hasUncommittedChanges) reasons.push('未提交的更改');
+        if (worktreeInfo.hasUnpushedCommits) reasons.push('未推送的提交');
+
+        const confirmForce = confirm(
+          `警告：该会话的 worktree 包含${reasons.join('和')}。\n\n` +
+          `Worktree 路径: ${worktreeInfo.path}\n` +
+          `任务 ID: ${worktreeInfo.taskId}\n\n` +
+          `如果继续删除，这些更改将永久丢失。\n\n` +
+          `确定要强制删除吗？`
+        );
+
+        if (!confirmForce) {
+          return; // User cancelled
+        }
+
+        // Force delete
+        const forceResult = await deleteSession(sessionId, true);
+        if (!forceResult.deleted) {
+          alert('强制删除失败: ' + (forceResult.error || '未知错误'));
+          return;
+        }
+      }
+
       setSessions(prev => prev.filter(s => s.id !== sessionId));
       if (activeSession === sessionId) {
         setActiveSession(null);
