@@ -436,7 +436,7 @@ export class Agent {
                             if (skillName.includes('send-message') || skillName.includes('send_message')) return true;
                         }
                         // 3. Bash/shell tool executing handler.sh
-                        if (name === 'bash' || name === 'shell' || name === 'run_shell_command') {
+                        if (name === 'bash' || name === 'shell' || name === 'run_shell_command' || name === 'command_execution') {
                             const cmd = (input.command ?? input.cmd ?? input.script ?? '') as string;
                             if (cmd.includes('send-message') || cmd.includes('handler.sh')) return true;
                         }

@@ -297,6 +297,12 @@ export class ChatRoom {
             });
         }
 
+        // Skip agent routing for human-in-loop responses
+        if (message.metadata?.humanInputResponse) {
+            log.info(`Received human-in-loop response, skipping agent routing`);
+            return;
+        }
+
         const senderId = message.sender.id;
         const senderIsAgent = this.agents.has(senderId);
 
