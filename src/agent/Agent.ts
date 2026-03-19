@@ -458,11 +458,24 @@ export class Agent {
                         break;
                     }
 
+                    let systemHint = '';
+
                     if (toolCalls.length === 0) {
                         // No tools called AND no message sent?
                         // This usually means the LLM just gave a text response without using send-message.
-                        // We'll consider this done to avoid infinite loops, though ideally they should speak.
-                        break;
+                        if (round === 1) {
+                            // First round - give agent one more chance with explicit instruction
+                            const identity = this.contextAssembler.buildIdentitySection(this.config);
+                            const workflow = await this.contextAssembler.buildWorkflowStageSection(message.roomId, this.id);
+                            const participants = this.contextAssembler.buildParticipantsSection(chatRoom);
+
+                            systemHint = `[系统提示] 你在上一轮只输出了文本，但没有调用 send-message 工具。用户看不到你的内心独白，你必须调用 send-message 工具将你的回复发送出去。请现在就调用 send-message。`;
+                            currentPrompt = [identity, workflow, participants, systemHint].filter(Boolean).join('\n\n');
+                            continue;
+                        } else {
+                            // Second round and still no tools - give up to avoid infinite loop
+                            break;
+                        }
                     }
 
                     // Tools were called but no send-message. 
@@ -477,7 +490,6 @@ export class Agent {
                     const workflow = await this.contextAssembler.buildWorkflowStageSection(message.roomId, this.id);
                     const participants = this.contextAssembler.buildParticipantsSection(chatRoom);
 
-                    let systemHint = '';
                     if (failedTools.length > 0) {
                         systemHint = `[系统提示] 你在上一轮执行的以下工具失败了：${failedTools.join(', ')}。请根据工具执行结果分析原因并尝试重试。注意：如果你之前调用了 send-message 但失败了，用户并没有收到你的消息，你必须再次调用成功的 send-message 才能完成任务。`;
                     } else {

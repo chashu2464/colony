@@ -157,6 +157,12 @@ export function createColonyServer(options: ServerOptions) {
             return;
         }
 
+        // Validate mentions: humans can only mention one agent at a time
+        if (mentions && mentions.length > 1) {
+            res.status(400).json({ error: 'You can only mention one agent at a time' });
+            return;
+        }
+
         try {
             const message = room.sendHumanMessage(senderId, content, mentions, metadata);
             res.json({ message });

@@ -43,18 +43,23 @@ fi
 MENTIONS_RAW=$(echo "$PARAMS" | jq -r '.mentions // "null"')
 if [ "$MENTIONS_RAW" != "null" ]; then
     MENTIONS_TYPE=$(echo "$PARAMS" | jq -r '.mentions | type')
-    if [ "$MENTIONS_TYPE" != "array" ]; then
-        log_debug "Error: mentions must be an array, got $MENTIONS_TYPE"
-        echo "{\"error\": \"mentions must be an array (e.g., [\\\"name\\\"]), not a $MENTIONS_TYPE (e.g., \\\"name\\\")\"}" >&2
+    if [ "$MENTIONS_TYPE" != "string" ]; then
+        log_debug "Error: mentions must be a string, got $MENTIONS_TYPE"
+        echo "{\"error\": \"mentions must be a string (e.g., \\\"name\\\"), not a $MENTIONS_TYPE (e.g., [\\\"name\\\"])\"}" >&2
         exit 1
     fi
 fi
 
-# Build request body
+# Build request body - convert string mention to array for API
+MENTIONS_ARRAY="[]"
+if [ "$MENTIONS_RAW" != "null" ]; then
+    MENTIONS_ARRAY=$(echo "$PARAMS" | jq -c '[.mentions]')
+fi
+
 BODY=$(jq -n \
     --arg agentId "$AGENT_ID" \
     --arg content "$CONTENT" \
-    --argjson mentions "$(echo "$PARAMS" | jq '.mentions // []')" \
+    --argjson mentions "$MENTIONS_ARRAY" \
     '{agentId: $agentId, content: $content, mentions: $mentions}')
 
 log_debug "Sending POST request to $COLONY_API/api/sessions/$ROOM_ID/agent-messages"

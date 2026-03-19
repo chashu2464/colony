@@ -264,6 +264,11 @@ class ChatRoom {
                 log.error(`Auto-save failed for room ${this.id}:`, err);
             });
         }
+        // Skip agent routing for human-in-loop responses
+        if (message.metadata?.humanInputResponse) {
+            log.info(`Received human-in-loop response, skipping agent routing`);
+            return;
+        }
         const senderId = message.sender.id;
         const senderIsAgent = this.agents.has(senderId);
         // Agent messages: only use explicit mentions array (from send-message skill param)
@@ -278,13 +283,10 @@ class ChatRoom {
         }
         if (mentionIds.length > 0) {
             // ── Layer 1: Explicit @mention routing ──
-            // Agent messages: only route to the FIRST mentioned agent (prevent fan-out)
-            // Human messages: route to ALL mentioned agents
+            // Both agents and humans: only route to the FIRST mentioned agent (prevent fan-out)
             const otherIds = mentionIds.filter(id => id !== senderId);
             const agentOnlyIds = otherIds.filter(id => this.agents.has(id));
-            const routeTargets = senderIsAgent
-                ? agentOnlyIds.slice(0, 1) // skip user mentions, pick first agent
-                : otherIds;
+            const routeTargets = agentOnlyIds.slice(0, 1); // skip user mentions, pick first agent
             for (const mentionedId of routeTargets) {
                 const agent = this.agents.get(mentionedId);
                 if (agent) {
@@ -294,8 +296,8 @@ class ChatRoom {
                     });
                 }
             }
-            if (senderIsAgent && mentionIds.filter(id => id !== senderId).length > 1) {
-                log.warn(`Agent "${message.sender.name}" mentioned ${mentionIds.length} agents, only routing to first one`);
+            if (agentOnlyIds.length > 1) {
+                log.warn(`${senderIsAgent ? 'Agent' : 'Human'} "${message.sender.name}" mentioned ${agentOnlyIds.length} agents, only routing to first one`);
             }
         }
         else if (!senderIsAgent) {

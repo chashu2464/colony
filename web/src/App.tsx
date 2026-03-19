@@ -497,8 +497,8 @@ export default function App() {
                                     </div>
                                   )}
                                 </div>
-                                {/* Message metadata footer */}
-                                {(msg.metadata?.cliType || msg.mentions?.length > 0) && (
+                                {/* Message metadata footer - only show for agent messages */}
+                                {group.sender.type === 'agent' && (msg.metadata?.cliType || msg.mentions?.length > 0) && (
                                   <div style={{
                                     fontSize: '10px',
                                     color: '#888',
