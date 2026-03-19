@@ -9,6 +9,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ChatRoom = void 0;
 const crypto_1 = require("crypto");
 const Logger_js_1 = require("../utils/Logger.js");
+const MentionRouter_js_1 = require("./MentionRouter.js");
 const log = new Logger_js_1.Logger('ChatRoom');
 class ChatRoom {
     id;
@@ -24,12 +25,14 @@ class ChatRoom {
     defaultAgentId = null;
     autoSaveCallback;
     isPaused = false;
-    constructor(name, messageBus, id, workingDir) {
+    mentionRouter;
+    constructor(name, messageBus, id, workingDir, mentionRouter) {
         this.id = id ?? (0, crypto_1.randomUUID)();
         this.name = name;
         this.createdAt = new Date();
         this.messageBus = messageBus;
         this.workingDir = workingDir;
+        this.mentionRouter = mentionRouter ?? MentionRouter_js_1.MentionRouter.fromDefaultConfig();
         // Subscribe to messages on this room via the bus
         const unsub = this.messageBus.subscribe(this.id, (message) => {
             this.onMessage(message);
@@ -280,6 +283,14 @@ class ChatRoom {
                 if (!mentionIds.includes(id))
                     mentionIds.push(id);
             }
+        }
+        const routed = this.mentionRouter.route(message, mentionIds, (mention) => this.resolveAgentMention(mention)?.id ?? null);
+        mentionIds = routed.mentionIds;
+        if (routed.routingHint) {
+            message.metadata = {
+                ...message.metadata,
+                routingHint: routed.routingHint,
+            };
         }
         if (mentionIds.length > 0) {
             // ── Layer 1: Explicit @mention routing ──

@@ -11,10 +11,16 @@ Store important information to long-term memory (Mem0/Qdrant) for future recall.
 
 **DO use remember for:**
 - Important decisions and their rationale
+- User preferences and stable working habits (for example tool choice, communication style, default workflow)
+- User choices made during decision points (for example selecting方案A、拒绝方案B、接受某个架构约束)
+- Explicit instructions from the user about what must be remembered, especially normative rules or collaboration conventions
 - Valuable patterns or best practices discovered
 - Key architectural choices and trade-offs
 - Lessons learned from debugging or problem-solving
+- Reflections after repeated skill/tool failures, when the cause is stable and worth avoiding next time
 - Critical project context that should persist
+- Reusable coordination knowledge, such as who owns which module or which agent should be involved for certain classes of changes
+- Confirmed constraints from the environment or infrastructure that meaningfully affect future design decisions
 
 **DON'T use remember for:**
 - Casual conversation or small talk

@@ -61,6 +61,7 @@ export interface MessageMetadata {
     toolCalls?: any[];
     attachments?: { type: string; url: string }[];
     isPending?: boolean;
+    routingHint?: string;
     [key: string]: unknown;
 }
 

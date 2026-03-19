@@ -46,6 +46,7 @@ export interface Message {
             requestId: string;
             response: string;
         };
+        routingHint?: string;
         [key: string]: unknown;
     };
 }

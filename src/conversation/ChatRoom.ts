@@ -8,6 +8,7 @@
 import { randomUUID as uuid } from 'crypto';
 import { Logger } from '../utils/Logger.js';
 import { MessageBus } from './MessageBus.js';
+import { MentionRouter } from './MentionRouter.js';
 import type { Agent } from '../agent/Agent.js';
 import type { Message, Participant, ChatRoomInfo } from '../types.js';
 
@@ -28,13 +29,15 @@ export class ChatRoom {
     private defaultAgentId: string | null = null;
     private autoSaveCallback?: (roomId: string) => Promise<void>;
     private isPaused: boolean = false;
+    private mentionRouter: MentionRouter;
 
-    constructor(name: string, messageBus: MessageBus, id?: string, workingDir?: string) {
+    constructor(name: string, messageBus: MessageBus, id?: string, workingDir?: string, mentionRouter?: MentionRouter) {
         this.id = id ?? uuid();
         this.name = name;
         this.createdAt = new Date();
         this.messageBus = messageBus;
         this.workingDir = workingDir;
+        this.mentionRouter = mentionRouter ?? MentionRouter.fromDefaultConfig();
 
         // Subscribe to messages on this room via the bus
         const unsub = this.messageBus.subscribe(this.id, (message) => {
@@ -314,6 +317,19 @@ export class ChatRoom {
             for (const id of parsedFromContent) {
                 if (!mentionIds.includes(id)) mentionIds.push(id);
             }
+        }
+
+        const routed = this.mentionRouter.route(
+            message,
+            mentionIds,
+            (mention) => this.resolveAgentMention(mention)?.id ?? null
+        );
+        mentionIds = routed.mentionIds;
+        if (routed.routingHint) {
+            message.metadata = {
+                ...message.metadata,
+                routingHint: routed.routingHint,
+            };
         }
 
         if (mentionIds.length > 0) {

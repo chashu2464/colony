@@ -1,4 +1,5 @@
 import { MessageBus } from './MessageBus.js';
+import { MentionRouter } from './MentionRouter.js';
 import type { Agent } from '../agent/Agent.js';
 import type { Message, Participant, ChatRoomInfo } from '../types.js';
 export declare class ChatRoom {
@@ -15,7 +16,8 @@ export declare class ChatRoom {
     private defaultAgentId;
     private autoSaveCallback?;
     private isPaused;
-    constructor(name: string, messageBus: MessageBus, id?: string, workingDir?: string);
+    private mentionRouter;
+    constructor(name: string, messageBus: MessageBus, id?: string, workingDir?: string, mentionRouter?: MentionRouter);
     /**
      * Add an agent to this room.
      */

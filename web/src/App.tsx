@@ -487,6 +487,12 @@ export default function App() {
                                     {msg.content}
                                   </ReactMarkdown>
 
+                                  {msg.metadata?.routingHint && (
+                                    <div className="routing-hint">
+                                      {msg.metadata.routingHint}
+                                    </div>
+                                  )}
+
                                   {msg.metadata?.attachments && msg.metadata.attachments.length > 0 && (
                                     <div className="attachment-preview">
                                       {msg.metadata.attachments.map((att, attIdx) => (
