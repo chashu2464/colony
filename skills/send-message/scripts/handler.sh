@@ -22,7 +22,7 @@ log_debug() {
 
 log_debug "Starting send-message skill (Room: $ROOM_ID, Agent: $AGENT_ID)"
 
-# Read JSON params from stdin: {"content": "...", "mentions": [...]}
+# Read JSON params from stdin: {"content": "...", "mentions": "..."}
 PARAMS=$(cat)
 
 # Validate JSON format
@@ -40,20 +40,23 @@ if [ -z "$CONTENT" ]; then
 fi
 
 # Validate mentions parameter type
-MENTIONS_RAW=$(echo "$PARAMS" | jq -r '.mentions // "null"')
-if [ "$MENTIONS_RAW" != "null" ]; then
+MENTIONS_PRESENT=$(echo "$PARAMS" | jq -r 'has("mentions")')
+MENTIONS_VALUE=""
+if [ "$MENTIONS_PRESENT" = "true" ]; then
     MENTIONS_TYPE=$(echo "$PARAMS" | jq -r '.mentions | type')
     if [ "$MENTIONS_TYPE" != "string" ]; then
         log_debug "Error: mentions must be a string, got $MENTIONS_TYPE"
         echo "{\"error\": \"mentions must be a string (e.g., \\\"name\\\"), not a $MENTIONS_TYPE (e.g., [\\\"name\\\"])\"}" >&2
         exit 1
     fi
+
+    MENTIONS_VALUE=$(echo "$PARAMS" | jq -r '.mentions')
 fi
 
 # Build request body - convert string mention to array for API
 MENTIONS_ARRAY="[]"
-if [ "$MENTIONS_RAW" != "null" ]; then
-    MENTIONS_ARRAY=$(echo "$PARAMS" | jq -c '[.mentions]')
+if [ -n "${MENTIONS_VALUE//[[:space:]]/}" ]; then
+    MENTIONS_ARRAY=$(jq -cn --arg mention "$MENTIONS_VALUE" '[$mention]')
 fi
 
 BODY=$(jq -n \

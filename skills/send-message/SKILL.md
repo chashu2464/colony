@@ -20,11 +20,12 @@ echo '{"content": "你好，这是我的回复"}' | bash scripts/handler.sh
 | Parameter  | Type     | Required | Description | Example |
 |-----------|----------|----------|-------------|---------|
 | `content`  | string   | ✅       | Message text to send (must be non-empty) | `"收到，我来处理"` |
-| `mentions` | string   | ❌       | Agent name to @mention — **must be a string**, not an array | `"开发者"` |
+| `mentions` | string   | ❌       | Agent name to @mention — **must be a string**, not an array; omit when no @ is needed | `"开发者"` |
 
 **⚠️ Type Requirements:**
 - `content` must be a **non-empty string**
 - `mentions` must be a **string** (e.g., `"name"`), NOT an array (e.g., `["name"]`)
+- If you do not need to @ anyone, omit `mentions`; empty/blank string is treated as no mention.
 
 ### ⚠️ Important: @mention Rules
 
@@ -38,6 +39,11 @@ echo '{"content": "你好，这是我的回复"}' | bash scripts/handler.sh
 **Simple reply (no @mention):**
 ```bash
 echo '{"content": "收到，我来处理这个任务。"}' | bash scripts/handler.sh
+```
+
+**No @mention with explicit empty string (also treated as no mention):**
+```bash
+echo '{"content": "收到，我来处理这个任务。", "mentions": ""}' | bash scripts/handler.sh
 ```
 
 **Reply with @mention (needs another agent to act):**

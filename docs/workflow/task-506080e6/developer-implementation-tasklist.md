@@ -82,3 +82,30 @@
 ## 6. 执行顺序
 - 严格按 `P1 出站桥接 -> P2 入站回调` 集成验证。
 - 设计/测试可并行准备，但代码合入遵循依赖顺序。
+
+## 7. 开发侧自测点与证据要求（对齐 QA Stage 4）
+- 证据形式：每个分支至少提供 1 条测试结果（单测日志或集成日志）+ 关键审计字段截图/摘录（`eventId/traceId/sessionKey/roomId`）。
+- 正常链路：
+  - `run.started` 入站处理成功并更新运行状态。
+  - `message.completed` 消息写入目标房间并触发广播。
+  - `run.failed` 失败状态可观测且可追踪到 `traceId`。
+- 异常链路：
+  - 签名失败被拒绝（不落房间）。
+  - 时间窗过期被拒绝（防重放）。
+  - `sessionKey` 映射缺失失败可观测（不写默认房间）。
+  - 出站 OpenClaw 5xx/超时失败可观测（含 `traceId`）。
+- 边界/安全链路：
+  - 重复 `eventId` 幂等命中且不重复写入。
+  - 未知 `eventType` 返回 `202 Accepted` 并安全忽略。
+  - 同 `traceId` 跨房间注入被拒绝并记录安全日志。
+  - payload 超限/非法结构不会导致服务崩溃。
+- 配置边界：
+  - `OPENCLAW_BASE_URL` 非法、`OPENCLAW_TIMEOUT_MS<=0`、`OPENCLAW_ALLOWED_SKEW_MS<0` 时显式失败，禁止静默降级。
+
+## 8. 实现顺序约束（Stage 6 编码执行）
+- S1 配置与校验：先补齐配置定义、默认值和启动期校验，再进入业务代码。
+- S2 出站桥接：实现 `OpenClawClient` 与 `sessionMappingStore` 基础读写，先打通 Colony -> OpenClaw。
+- S3 入站安全外壳：先实现验签、时间窗、payload 限制、幂等去重，再接事件分发。
+- S4 事件落房间：实现冻结 3 类事件翻译与写入，补齐审计字段输出。
+- S5 错误码语义统一：统一 mapping miss / duplicate / signature invalid / timestamp expired 的状态码与错误体。
+- S6 回归与门禁：按第 7 节补齐全分支证据后再提测；如出现 toolcall/delta 范围变更，必须先回架构重审。

@@ -91,6 +91,96 @@ function load_state() {
   cat "$WORKFLOW_FILE"
 }
 
+# --- UCD Helpers ---
+
+function default_ucd_artifact_path() {
+  local task_id="$1"
+  echo "docs/workflow/task-$task_id/artifacts/$task_id-ucd.md"
+}
+
+function empty_ucd_audit_group() {
+  jq -n '{
+    ucd_required: false,
+    ucd_reason_codes: [],
+    ucd_override_reason: null,
+    ucd_version: null,
+    ucd_artifact: null,
+    ucd_baseline_source: null
+  }'
+}
+
+function evaluate_ucd_trigger() {
+  local task_description="$1"
+  local changed_paths_json="$2"
+  local user_intent_flags_json="$3"
+  local override_requested="$4"
+  local override_reason="$5"
+  local override_ucd_required="$6"
+
+  local evaluator="$PROJ_ROOT/skills/ucd/scripts/evaluate-trigger.js"
+  if [ ! -f "$evaluator" ]; then
+    empty_ucd_audit_group
+    return 0
+  fi
+
+  local payload
+  payload=$(jq -n \
+    --arg desc "$task_description" \
+    --argjson changed_paths "${changed_paths_json:-[]}" \
+    --argjson user_intent_flags "${user_intent_flags_json:-[]}" \
+    --argjson override_requested "${override_requested:-false}" \
+    --arg override_reason "$override_reason" \
+    --argjson override_ucd_required "${override_ucd_required:-null}" \
+    '{
+      task_description: $desc,
+      changed_paths: $changed_paths,
+      user_intent_flags: $user_intent_flags,
+      override_requested: $override_requested,
+      override_reason: $override_reason,
+      override_ucd_required: $override_ucd_required
+    }')
+
+  node "$evaluator" "$payload"
+}
+
+function validate_ucd_gate() {
+  local state_json="$1"
+
+  local required
+  required=$(echo "$state_json" | jq -r '.ucd.ucd_required // false')
+  local validator="$PROJ_ROOT/skills/ucd/scripts/validate-ucd.js"
+  if [ ! -f "$validator" ]; then
+    if [ "$required" == "true" ]; then
+      echo '{"result":"block","block_reason":"UCD_VALIDATOR_MISSING","details":["ucd validator missing while ucd_required=true"]}'
+      return 0
+    fi
+    echo '{"result":"pass","details":["ucd_required=false; validator missing; gate skipped"]}'
+    return 0
+  fi
+
+  local task_id
+  task_id=$(echo "$state_json" | jq -r '.task_id')
+  local audited_artifact
+  audited_artifact=$(echo "$state_json" | jq -r '.ucd.ucd_artifact // empty')
+  if [ -z "$audited_artifact" ] || [ "$audited_artifact" == "null" ]; then
+    audited_artifact=$(default_ucd_artifact_path "$task_id")
+  fi
+
+  local audit_group
+  audit_group=$(echo "$state_json" | jq -c '.ucd // {}')
+  local expected_version
+  expected_version=$(echo "$state_json" | jq -r '.ucd.ucd_version // empty')
+
+  local payload
+  payload=$(jq -n \
+    --arg artifact_path "$audited_artifact" \
+    --arg expected_ucd_version "$expected_version" \
+    --argjson audit "$audit_group" \
+    '{artifact_path: $artifact_path, expected_ucd_version: $expected_ucd_version, audit: $audit}')
+
+  node "$validator" "$payload"
+}
+
 # --- Notification Helper ---
 
 function get_next_actor_role() {
@@ -399,7 +489,12 @@ case "$ACTION" in
     fi
     
     DESCRIPTION=$(echo "$INPUT" | jq -r '.description // ""')
-    ASSIGNMENTS=$(echo "$INPUT" | jq -c '.assignments // .roles // {"architect":null,"qa_lead":null,"developer":null}')
+    CHANGED_PATHS=$(echo "$INPUT" | jq -c '.changed_paths // []')
+    USER_INTENT_FLAGS=$(echo "$INPUT" | jq -c '.user_intent_flags // []')
+    OVERRIDE_REQUESTED=$(echo "$INPUT" | jq -r '.override_requested // false')
+    OVERRIDE_REASON=$(echo "$INPUT" | jq -r '.override_reason // ""')
+    OVERRIDE_UCD_REQUIRED=$(echo "$INPUT" | jq -r 'if has("override_ucd_required") then .override_ucd_required else "null" end')
+    ASSIGNMENTS=$(echo "$INPUT" | jq -c '.assignments // .roles // {"architect":null,"qa_lead":null,"developer":null,"designer":null}')
     
     # Simple ID validation
     INVALID_ID=$(echo "$ASSIGNMENTS" | jq -r 'to_entries[] | select(.value != null) | select(.value | contains("/") or contains("@")) | .key')
@@ -410,17 +505,44 @@ case "$ACTION" in
 
     TASK_ID="$(uuidgen 2>/dev/null | tr '[:upper:]' '[:lower:]' | cut -c1-8 || echo $RANDOM-$RANDOM)"
     BRANCH_NAME="feature/task-${TASK_ID}"
+    DEFAULT_UCD_ARTIFACT=$(default_ucd_artifact_path "$TASK_ID")
+
+    UCD_DECISION=$(evaluate_ucd_trigger "$DESCRIPTION" "$CHANGED_PATHS" "$USER_INTENT_FLAGS" "$OVERRIDE_REQUESTED" "$OVERRIDE_REASON" "$OVERRIDE_UCD_REQUIRED")
+    if ! echo "$UCD_DECISION" | jq . >/dev/null 2>&1; then
+      echo "{\"error\": \"Failed to evaluate UCD trigger\", \"exit_code\": $EXIT_SYSTEM}"
+      exit $EXIT_SYSTEM
+    fi
+
+    if [ "$(echo "$UCD_DECISION" | jq -r '.ucd_required')" == "true" ]; then
+      UCD_AUDIT=$(echo "$UCD_DECISION" | jq --arg art "$DEFAULT_UCD_ARTIFACT" '{
+        ucd_required: .ucd_required,
+        ucd_reason_codes: .reason_codes,
+        ucd_override_reason: .ucd_override_reason,
+        ucd_artifact: $art,
+        ucd_version: null,
+        ucd_baseline_source: null
+      }')
+    else
+      UCD_AUDIT=$(echo "$UCD_DECISION" | jq '{
+        ucd_required: .ucd_required,
+        ucd_reason_codes: .reason_codes,
+        ucd_override_reason: .ucd_override_reason,
+        ucd_artifact: null,
+        ucd_version: null,
+        ucd_baseline_source: null
+      }')
+    fi
 
     # Create sandbox worktree immediately on init to support parallel work from start
     create_sandbox "$TASK_ID" "$BRANCH_NAME" || exit $?
 
-    STATE=$(jq -n --arg id "$TASK_ID" --arg name "$TASK_NAME" --arg desc "$DESCRIPTION" --argjson assign "$ASSIGNMENTS" --arg stage_name "${STAGES[0]}" \
-      '{task_id: $id, task_name: $name, description: $desc, current_stage: 0, stage_name: $stage_name, status: "active", assignments: $assign, artifacts: [], reviews: [], history: []}')
+    STATE=$(jq -n --arg id "$TASK_ID" --arg name "$TASK_NAME" --arg desc "$DESCRIPTION" --argjson assign "$ASSIGNMENTS" --arg stage_name "${STAGES[0]}" --argjson ucd "$UCD_AUDIT" \
+      '{task_id: $id, task_name: $name, description: $desc, current_stage: 0, stage_name: $stage_name, status: "active", assignments: $assign, ucd: $ucd, artifacts: [], reviews: [], history: []}')
     
     # Log history
     HASH=$(get_git_hash)
-    ENTRY=$(jq -n --argjson from null --argjson to 0 --arg act "init" --arg actor "$COLONY_AGENT_ID" --arg notes "Workflow initialized" --arg hash "$HASH" \
-      '{from_stage: $from, to_stage: $to, action: $act, actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'" }')
+    ENTRY=$(jq -n --argjson from null --argjson to 0 --arg act "init" --arg actor "$COLONY_AGENT_ID" --arg notes "Workflow initialized" --arg hash "$HASH" --argjson ucd "$UCD_AUDIT" \
+      '{from_stage: $from, to_stage: $to, action: $act, actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'", ucd: $ucd }')
     STATE=$(echo "$STATE" | jq --argjson entry "$ENTRY" '.history += [$entry]')
     
     save_state "$STATE"
@@ -429,6 +551,14 @@ case "$ACTION" in
 
   next)
     STATE=$(load_state) || exit $?
+    STATE=$(echo "$STATE" | jq '.ucd = (.ucd // {
+      ucd_required: false,
+      ucd_reason_codes: ["NON_UI_TEXT_ONLY"],
+      ucd_override_reason: null,
+      ucd_version: null,
+      ucd_artifact: null,
+      ucd_baseline_source: null
+    })')
     
     NOTES=$(echo "$INPUT" | jq -r '.notes // empty' | xargs)
     EVIDENCE=$(echo "$INPUT" | jq -r '.evidence // empty' | xargs)
@@ -492,6 +622,31 @@ case "$ACTION" in
         fi
         ;;
     esac
+
+    # UCD Gate (Phase 1: dev-workflow only)
+    if [ "$CURRENT" -ge 1 ] && [ "$CURRENT" -le 8 ]; then
+      UCD_VALIDATION=$(validate_ucd_gate "$STATE")
+      if ! echo "$UCD_VALIDATION" | jq . >/dev/null 2>&1; then
+        echo "{\"error\": \"UCD gate validation failed to execute\", \"exit_code\": $EXIT_SYSTEM}"
+        exit $EXIT_SYSTEM
+      fi
+      UCD_RESULT=$(echo "$UCD_VALIDATION" | jq -r '.result')
+      if [ "$UCD_RESULT" == "block" ]; then
+        UCD_REASON=$(echo "$UCD_VALIDATION" | jq -r '.block_reason // "UCD_GATE_BLOCKED"')
+        UCD_DETAIL=$(echo "$UCD_VALIDATION" | jq -c '.details // []')
+        echo "{\"error\": \"UCD gate blocked stage advance\", \"block_reason\": \"$UCD_REASON\", \"details\": $UCD_DETAIL, \"exit_code\": $EXIT_GENERAL}"
+        exit $EXIT_GENERAL
+      fi
+
+      UCD_META=$(echo "$UCD_VALIDATION" | jq -c '.metadata // null')
+      if [ "$UCD_META" != "null" ]; then
+        STATE=$(echo "$STATE" | jq --argjson meta "$UCD_META" '
+          .ucd.ucd_version = ($meta.ucd_version // .ucd.ucd_version)
+          | .ucd.ucd_baseline_source = ($meta.baseline_source // .ucd.ucd_baseline_source)
+          | .ucd.ucd_artifact = ($meta.artifact_path // .ucd.ucd_artifact)
+        ')
+      fi
+    fi
 
     # TDD Quality Gates (Stage 6 -> 7)
     if [ "$CURRENT" -eq 6 ]; then
@@ -564,8 +719,9 @@ case "$ACTION" in
     STATUS="active"
     if [ "$NEXT" -eq 9 ]; then STATUS="completed"; fi
     
-    ENTRY=$(jq -n --argjson from "$CURRENT" --argjson to "$NEXT" --arg act "next" --arg actor "$COLONY_AGENT_ID" --arg notes "$NOTES" --arg hash "$HASH" \
-      '{from_stage: $from, to_stage: $to, action: $act, actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'" }')
+    UCD_AUDIT_ENTRY=$(echo "$STATE" | jq -c '.ucd')
+    ENTRY=$(jq -n --argjson from "$CURRENT" --argjson to "$NEXT" --arg act "next" --arg actor "$COLONY_AGENT_ID" --arg notes "$NOTES" --arg hash "$HASH" --argjson ucd "$UCD_AUDIT_ENTRY" \
+      '{from_stage: $from, to_stage: $to, action: $act, actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'", ucd: $ucd }')
     
     NEW_STATE=$(echo "$STATE" | jq --arg next "$NEXT" --arg name "${STAGES[$NEXT]}" --arg status "$STATUS" --argjson entry "$ENTRY" \
       '.current_stage = ($next|tonumber) | .stage_name = $name | .status = $status | .history += [$entry]')
@@ -647,6 +803,16 @@ case "$ACTION" in
     STATE=$(load_state) || exit $?
     NEW_ASSIGNMENTS=$(echo "$INPUT" | jq -c '.assignments // .roles // empty')
     NEW_STATE="$STATE"
+    TASK_ID=$(echo "$STATE" | jq -r '.task_id')
+
+    NEW_STATE=$(echo "$NEW_STATE" | jq '.ucd = (.ucd // {
+      ucd_required: false,
+      ucd_reason_codes: ["NON_UI_TEXT_ONLY"],
+      ucd_override_reason: null,
+      ucd_version: null,
+      ucd_artifact: null,
+      ucd_baseline_source: null
+    })')
 
     if [ ! -z "$NEW_ASSIGNMENTS" ] && [ "$NEW_ASSIGNMENTS" != "null" ]; then
       NEW_STATE=$(echo "$NEW_STATE" | jq --argjson assign "$NEW_ASSIGNMENTS" '.assignments = $assign')
@@ -661,6 +827,67 @@ case "$ACTION" in
     if [ ! -z "$DESCRIPTION" ] && [ "$DESCRIPTION" != "null" ]; then
        NEW_STATE=$(echo "$NEW_STATE" | jq --arg desc "$DESCRIPTION" '.description = $desc')
     fi
+
+    UCD_METADATA=$(echo "$INPUT" | jq -c '.ucd_metadata // {}')
+    UCD_ARTIFACT_PATCH=$(echo "$UCD_METADATA" | jq -r '.ucd_artifact // empty')
+    UCD_VERSION_PATCH=$(echo "$UCD_METADATA" | jq -r '.ucd_version // empty')
+    UCD_BASELINE_PATCH=$(echo "$UCD_METADATA" | jq -r '.ucd_baseline_source // empty')
+
+    if [ -n "$UCD_ARTIFACT_PATCH" ] || [ -n "$UCD_VERSION_PATCH" ] || [ -n "$UCD_BASELINE_PATCH" ]; then
+      NEW_STATE=$(echo "$NEW_STATE" | jq \
+        --arg art "$UCD_ARTIFACT_PATCH" \
+        --arg ver "$UCD_VERSION_PATCH" \
+        --arg base "$UCD_BASELINE_PATCH" '
+        .ucd.ucd_artifact = (if $art == "" then .ucd.ucd_artifact else $art end)
+        | .ucd.ucd_version = (if $ver == "" then .ucd.ucd_version else $ver end)
+        | .ucd.ucd_baseline_source = (if $base == "" then .ucd.ucd_baseline_source else $base end)
+      ')
+    fi
+
+    UPDATE_CHECKPOINT=$(echo "$INPUT" | jq -r '.update_checkpoint // false')
+    if [ "$UPDATE_CHECKPOINT" == "true" ]; then
+      CHECKPOINT_DESC=$(echo "$NEW_STATE" | jq -r '.description // ""')
+      CHECKPOINT_PATHS=$(echo "$INPUT" | jq -c '.changed_paths // []')
+      CHECKPOINT_FLAGS=$(echo "$INPUT" | jq -c '.user_intent_flags // []')
+      CHECKPOINT_OVERRIDE_REQUESTED=$(echo "$INPUT" | jq -r '.override_requested // false')
+      CHECKPOINT_OVERRIDE_REASON=$(echo "$INPUT" | jq -r '.override_reason // ""')
+      CHECKPOINT_OVERRIDE_REQUIRED=$(echo "$INPUT" | jq -r 'if has("override_ucd_required") then .override_ucd_required else "null" end')
+
+      UCD_DECISION=$(evaluate_ucd_trigger "$CHECKPOINT_DESC" "$CHECKPOINT_PATHS" "$CHECKPOINT_FLAGS" "$CHECKPOINT_OVERRIDE_REQUESTED" "$CHECKPOINT_OVERRIDE_REASON" "$CHECKPOINT_OVERRIDE_REQUIRED")
+      if ! echo "$UCD_DECISION" | jq . >/dev/null 2>&1; then
+        echo "{\"error\": \"Failed to evaluate UCD trigger at update-checkpoint\", \"exit_code\": $EXIT_SYSTEM}"
+        exit $EXIT_SYSTEM
+      fi
+
+      CURRENT_ARTIFACT=$(echo "$NEW_STATE" | jq -r '.ucd.ucd_artifact // empty')
+      if [ -z "$CURRENT_ARTIFACT" ] || [ "$CURRENT_ARTIFACT" == "null" ]; then
+        CURRENT_ARTIFACT=$(default_ucd_artifact_path "$TASK_ID")
+      fi
+
+      if [ "$(echo "$UCD_DECISION" | jq -r '.ucd_required')" == "true" ]; then
+        NEW_STATE=$(echo "$NEW_STATE" | jq --arg art "$CURRENT_ARTIFACT" --argjson decision "$UCD_DECISION" '
+          .ucd.ucd_required = $decision.ucd_required
+          | .ucd.ucd_reason_codes = $decision.reason_codes
+          | .ucd.ucd_override_reason = $decision.ucd_override_reason
+          | .ucd.ucd_artifact = $art
+        ')
+      else
+        NEW_STATE=$(echo "$NEW_STATE" | jq --argjson decision "$UCD_DECISION" '
+          .ucd.ucd_required = $decision.ucd_required
+          | .ucd.ucd_reason_codes = $decision.reason_codes
+          | .ucd.ucd_override_reason = $decision.ucd_override_reason
+          | .ucd.ucd_artifact = null
+          | .ucd.ucd_version = null
+          | .ucd.ucd_baseline_source = null
+        ')
+      fi
+    fi
+
+    HASH=$(get_git_hash)
+    UCD_AUDIT_ENTRY=$(echo "$NEW_STATE" | jq -c '.ucd')
+    ENTRY=$(jq -n --argjson from "$(echo "$STATE" | jq -r '.current_stage')" --argjson to "$(echo "$STATE" | jq -r '.current_stage')" --arg act "update" --arg actor "$COLONY_AGENT_ID" --arg notes "Workflow metadata updated" --arg hash "$HASH" --argjson ucd "$UCD_AUDIT_ENTRY" \
+      '{from_stage: $from, to_stage: $to, action: $act, actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'", ucd: $ucd }')
+    NEW_STATE=$(echo "$NEW_STATE" | jq --argjson entry "$ENTRY" '.history += [$entry]')
 
     save_state "$NEW_STATE"
     echo "$NEW_STATE"
