@@ -110,4 +110,16 @@ describe('Agent send-message success detection', () => {
         ];
         expect(hasSuccessfulSendMessage.call(fakeAgent, toolCalls)).toBe(true);
     });
+
+    it('does not treat generic success text as successful without message.id receipt', () => {
+        const toolCalls = [
+            {
+                name: 'send-message',
+                isError: false,
+                input: { content: 'hello world' },
+                result: '{"success":true,"output":"message sent successfully"}',
+            },
+        ];
+        expect(hasSuccessfulSendMessage.call(fakeAgent, toolCalls)).toBe(false);
+    });
 });

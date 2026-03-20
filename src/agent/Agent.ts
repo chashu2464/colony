@@ -288,12 +288,6 @@ export class Agent {
             return isCommandStyleTool ? hasSuccessfulExecution : true;
         }
 
-        const resultObj = this.tryParseJsonObject(toolCall.result);
-        if (resultObj?.success === true) {
-            const outputText = String(resultObj.output ?? '').toLowerCase();
-            if (outputText.includes('message sent')) return true;
-        }
-
         return false;
     }
 
