@@ -23,6 +23,7 @@ import type {
     AgentConfig,
     AgentStatus,
     Message,
+    ToolUseEvent,
 } from '../types.js';
 
 const log = new Logger('Agent');
@@ -230,6 +231,122 @@ export class Agent {
         return path.join(os.homedir(), '.claude');
     }
 
+    private hasSuccessfulSendMessage(toolCalls: ToolUseEvent[]): boolean {
+        return toolCalls.some((toolCall) => {
+            if (!this.isSendMessageInvocation(toolCall)) return false;
+            if (toolCall.isError === true) return false;
+            return this.hasSendMessageSuccessReceipt(toolCall);
+        });
+    }
+
+    private isSendMessageInvocation(toolCall: ToolUseEvent): boolean {
+        const name = toolCall.name?.toLowerCase() ?? '';
+        const input = toolCall.input ?? {};
+
+        if (name === 'send-message' || name === 'send_message') {
+            return true;
+        }
+
+        if (name === 'skill' || name === 'activate_skill') {
+            const skillName = String(input.name ?? input.skill ?? input.skill_name ?? '').toLowerCase();
+            return skillName === 'send-message' || skillName === 'send_message';
+        }
+
+        if (name === 'bash' || name === 'shell' || name === 'run_shell_command' || name === 'command_execution') {
+            const command = String(input.command ?? input.cmd ?? input.script ?? '').toLowerCase();
+            const cwd = String(input.cwd ?? '').toLowerCase();
+            const runsHandlerScript = command.includes('send-message/scripts/handler.sh')
+                || (command.includes('bash scripts/handler.sh') && cwd.includes('/skills/send-message'));
+            return runsHandlerScript;
+        }
+
+        return false;
+    }
+
+    private hasSendMessageSuccessReceipt(toolCall: ToolUseEvent): boolean {
+        const name = toolCall.name?.toLowerCase() ?? '';
+        const input = toolCall.input ?? {};
+        const isCommandStyleTool = name === 'bash'
+            || name === 'shell'
+            || name === 'run_shell_command'
+            || name === 'command_execution';
+        const hasSuccessfulExecution = input.exit_code === 0
+            || input.status === 'completed'
+            || input.status === 'success';
+
+        const resultCandidates: unknown[] = [
+            toolCall.result,
+            input.aggregated_output,
+            input.stdout,
+            input.output,
+            input.result,
+        ];
+
+        const receiptFound = resultCandidates.some(candidate => this.containsMessageReceipt(candidate));
+
+        if (receiptFound) {
+            return isCommandStyleTool ? hasSuccessfulExecution : true;
+        }
+
+        const resultObj = this.tryParseJsonObject(toolCall.result);
+        if (resultObj?.success === true) {
+            const outputText = String(resultObj.output ?? '').toLowerCase();
+            if (outputText.includes('message sent')) return true;
+        }
+
+        return false;
+    }
+
+    private containsMessageReceipt(candidate: unknown): boolean {
+        if (!candidate) return false;
+
+        if (typeof candidate === 'object') {
+            const record = candidate as Record<string, unknown>;
+            const message = record.message;
+            if (message && typeof message === 'object' && typeof (message as Record<string, unknown>).id === 'string') {
+                return ((message as Record<string, unknown>).id as string).trim().length > 0;
+            }
+            return false;
+        }
+
+        if (typeof candidate !== 'string') return false;
+        const text = candidate.trim();
+        if (!text) return false;
+        const parsed = this.tryParseJsonObject(text);
+        if (parsed) {
+            const message = parsed.message;
+            if (message && typeof message === 'object' && typeof (message as Record<string, unknown>).id === 'string') {
+                return ((message as Record<string, unknown>).id as string).trim().length > 0;
+            }
+        }
+
+        const apiResponseMatch = text.match(/API Response \(HTTP 2\d{2}\):\s*(\{[\s\S]*\})/i);
+        if (apiResponseMatch?.[1]) {
+            const extracted = this.tryParseJsonObject(apiResponseMatch[1]);
+            const message = extracted?.message;
+            if (message && typeof message === 'object' && typeof (message as Record<string, unknown>).id === 'string') {
+                return ((message as Record<string, unknown>).id as string).trim().length > 0;
+            }
+        }
+
+        return /"message"\s*:\s*\{[\s\S]*?"id"\s*:\s*"[^"]+"/i.test(text);
+    }
+
+    private tryParseJsonObject(candidate: unknown): Record<string, unknown> | null {
+        if (!candidate) return null;
+        if (typeof candidate === 'object') return candidate as Record<string, unknown>;
+        if (typeof candidate !== 'string') return null;
+        try {
+            const parsed = JSON.parse(candidate);
+            if (parsed && typeof parsed === 'object') {
+                return parsed as Record<string, unknown>;
+            }
+            return null;
+        } catch {
+            return null;
+        }
+    }
+
     private async handleMessage(message: Message): Promise<void> {
         this.setStatus('thinking');
 
@@ -421,32 +538,7 @@ export class Agent {
 
                     // Check if CLI executed any tools successfully
                     const toolCalls = result.toolCalls || [];
-                    const hasSendMessage = toolCalls.some(t => {
-                        const name = t.name?.toLowerCase() ?? '';
-                        const input = t.input ?? {};
-
-                        // If we have result info, and it's an error, this wasn't a successful send
-                        if (t.isError === true) return false;
-
-                        // 1. Direct name match
-                        if (name === 'send-message' || name === 'send_message') return true;
-                        // 2. CLI 'Skill' wrapper — check known input field variants
-                        if (name === 'skill' || name === 'activate_skill') {
-                            const skillName = (input.name ?? input.skill ?? input.skill_name ?? '') as string;
-                            if (skillName.includes('send-message') || skillName.includes('send_message')) return true;
-                        }
-                        // 3. Bash/shell tool executing handler.sh
-                        if (name === 'bash' || name === 'shell' || name === 'run_shell_command' || name === 'command_execution') {
-                            const cmd = (input.command ?? input.cmd ?? input.script ?? '') as string;
-                            if (cmd.includes('send-message') || cmd.includes('handler.sh')) return true;
-                        }
-                        // 4. Fallback: deep search the entire input JSON for send-message
-                        try {
-                            const inputStr = JSON.stringify(input).toLowerCase();
-                            if (inputStr.includes('send-message') || inputStr.includes('send_message')) return true;
-                        } catch { /* ignore */ }
-                        return false;
-                    });
+                    const hasSendMessage = this.hasSuccessfulSendMessage(toolCalls);
 
                     if (!hasSendMessage && toolCalls.length > 0) {
                         log.debug(`[${this.name}] Tool call details: ${JSON.stringify(toolCalls.map(t => ({ name: t.name, input: t.input })))}`);
