@@ -17,6 +17,22 @@ function get_main_branch() {
   fi
 }
 
+function has_staged_changes() {
+  ! git diff --cached --quiet -- 2>/dev/null
+}
+
+function has_unstaged_changes() {
+  ! git diff --quiet -- 2>/dev/null
+}
+
+function has_untracked_files() {
+  [ -n "$(git ls-files --others --exclude-standard 2>/dev/null)" ]
+}
+
+function has_any_changes() {
+  has_staged_changes || has_unstaged_changes || has_untracked_files
+}
+
 # Read input JSON
 INPUT=$(cat)
 ACTION=$(echo "$INPUT" | jq -r '.action // empty')
@@ -72,12 +88,12 @@ EOF
       git add --update 2>/dev/null
       git add . 2>/dev/null 
       
-      if ! git diff-index --quiet HEAD -- 2>/dev/null; then
+      if has_staged_changes; then
         git commit -m "feat: wip for quick task $TASK_ID" --no-verify >/dev/null 2>&1
       fi
       # Stash any remaining untracked/ignored changes before switching
       stashed=false
-      if [ ! -z "$(git status --porcelain 2>/dev/null)" ]; then
+      if has_any_changes; then
         git stash push -m "quick-task-merge-stash" --quiet 2>/dev/null && stashed=true
       fi
       git checkout "$MAIN_BRANCH" >/dev/null 2>&1
