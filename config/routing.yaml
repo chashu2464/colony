@@ -1,0 +1,10 @@
+rules:
+  - sourceMention: codex
+    intentKeywords:
+      - review
+      - codex review
+      - 评审
+      - 审查
+      - code review
+    targetMention: Cloud Codex Review
+    routingHint: 根据团队约定，已将 @codex 的 review 请求重定向至 @Cloud Codex Review
