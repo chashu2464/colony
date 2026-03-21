@@ -67,25 +67,45 @@ BODY=$(jq -n \
 
 log_debug "Sending POST request to $COLONY_API/api/sessions/$ROOM_ID/agent-messages"
 
-RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+# Use temp file to separate response body from HTTP status code.
+# This avoids SIGPIPE / pipefail issues with echo | tail/sed on large bodies,
+# which previously caused false "send failed" reports even though the message
+# had already been delivered (the API processes & broadcasts the message before
+# returning the HTTP response).
+TMPFILE=$(mktemp)
+trap 'rm -f "$TMPFILE"' EXIT
+
+HTTP_CODE=$(curl -s -o "$TMPFILE" -w "%{http_code}" -X POST \
     "$COLONY_API/api/sessions/$ROOM_ID/agent-messages" \
     -H "Content-Type: application/json" \
-    -d "$BODY")
+    -d "$BODY") || true
 
-HTTP_CODE=$(echo "$RESPONSE" | tail -1)
-BODY_RESPONSE=$(echo "$RESPONSE" | sed '$d')
+BODY_RESPONSE=$(cat "$TMPFILE" 2>/dev/null || echo "")
 
 log_debug "API Response (HTTP $HTTP_CODE): $BODY_RESPONSE"
 
+# Validate HTTP_CODE is numeric before comparison
+if ! [[ "$HTTP_CODE" =~ ^[0-9]+$ ]]; then
+    log_debug "Warning: Non-numeric HTTP code '$HTTP_CODE', treating as success if body looks valid"
+    # If we got a response body that looks like valid JSON with a message id,
+    # the send likely succeeded despite the status code parsing issue
+    if printf '%s' "$BODY_RESPONSE" | jq -e '.message.id' >/dev/null 2>&1; then
+        printf '%s' "$BODY_RESPONSE"
+        exit 0
+    fi
+    echo "send-message failed: could not determine HTTP status" >&2
+    exit 1
+fi
+
 if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
-    echo "$BODY_RESPONSE"
+    printf '%s' "$BODY_RESPONSE"
 else
     log_debug "send-message failed with HTTP $HTTP_CODE"
     ERROR_MSG="send-message failed (HTTP $HTTP_CODE)"
 
     # Try to extract error details from response
-    if echo "$BODY_RESPONSE" | jq empty 2>/dev/null; then
-        ERROR_DETAIL=$(echo "$BODY_RESPONSE" | jq -r '.error // .message // empty')
+    if printf '%s' "$BODY_RESPONSE" | jq empty 2>/dev/null; then
+        ERROR_DETAIL=$(printf '%s' "$BODY_RESPONSE" | jq -r '.error // .message // empty')
         if [ -n "$ERROR_DETAIL" ]; then
             ERROR_MSG="$ERROR_MSG: $ERROR_DETAIL"
         fi
