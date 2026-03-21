@@ -25,6 +25,7 @@ function makeDeps() {
     const config: OpenClawConfig = {
         enabled: true,
         baseUrl: 'https://openclaw.example.com',
+        outboundPath: '/hooks/colony',
         apiKey: 'key',
         agentId: 'agent-1',
         timeoutMs: 100,

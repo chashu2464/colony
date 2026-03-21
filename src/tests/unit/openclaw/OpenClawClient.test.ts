@@ -5,6 +5,7 @@ import type { OpenClawConfig } from '../../../integrations/openclaw/types.js';
 const config: OpenClawConfig = {
     enabled: true,
     baseUrl: 'https://openclaw.example.com',
+    outboundPath: '/hooks/colony',
     apiKey: 'key',
     agentId: 'agent-1',
     timeoutMs: 100,
@@ -26,12 +27,13 @@ describe('OpenClawClient', () => {
     });
 
     it('returns parsed JSON on successful response', async () => {
-        globalThis.fetch = vi.fn().mockResolvedValue({
+        const fetchMock = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
             headers: { get: vi.fn().mockReturnValue('application/json') },
             text: vi.fn().mockResolvedValue('{"id":"resp-1"}'),
         } as unknown as Response);
+        globalThis.fetch = fetchMock;
 
         const client = new OpenClawClient(config);
         const result = await client.sendMessage({
@@ -43,6 +45,36 @@ describe('OpenClawClient', () => {
 
         expect(result.status).toBe(200);
         expect(result.data.id).toBe('resp-1');
+        expect(fetchMock).toHaveBeenCalledWith(
+            'https://openclaw.example.com/hooks/colony',
+            expect.objectContaining({ method: 'POST' }),
+        );
+    });
+
+    it('uses custom outbound path from config', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            headers: { get: vi.fn().mockReturnValue('application/json') },
+            text: vi.fn().mockResolvedValue('{}'),
+        } as unknown as Response);
+        globalThis.fetch = fetchMock;
+
+        const client = new OpenClawClient({
+            ...config,
+            outboundPath: '/v1/responses',
+        });
+        await client.sendMessage({
+            sessionKey: 'room-1',
+            traceId: 'trace-1',
+            senderId: 'user-1',
+            content: 'hello',
+        });
+
+        expect(fetchMock).toHaveBeenCalledWith(
+            'https://openclaw.example.com/v1/responses',
+            expect.objectContaining({ method: 'POST' }),
+        );
     });
 
     it('throws on upstream 5xx', async () => {

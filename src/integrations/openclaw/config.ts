@@ -9,6 +9,7 @@ export function loadOpenClawConfig(env: NodeJS.ProcessEnv = process.env): OpenCl
         return {
             enabled: false,
             baseUrl: '',
+            outboundPath: '/hooks/colony',
             apiKey: '',
             agentId: '',
             timeoutMs: 10000,
@@ -19,6 +20,7 @@ export function loadOpenClawConfig(env: NodeJS.ProcessEnv = process.env): OpenCl
     }
 
     const baseUrl = mustGetString(env, 'OPENCLAW_BASE_URL');
+    const outboundPath = parseOutboundPath(env.OPENCLAW_OUTBOUND_PATH);
     const apiKey = mustGetString(env, 'OPENCLAW_API_KEY');
     const agentId = mustGetString(env, 'OPENCLAW_AGENT_ID');
     const webhookSecret = mustGetString(env, 'OPENCLAW_WEBHOOK_SECRET');
@@ -26,7 +28,7 @@ export function loadOpenClawConfig(env: NodeJS.ProcessEnv = process.env): OpenCl
     const allowedSkewMs = parseNonNegativeInt(env.OPENCLAW_ALLOWED_SKEW_MS, 'OPENCLAW_ALLOWED_SKEW_MS', 300000);
     const roomIds = new Set((env.OPENCLAW_ROOM_IDS ?? '').split(',').map((item) => item.trim()).filter(Boolean));
 
-    return { enabled: true, baseUrl, apiKey, agentId, timeoutMs, webhookSecret, allowedSkewMs, roomIds };
+    return { enabled: true, baseUrl, outboundPath, apiKey, agentId, timeoutMs, webhookSecret, allowedSkewMs, roomIds };
 }
 
 function mustGetString(env: NodeJS.ProcessEnv, key: string): string {
@@ -49,6 +51,17 @@ function parseNonNegativeInt(raw: string | undefined, key: string, fallback: num
     const value = raw ? Number(raw) : fallback;
     if (!Number.isInteger(value) || value < 0) {
         throw new Error(`${key} must be an integer >= 0`);
+    }
+    return value;
+}
+
+function parseOutboundPath(raw: string | undefined): string {
+    const value = (raw ?? '/hooks/colony').trim();
+    if (!value) {
+        return '/hooks/colony';
+    }
+    if (!value.startsWith('/')) {
+        throw new Error('OPENCLAW_OUTBOUND_PATH must start with "/"');
     }
     return value;
 }

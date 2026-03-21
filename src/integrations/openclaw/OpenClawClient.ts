@@ -23,7 +23,7 @@ export class OpenClawClient {
         const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs);
 
         try {
-            const response = await fetch(`${this.config.baseUrl.replace(/\/$/, '')}/v1/responses`, {
+            const response = await fetch(buildOutboundUrl(this.config.baseUrl, this.config.outboundPath), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -97,6 +97,10 @@ export class OpenClawClient {
             return null;
         }
     }
+}
+
+function buildOutboundUrl(baseUrl: string, outboundPath: string): string {
+    return `${baseUrl.replace(/\/$/, '')}${outboundPath.startsWith('/') ? outboundPath : `/${outboundPath}`}`;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

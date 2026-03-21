@@ -11,6 +11,7 @@ describe('OpenClawBridge', () => {
         const config: OpenClawConfig = {
             enabled: true,
             baseUrl: 'https://openclaw.example.com',
+            outboundPath: '/hooks/colony',
             apiKey: 'k',
             agentId: 'agent-1',
             timeoutMs: 1000,
@@ -56,6 +57,7 @@ describe('OpenClawBridge', () => {
         const config: OpenClawConfig = {
             enabled: true,
             baseUrl: 'https://openclaw.example.com',
+            outboundPath: '/hooks/colony',
             apiKey: 'k',
             agentId: 'agent-1',
             timeoutMs: 1000,
@@ -110,6 +112,7 @@ describe('OpenClawBridge', () => {
         const config: OpenClawConfig = {
             enabled: true,
             baseUrl: 'https://openclaw.example.com',
+            outboundPath: '/hooks/colony',
             apiKey: 'k',
             agentId: 'agent-1',
             timeoutMs: 1000,
@@ -155,6 +158,7 @@ describe('OpenClawBridge', () => {
         const config: OpenClawConfig = {
             enabled: true,
             baseUrl: 'https://openclaw.example.com',
+            outboundPath: '/hooks/colony',
             apiKey: 'k',
             agentId: 'agent-1',
             timeoutMs: 1000,

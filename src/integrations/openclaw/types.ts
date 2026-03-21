@@ -1,6 +1,7 @@
 export interface OpenClawConfig {
     enabled: boolean;
     baseUrl: string;
+    outboundPath: string;
     apiKey: string;
     agentId: string;
     timeoutMs: number;
