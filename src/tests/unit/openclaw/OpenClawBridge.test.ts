@@ -148,4 +148,39 @@ describe('OpenClawBridge', () => {
         expect(sendMessage).toHaveBeenCalledTimes(1);
         expect(sendMessage.mock.calls[0][0].sessionKey).toBe('room-allowed');
     });
+
+    it('matches mention by stable agentId, not display name aliases', async () => {
+        const messageBus = new MessageBus();
+        const sendMessage = vi.fn().mockResolvedValue({ status: 200, data: {} });
+        const config: OpenClawConfig = {
+            enabled: true,
+            baseUrl: 'https://openclaw.example.com',
+            apiKey: 'k',
+            agentId: 'agent-1',
+            timeoutMs: 1000,
+            webhookSecret: 's',
+            allowedSkewMs: 1000,
+            roomIds: new Set<string>(),
+        };
+
+        const bridge = new OpenClawBridge({
+            messageBus,
+            client: { sendMessage } as any,
+            mappingStore: new SessionMappingStore(),
+            config,
+        });
+        bridge.start();
+
+        messageBus.publish({
+            id: 'm1',
+            roomId: 'room-a',
+            sender: { id: 'u1', type: 'human', name: 'User' },
+            content: 'hi @openclaw please handle this',
+            mentions: ['openclaw'],
+            timestamp: new Date(),
+        });
+
+        await Promise.resolve();
+        expect(sendMessage).not.toHaveBeenCalled();
+    });
 });

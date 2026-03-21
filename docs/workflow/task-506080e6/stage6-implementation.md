@@ -44,3 +44,17 @@
   - `npm install`
   - `npm run build:server`
   - `npm run test -- src/tests/unit/openclaw/*.test.ts`
+
+## 5. 边界与接口契约（修订）
+- 路由边界：
+  - OpenClaw 是“可加入会话的外部特殊 agent”，不是房间全量消息镜像目标。
+  - 仅当消息 `mentions` 命中 OpenClaw 稳定 `agentId` 时，Colony 才执行出站路由。
+  - `OPENCLAW_ROOM_IDS` 只用于白名单准入，不代表全量同步。
+- Colony 对 OpenClaw 仅提供桥接能力：
+  - `get-messages`：供 OpenClaw 按需拉取会话消息。
+  - `send-message`：供 OpenClaw 主动回写消息到 Colony。
+- `send-message` 契约要求：
+  - 必须携带稳定 `roomId`，否则回写消息无法稳定路由到目标会话。
+  - 若缺少 `roomId`，服务端应拒绝请求并返回可诊断错误。
+- mention 匹配要求：
+  - 优先使用稳定 `agentId`，禁止仅依赖显示名/别名做路由判定，避免改名导致隐性故障。

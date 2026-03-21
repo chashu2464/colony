@@ -254,10 +254,26 @@ export class Agent {
 
         if (name === 'bash' || name === 'shell' || name === 'run_shell_command' || name === 'command_execution') {
             const command = String(input.command ?? input.cmd ?? input.script ?? '').toLowerCase();
-            const cwd = String(input.cwd ?? '').toLowerCase();
+            // cwd from input field, OR extracted from "cd /path && ..." pattern in command
+            let cwd = String(input.cwd ?? '').toLowerCase();
+            if (!cwd) {
+                const cdMatch = command.match(/cd\s+["']?([^"'&|;]+?)["']?\s*&&/);
+                if (cdMatch) cwd = cdMatch[1].trim().toLowerCase();
+            }
             const runsHandlerScript = command.includes('send-message/scripts/handler.sh')
-                || (command.includes('bash scripts/handler.sh') && cwd.includes('/skills/send-message'));
-            return runsHandlerScript;
+                || (command.includes('bash scripts/handler.sh') && cwd.includes('/skills/send-message'))
+                || (command.includes('send-message') && command.includes('handler.sh'));
+
+            if (runsHandlerScript) return true;
+
+            // If the command is just "bash scripts/handler.sh" from an implicit cwd (like codex does),
+            // check if there's a strong send-message receipt in the result to confirm it's this skill.
+            if (command.includes('bash scripts/handler.sh') || command.includes('handler.sh')) {
+                const candidates = [toolCall.result, input.aggregated_output, input.stdout, input.output, input.result];
+                if (candidates.some(c => this.containsMessageReceipt(c))) return true;
+            }
+
+            return false;
         }
 
         return false;
@@ -270,9 +286,11 @@ export class Agent {
             || name === 'shell'
             || name === 'run_shell_command'
             || name === 'command_execution';
+        // Check exit_code/status from input (codex-style) OR isError from merged tool_result (claude-style)
         const hasSuccessfulExecution = input.exit_code === 0
             || input.status === 'completed'
-            || input.status === 'success';
+            || input.status === 'success'
+            || toolCall.isError === false;
 
         const resultCandidates: unknown[] = [
             toolCall.result,
@@ -355,275 +373,275 @@ export class Agent {
         try {
             // Wrap entire processing in try-finally to ensure status is always reset
             try {
-            const sessionName = `agent-${this.id}-room-${message.roomId}`;
-            let round = 0;
-            let lastPendingId: string | null = null; // Track the last pending message for cleanup
+                const sessionName = `agent-${this.id}-room-${message.roomId}`;
+                let round = 0;
+                let lastPendingId: string | null = null; // Track the last pending message for cleanup
 
-            // Setup working directory
-            const workingDir = chatRoom.workingDir || process.cwd();
-            await this.ensureSkillsSymlinks(workingDir);
+                // Setup working directory
+                const workingDir = chatRoom.workingDir || process.cwd();
+                await this.ensureSkillsSymlinks(workingDir);
 
-            // Setup environment isolation for CLI (BUG-CONCURRENCY-001)
-            // Use room-specific config directory to avoid sharing session cache across rooms
-            const sessionConfigDir = path.join(process.cwd(), '.data/sessions', message.roomId);
-            if (!fs.existsSync(sessionConfigDir)) {
-                fs.mkdirSync(sessionConfigDir, { recursive: true });
-            }
-            const claudeConfigDir = this.resolveClaudeConfigDir(sessionConfigDir);
-
-            // Use ContextAssembler to build the initial prompt
-            let currentPrompt = await this.contextAssembler.assemble({
-                agentId: this.id,
-                roomId: message.roomId,
-                currentMessage: message,
-                tokenBudget: 32000, // Increased budget for better context retention
-                includeHistory: true,
-                includeLongTerm: true, // ✅ Enable long-term memory (Mem0)
-                chatRoom: chatRoom, // Pass the chatRoom instance
-            });
-
-            while (round < Agent.MAX_FOLLOW_UP_ROUNDS) {
-                round++;
-
-                const activeSession = this.sessionStore.getActive(this.id, message.roomId);
-
-                // ── Phase 2: Check if session needs sealing ──
-                let promptForThisRound = currentPrompt;
-                if (activeSession) {
-                    const action = this.sessionSealer.shouldTakeAction(activeSession);
-                    if (action.type === 'seal') {
-                        log.info(`[${this.name}] Sealing session ${activeSession.id} (${(action.fillRatio * 100).toFixed(1)}%)`);
-                        const sealed = this.sessionStore.seal(this.id, message.roomId, activeSession.id);
-                        if (sealed) {
-                            activeSession.status = 'sealed'; // Invalidate active state so a new session is started
-
-                            // Delete CLI session cache to force creation of a new session
-                            deleteSession(sessionName);
-
-                            // Generate digest asynchronously (don't block the current invoke)
-                            this.digestGenerator.generate(sealed).then(digest => {
-                                this.sessionStore.setDigest(this.id, message.roomId, sealed.id, digest);
-                                log.info(`[${this.name}] Digest stored for session ${sealed.id}`);
-                            }).catch(err => {
-                                log.error(`[${this.name}] Failed to generate digest:`, err);
-                            });
-
-                            // Inject bootstrap preamble: new session starts fresh (no --resume)
-                            // Create a placeholder new record — it will get real ID after first invoke
-                            promptForThisRound = this.sessionBootstrap.injectInto(currentPrompt, {
-                                ...activeSession,
-                                chainIndex: activeSession.chainIndex + 1,
-                                id: 'pending',
-                                status: 'active',
-                                tokenUsage: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0, cumulative: 0, currentContextLength: 0 },
-                                invocationCount: 0,
-                                createdAt: new Date().toISOString(),
-                                previousSessionId: activeSession.id,
-                            }, sealed);
-                        }
-                    } else if (action.type === 'warn') {
-                        log.warn(`[${this.name}] Context at ${(action.fillRatio * 100).toFixed(1)}% — approaching seal threshold`);
-                    }
+                // Setup environment isolation for CLI (BUG-CONCURRENCY-001)
+                // Use room-specific config directory to avoid sharing session cache across rooms
+                const sessionConfigDir = path.join(process.cwd(), '.data/sessions', message.roomId);
+                if (!fs.existsSync(sessionConfigDir)) {
+                    fs.mkdirSync(sessionConfigDir, { recursive: true });
                 }
+                const claudeConfigDir = this.resolveClaudeConfigDir(sessionConfigDir);
 
-                const existingSession = activeSession?.status === 'active' ? activeSession.id : undefined;
-
-                log.info(`[${this.name}] Invoking LLM (round ${round}) for message from ${message.sender.name}...`);
-
-                // Send a pending placeholder message — will be updated in-place
-                const pendingMsg = chatRoom.sendAgentMessage(this.id, `正在思考...`, [], {
-                    isMonologue: true,
-                    isPending: true,
+                // Use ContextAssembler to build the initial prompt
+                let currentPrompt = await this.contextAssembler.assemble({
+                    agentId: this.id,
+                    roomId: message.roomId,
+                    currentMessage: message,
+                    tokenBudget: 32000, // Increased budget for better context retention
+                    includeHistory: true,
+                    includeLongTerm: true, // ✅ Enable long-term memory (Mem0)
+                    chatRoom: chatRoom, // Pass the chatRoom instance
                 });
-                const pendingId = pendingMsg.id;
-                lastPendingId = pendingId; // Track for cleanup
 
-                const controller = new AbortController();
-                this.activeInvocations.set(message.roomId, controller);
+                while (round < Agent.MAX_FOLLOW_UP_ROUNDS) {
+                    round++;
 
-                try {
-                    const result = await this.modelRouter.invoke(
-                        this.config.model.primary,
-                        promptForThisRound,
-                        {
-                            sessionName,
-                            sessionId: existingSession ?? undefined,
-                            cwd: workingDir, // Set working directory for CLI
-                            signal: controller.signal,
-                            security: { skipPermissions: true, bypassSandbox: true }, // Allow CLI to execute bash skills (send-message, etc.)
-                            attachments: message.metadata?.attachments,
-                            env: {
-                                COLONY_AGENT_ID: this.id,
-                                COLONY_ROOM_ID: message.roomId,
-                                COLONY_API: process.env.COLONY_API ?? 'http://localhost:3001',
-                                ...(process.env.CLAUDE_CODE_SESSION_ACCESS_TOKEN ? { CLAUDE_CODE_SESSION_ACCESS_TOKEN: process.env.CLAUDE_CODE_SESSION_ACCESS_TOKEN } : {}),
-                                // Room-isolated session cache for CLI state.
-                                XDG_CONFIG_HOME: sessionConfigDir,
-                                // Keep Claude auth shared (global or explicit override) to avoid room-scoped login loss.
-                                CLAUDE_CONFIG_DIR: claudeConfigDir,
-                            },
-                        },
-                        this.config.model.fallback,
-                        {
-                            onStatusUpdate: (statusMsg: string) => {
-                                // Update the pending message with status (e.g. "429, switching...")
-                                chatRoom.updateMessage(pendingId, statusMsg, { isPending: true, isMonologue: true });
-                            },
+                    const activeSession = this.sessionStore.getActive(this.id, message.roomId);
+
+                    // ── Phase 2: Check if session needs sealing ──
+                    let promptForThisRound = currentPrompt;
+                    if (activeSession) {
+                        const action = this.sessionSealer.shouldTakeAction(activeSession);
+                        if (action.type === 'seal') {
+                            log.info(`[${this.name}] Sealing session ${activeSession.id} (${(action.fillRatio * 100).toFixed(1)}%)`);
+                            const sealed = this.sessionStore.seal(this.id, message.roomId, activeSession.id);
+                            if (sealed) {
+                                activeSession.status = 'sealed'; // Invalidate active state so a new session is started
+
+                                // Delete CLI session cache to force creation of a new session
+                                deleteSession(sessionName);
+
+                                // Generate digest asynchronously (don't block the current invoke)
+                                this.digestGenerator.generate(sealed).then(digest => {
+                                    this.sessionStore.setDigest(this.id, message.roomId, sealed.id, digest);
+                                    log.info(`[${this.name}] Digest stored for session ${sealed.id}`);
+                                }).catch(err => {
+                                    log.error(`[${this.name}] Failed to generate digest:`, err);
+                                });
+
+                                // Inject bootstrap preamble: new session starts fresh (no --resume)
+                                // Create a placeholder new record — it will get real ID after first invoke
+                                promptForThisRound = this.sessionBootstrap.injectInto(currentPrompt, {
+                                    ...activeSession,
+                                    chainIndex: activeSession.chainIndex + 1,
+                                    id: 'pending',
+                                    status: 'active',
+                                    tokenUsage: { input: 0, output: 0, cacheRead: 0, cacheCreation: 0, cumulative: 0, currentContextLength: 0 },
+                                    invocationCount: 0,
+                                    createdAt: new Date().toISOString(),
+                                    previousSessionId: activeSession.id,
+                                }, sealed);
+                            }
+                        } else if (action.type === 'warn') {
+                            log.warn(`[${this.name}] Context at ${(action.fillRatio * 100).toFixed(1)}% — approaching seal threshold`);
                         }
-                    );
+                    }
 
-                    // ── Log full raw LLM response for debugging ──
-                    log.info(`[${this.name}] ── LLM Response round ${round} (${result.text.length} chars) ──`);
-                    log.info(`[${this.name}] ${result.text}`);
-                    log.info(`[${this.name}] ── End Response ──`);
+                    const existingSession = activeSession?.status === 'active' ? activeSession.id : undefined;
 
-                    // Save session ID to SessionStore
-                    if (result.sessionId) {
-                        const actualCli = result.actualModel ?? this.config.model.primary;
-                        // Look up by exact session ID first, then fall back to any active
-                        let existing = this.sessionStore.getBySessionId(this.id, message.roomId, result.sessionId);
-                        if (!existing) {
-                            // New session ID (either first invocation or fallback model created one)
-                            existing = this.sessionStore.create({
-                                id: result.sessionId,
-                                agentId: this.id,
-                                roomId: message.roomId,
-                                cli: actualCli,
+                    log.info(`[${this.name}] Invoking LLM (round ${round}) for message from ${message.sender.name}...`);
+
+                    // Send a pending placeholder message — will be updated in-place
+                    const pendingMsg = chatRoom.sendAgentMessage(this.id, `正在思考...`, [], {
+                        isMonologue: true,
+                        isPending: true,
+                    });
+                    const pendingId = pendingMsg.id;
+                    lastPendingId = pendingId; // Track for cleanup
+
+                    const controller = new AbortController();
+                    this.activeInvocations.set(message.roomId, controller);
+
+                    try {
+                        const result = await this.modelRouter.invoke(
+                            this.config.model.primary,
+                            promptForThisRound,
+                            {
+                                sessionName,
+                                sessionId: existingSession ?? undefined,
+                                cwd: workingDir, // Set working directory for CLI
+                                signal: controller.signal,
+                                security: { skipPermissions: true, bypassSandbox: true }, // Allow CLI to execute bash skills (send-message, etc.)
+                                attachments: message.metadata?.attachments,
+                                env: {
+                                    COLONY_AGENT_ID: this.id,
+                                    COLONY_ROOM_ID: message.roomId,
+                                    COLONY_API: process.env.COLONY_API ?? 'http://localhost:3001',
+                                    ...(process.env.CLAUDE_CODE_SESSION_ACCESS_TOKEN ? { CLAUDE_CODE_SESSION_ACCESS_TOKEN: process.env.CLAUDE_CODE_SESSION_ACCESS_TOKEN } : {}),
+                                    // Room-isolated session cache for CLI state.
+                                    XDG_CONFIG_HOME: sessionConfigDir,
+                                    // Keep Claude auth shared (global or explicit override) to avoid room-scoped login loss.
+                                    CLAUDE_CONFIG_DIR: claudeConfigDir,
+                                },
+                            },
+                            this.config.model.fallback,
+                            {
+                                onStatusUpdate: (statusMsg: string) => {
+                                    // Update the pending message with status (e.g. "429, switching...")
+                                    chatRoom.updateMessage(pendingId, statusMsg, { isPending: true, isMonologue: true });
+                                },
+                            }
+                        );
+
+                        // ── Log full raw LLM response for debugging ──
+                        log.info(`[${this.name}] ── LLM Response round ${round} (${result.text.length} chars) ──`);
+                        log.info(`[${this.name}] ${result.text}`);
+                        log.info(`[${this.name}] ── End Response ──`);
+
+                        // Save session ID to SessionStore
+                        if (result.sessionId) {
+                            const actualCli = result.actualModel ?? this.config.model.primary;
+                            // Look up by exact session ID first, then fall back to any active
+                            let existing = this.sessionStore.getBySessionId(this.id, message.roomId, result.sessionId);
+                            if (!existing) {
+                                // New session ID (either first invocation or fallback model created one)
+                                existing = this.sessionStore.create({
+                                    id: result.sessionId,
+                                    agentId: this.id,
+                                    roomId: message.roomId,
+                                    cli: actualCli,
+                                });
+                            }
+
+                            // Record transcript entry
+                            this.transcriptWriter.append(this.id, message.roomId, result.sessionId, {
+                                invocationIndex: (existing?.invocationCount ?? 0) + 1,
+                                timestamp: new Date().toISOString(),
+                                prompt: currentPrompt.substring(0, 2000),
+                                response: result.text,
+                                toolCalls: result.toolCalls,
+                                tokenUsage: result.tokenUsage,
                             });
-                        }
 
-                        // Record transcript entry
-                        this.transcriptWriter.append(this.id, message.roomId, result.sessionId, {
-                            invocationIndex: (existing?.invocationCount ?? 0) + 1,
-                            timestamp: new Date().toISOString(),
-                            prompt: currentPrompt.substring(0, 2000),
-                            response: result.text,
-                            toolCalls: result.toolCalls,
-                            tokenUsage: result.tokenUsage,
-                        });
-
-                        // Update token usage for this specific session and log context health
-                        if (result.tokenUsage) {
-                            const updated = this.sessionStore.updateUsage(this.id, message.roomId, result.tokenUsage, result.sessionId);
-                            if (updated) {
-                                logHealth(this.name, updated);
+                            // Update token usage for this specific session and log context health
+                            if (result.tokenUsage) {
+                                const updated = this.sessionStore.updateUsage(this.id, message.roomId, result.tokenUsage, result.sessionId);
+                                if (updated) {
+                                    logHealth(this.name, updated);
+                                }
                             }
                         }
-                    }
 
-                    // Update pending message with actual response content
-                    if (result.text || (result.toolCalls && result.toolCalls.length > 0)) {
-                        chatRoom.updateMessage(pendingId, result.text || '(Silent Execution)', {
-                            isMonologue: true,
-                            isPending: false,
-                            toolCalls: result.toolCalls || [],
-                            cliType: result.actualModel ?? this.config.model.primary,
-                        });
-                        lastPendingId = null; // Message updated, no cleanup needed
-                    } else {
-                        // No content — just clear pending state
-                        chatRoom.updateMessage(pendingId, '(无输出)', {
-                            isMonologue: true,
-                            isPending: false,
-                            cliType: result.actualModel ?? this.config.model.primary,
-                        });
-                        lastPendingId = null; // Message updated, no cleanup needed
-                    }
-
-                    // Check if CLI executed any tools successfully
-                    const toolCalls = result.toolCalls || [];
-                    const hasSendMessage = this.hasSuccessfulSendMessage(toolCalls);
-
-                    if (!hasSendMessage && toolCalls.length > 0) {
-                        log.debug(`[${this.name}] Tool call details: ${JSON.stringify(toolCalls.map(t => ({ name: t.name, input: t.input })))}`);
-                    }
-
-                    if (hasSendMessage) {
-                        // Agent has spoken - done with this message
-                        // Note: Agent now uses 'remember' skill to actively store important memories
-                        break;
-                    }
-
-                    let systemHint = '';
-
-                    if (toolCalls.length === 0) {
-                        // No tools called AND no message sent?
-                        // This usually means the LLM just gave a text response without using send-message.
-                        if (round === 1) {
-                            // First round - give agent one more chance with explicit instruction
-                            const identity = this.contextAssembler.buildIdentitySection(this.config);
-                            const workflow = await this.contextAssembler.buildWorkflowStageSection(message.roomId, this.id);
-                            const participants = this.contextAssembler.buildParticipantsSection(chatRoom);
-
-                            systemHint = `[系统提示] 你在上一轮只输出了文本，但没有调用 send-message 工具。用户看不到你的内心独白，你必须调用 send-message 工具将你的回复发送出去。请现在就调用 send-message。`;
-                            currentPrompt = [identity, workflow, participants, systemHint].filter(Boolean).join('\n\n');
-                            continue;
+                        // Update pending message with actual response content
+                        if (result.text || (result.toolCalls && result.toolCalls.length > 0)) {
+                            chatRoom.updateMessage(pendingId, result.text || '(Silent Execution)', {
+                                isMonologue: true,
+                                isPending: false,
+                                toolCalls: result.toolCalls || [],
+                                cliType: result.actualModel ?? this.config.model.primary,
+                            });
+                            lastPendingId = null; // Message updated, no cleanup needed
                         } else {
-                            // Second round and still no tools - give up to avoid infinite loop
+                            // No content — just clear pending state
+                            chatRoom.updateMessage(pendingId, '(无输出)', {
+                                isMonologue: true,
+                                isPending: false,
+                                cliType: result.actualModel ?? this.config.model.primary,
+                            });
+                            lastPendingId = null; // Message updated, no cleanup needed
+                        }
+
+                        // Check if CLI executed any tools successfully
+                        const toolCalls = result.toolCalls || [];
+                        const hasSendMessage = this.hasSuccessfulSendMessage(toolCalls);
+
+                        if (!hasSendMessage && toolCalls.length > 0) {
+                            log.debug(`[${this.name}] Tool call details: ${JSON.stringify(toolCalls.map(t => ({ name: t.name, input: t.input })))}`);
+                        }
+
+                        if (hasSendMessage) {
+                            // Agent has spoken - done with this message
+                            // Note: Agent now uses 'remember' skill to actively store important memories
                             break;
                         }
-                    }
 
-                    // Tools were called but no send-message. 
-                    // Continue to next round to let LLM see tool outputs and potentially speak.
-                    log.info(`[${this.name}] Tools called (${toolCalls.map(t => t.name).join(', ')}), continuing to round ${round + 1}...`);
+                        let systemHint = '';
 
-                    const failedTools = toolCalls.filter(t => t.isError).map(t => t.name);
+                        if (toolCalls.length === 0) {
+                            // No tools called AND no message sent?
+                            // This usually means the LLM just gave a text response without using send-message.
+                            if (round === 1) {
+                                // First round - give agent one more chance with explicit instruction
+                                const identity = this.contextAssembler.buildIdentitySection(this.config);
+                                const workflow = await this.contextAssembler.buildWorkflowStageSection(message.roomId, this.id);
+                                const participants = this.contextAssembler.buildParticipantsSection(chatRoom);
 
-                    // --- Re-assemble prompt with identity and context for continuation rounds (BUG-CONTEXT-001) ---
-                    // This ensures the agent maintains its identity and room awareness even in deep tool-call loops.
-                    const identity = this.contextAssembler.buildIdentitySection(this.config);
-                    const workflow = await this.contextAssembler.buildWorkflowStageSection(message.roomId, this.id);
-                    const participants = this.contextAssembler.buildParticipantsSection(chatRoom);
+                                systemHint = `[系统提示] 你在上一轮只输出了文本，但没有调用 send-message 工具。用户看不到你的内心独白，你必须调用 send-message 工具将你的回复发送出去。请现在就调用 send-message。`;
+                                currentPrompt = [identity, workflow, participants, systemHint].filter(Boolean).join('\n\n');
+                                continue;
+                            } else {
+                                // Second round and still no tools - give up to avoid infinite loop
+                                break;
+                            }
+                        }
 
-                    if (failedTools.length > 0) {
-                        systemHint = `[系统提示] 你在上一轮执行的以下工具失败了：${failedTools.join(', ')}。请根据工具执行结果分析原因并尝试重试。注意：如果你之前调用了 send-message 但失败了，用户并没有收到你的消息，你必须再次调用成功的 send-message 才能完成任务。`;
-                    } else {
-                        // Tell the agent why it's being re-invoked
-                        systemHint = `[系统提示] 你在上一轮执行了以下工具：${toolCalls.map(t => t.name).join(', ')}，但没有调用 send-message 发送回复。用户看不到你的内心独白，你必须调用 send-message 工具将你的分析结果或回复发送出去。请现在就调用 send-message。`;
-                    }
+                        // Tools were called but no send-message. 
+                        // Continue to next round to let LLM see tool outputs and potentially speak.
+                        log.info(`[${this.name}] Tools called (${toolCalls.map(t => t.name).join(', ')}), continuing to round ${round + 1}...`);
 
-                    currentPrompt = [identity, workflow, participants, systemHint].filter(Boolean).join('\n\n');
-                    continue;
-                } catch (innerErr) {
-                    const innerErrMsg = (innerErr as Error).message ?? '';
+                        const failedTools = toolCalls.filter(t => t.isError).map(t => t.name);
 
-                    // ONLY check the signal itself — don't match error text to avoid
-                    // false positives from CLI errors that contain the word 'aborted'.
-                    if (controller.signal.aborted) {
-                        // Clear stale session so next message starts fresh
-                        // Session aborted — don't delete, let it resume next time
-                        chatRoom.updateMessage(pendingId, `⏹️ 已停止执行`, { isMonologue: true, isPending: false });
+                        // --- Re-assemble prompt with identity and context for continuation rounds (BUG-CONTEXT-001) ---
+                        // This ensures the agent maintains its identity and room awareness even in deep tool-call loops.
+                        const identity = this.contextAssembler.buildIdentitySection(this.config);
+                        const workflow = await this.contextAssembler.buildWorkflowStageSection(message.roomId, this.id);
+                        const participants = this.contextAssembler.buildParticipantsSection(chatRoom);
+
+                        if (failedTools.length > 0) {
+                            systemHint = `[系统提示] 你在上一轮执行的以下工具失败了：${failedTools.join(', ')}。请根据工具执行结果分析原因并尝试重试。注意：如果你之前调用了 send-message 但失败了，用户并没有收到你的消息，你必须再次调用成功的 send-message 才能完成任务。`;
+                        } else {
+                            // Tell the agent why it's being re-invoked
+                            systemHint = `[系统提示] 你在上一轮执行了以下工具：${toolCalls.map(t => t.name).join(', ')}，但没有调用 send-message 发送回复。用户看不到你的内心独白，你必须调用 send-message 工具将你的分析结果或回复发送出去。请现在就调用 send-message。`;
+                        }
+
+                        currentPrompt = [identity, workflow, participants, systemHint].filter(Boolean).join('\n\n');
+                        continue;
+                    } catch (innerErr) {
+                        const innerErrMsg = (innerErr as Error).message ?? '';
+
+                        // ONLY check the signal itself — don't match error text to avoid
+                        // false positives from CLI errors that contain the word 'aborted'.
+                        if (controller.signal.aborted) {
+                            // Clear stale session so next message starts fresh
+                            // Session aborted — don't delete, let it resume next time
+                            chatRoom.updateMessage(pendingId, `⏹️ 已停止执行`, { isMonologue: true, isPending: false });
+                            lastPendingId = null; // Message updated, no cleanup needed
+                            // Don't set status here - let finally block handle it
+                            break; // Exit the while loop, finally will reset status
+                        }
+
+                        if (innerErrMsg.includes('exhausted') || innerErrMsg.includes('rate') || innerErrMsg.includes('429') || innerErrMsg.includes('capacity')) {
+                            chatRoom.updateMessage(pendingId, `⚠️ 模型调用受限: ${innerErrMsg}`, { isMonologue: true, isPending: false, error: innerErrMsg });
+                            lastPendingId = null; // Message updated, no cleanup needed
+                            // Don't set status here - let finally block handle it
+                            break; // Exit the while loop, finally will reset status
+                        }
+
+                        // Other errors — update pending and re-throw to outer catch
+                        chatRoom.updateMessage(pendingId, `❌ 调用出错: ${innerErrMsg}`, { isMonologue: true, isPending: false, error: innerErrMsg });
                         lastPendingId = null; // Message updated, no cleanup needed
-                        // Don't set status here - let finally block handle it
-                        break; // Exit the while loop, finally will reset status
+                        throw innerErr;
+                    } finally {
+                        this.activeInvocations.delete(message.roomId);
                     }
-
-                    if (innerErrMsg.includes('exhausted') || innerErrMsg.includes('rate') || innerErrMsg.includes('429') || innerErrMsg.includes('capacity')) {
-                        chatRoom.updateMessage(pendingId, `⚠️ 模型调用受限: ${innerErrMsg}`, { isMonologue: true, isPending: false, error: innerErrMsg });
-                        lastPendingId = null; // Message updated, no cleanup needed
-                        // Don't set status here - let finally block handle it
-                        break; // Exit the while loop, finally will reset status
-                    }
-
-                    // Other errors — update pending and re-throw to outer catch
-                    chatRoom.updateMessage(pendingId, `❌ 调用出错: ${innerErrMsg}`, { isMonologue: true, isPending: false, error: innerErrMsg });
-                    lastPendingId = null; // Message updated, no cleanup needed
-                    throw innerErr;
-                } finally {
-                    this.activeInvocations.delete(message.roomId);
                 }
-            }
 
-            // Clean up any pending message that wasn't updated (e.g., if MAX_FOLLOW_UP_ROUNDS was reached)
-            if (lastPendingId) {
-                log.warn(`[${this.name}] Cleaning up pending message ${lastPendingId} after loop exit`);
-                chatRoom.updateMessage(lastPendingId, '⚠️ 达到最大轮次限制', {
-                    isMonologue: true,
-                    isPending: false,
-                    error: 'MAX_FOLLOW_UP_ROUNDS reached',
-                });
-            }
+                // Clean up any pending message that wasn't updated (e.g., if MAX_FOLLOW_UP_ROUNDS was reached)
+                if (lastPendingId) {
+                    log.warn(`[${this.name}] Cleaning up pending message ${lastPendingId} after loop exit`);
+                    chatRoom.updateMessage(lastPendingId, '⚠️ 达到最大轮次限制', {
+                        isMonologue: true,
+                        isPending: false,
+                        error: 'MAX_FOLLOW_UP_ROUNDS reached',
+                    });
+                }
             } catch (err) {
                 log.error(`[${this.name}] Error handling message:`, err);
 

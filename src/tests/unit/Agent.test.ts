@@ -122,4 +122,87 @@ describe('Agent send-message success detection', () => {
         ];
         expect(hasSuccessfulSendMessage.call(fakeAgent, toolCalls)).toBe(false);
     });
+
+    it('detects codex-style command_execution with cd-embedded cwd and handler.sh', () => {
+        const toolCalls = [
+            {
+                name: 'command_execution',
+                isError: false,
+                input: {
+                    id: 'item_1',
+                    type: 'command_execution',
+                    command: `/bin/zsh -lc "cd /Users/casu/Documents/Colony/skills/send-message && echo '{\\"content\\":\\"test\\"}' | bash scripts/handler.sh"`,
+                    exit_code: 0,
+                    status: 'completed',
+                    aggregated_output: '{"message":{"id":"be80b6dc-307d-4ce4-9b08-a2fee35ae2cd","roomId":"8fd84b25","content":"test"}}',
+                },
+            },
+        ];
+        expect(hasSuccessfulSendMessage.call(fakeAgent, toolCalls)).toBe(true);
+    });
+
+    it('detects claude-code Bash tool with isError=false and result (no exit_code)', () => {
+        const toolCalls = [
+            {
+                name: 'Bash',
+                isError: false,
+                input: {
+                    command: `cd /Users/casu/Documents/Colony/.claude/skills/send-message && echo '{"content": "收到测试消息 ✓"}' | bash scripts/handler.sh`,
+                    description: 'Send test acknowledgment',
+                },
+                result: '{"message":{"id":"5af4556a-b5f0-40da-9935-4d31c49926a9","roomId":"8fd84b25","sender":{"id":"architect","type":"agent","name":"架构师"},"content":"收到测试消息 ✓","mentions":[]}}',
+            },
+        ];
+        expect(hasSuccessfulSendMessage.call(fakeAgent, toolCalls)).toBe(true);
+    });
+
+    it('does not detect claude-code Bash tool when isError=true', () => {
+        const toolCalls = [
+            {
+                name: 'Bash',
+                isError: true,
+                input: {
+                    command: `cd /Users/casu/Documents/Colony/.claude/skills/send-message && echo '{"content": "test"}' | bash scripts/handler.sh`,
+                },
+                result: 'Error: Invalid JSON format',
+            },
+        ];
+        expect(hasSuccessfulSendMessage.call(fakeAgent, toolCalls)).toBe(false);
+    });
+
+    it('detects codex command_execution with implicit cwd and message receipt', () => {
+        const toolCalls = [
+            {
+                name: 'command_execution',
+                isError: false,
+                input: {
+                    id: 'item_1',
+                    type: 'command_execution',
+                    command: `/bin/zsh -lc "echo '{\\"content\\":\\"test\\"}' | bash scripts/handler.sh"`,
+                    exit_code: 0,
+                    status: 'completed',
+                    aggregated_output: '{"message":{"id":"bc1311fd-441b-42c9-878d-157af8cbd675","roomId":"8fd84b25","content":"test"}}',
+                },
+            },
+        ];
+        expect(hasSuccessfulSendMessage.call(fakeAgent, toolCalls)).toBe(true);
+    });
+
+    it('does not detect command_execution with handler.sh if there is no message receipt', () => {
+        const toolCalls = [
+            {
+                name: 'command_execution',
+                isError: false,
+                input: {
+                    id: 'item_1',
+                    type: 'command_execution',
+                    command: `/bin/zsh -lc "cat file.txt | bash scripts/handler.sh"`,
+                    exit_code: 0,
+                    status: 'completed',
+                    aggregated_output: 'Success but no message id here',
+                },
+            },
+        ];
+        expect(hasSuccessfulSendMessage.call(fakeAgent, toolCalls)).toBe(false);
+    });
 });
