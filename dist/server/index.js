@@ -49,13 +49,42 @@ const Logger_js_1 = require("../utils/Logger.js");
 const SessionRecord_js_1 = require("../session/SessionRecord.js");
 const TranscriptWriter_js_1 = require("../session/TranscriptWriter.js");
 const workflow_js_1 = require("./routes/workflow.js");
+const config_js_1 = require("../integrations/openclaw/config.js");
+const OpenClawClient_js_1 = require("../integrations/openclaw/OpenClawClient.js");
+const sessionMappingStore_js_1 = require("../integrations/openclaw/sessionMappingStore.js");
+const idempotencyStore_js_1 = require("../integrations/openclaw/idempotencyStore.js");
+const OpenClawBridge_js_1 = require("../integrations/openclaw/OpenClawBridge.js");
+const openclawIntegration_js_1 = require("./routes/openclawIntegration.js");
 const log = new Logger_js_1.Logger('Server');
 function createColonyServer(options) {
     const { colony, port = 3001 } = options;
     const app = (0, express_1.default)();
     const server = (0, http_1.createServer)(app);
     const wss = new ws_1.WebSocketServer({ server });
+    const openClawConfig = (0, config_js_1.loadOpenClawConfig)();
+    const openClawMappingStore = new sessionMappingStore_js_1.SessionMappingStore();
+    const openClawIdempotencyStore = new idempotencyStore_js_1.IdempotencyStore();
     app.use((0, cors_1.default)());
+    if (openClawConfig.enabled) {
+        const openClawClient = new OpenClawClient_js_1.OpenClawClient(openClawConfig);
+        const bridge = new OpenClawBridge_js_1.OpenClawBridge({
+            messageBus: colony.messageBus,
+            client: openClawClient,
+            mappingStore: openClawMappingStore,
+            config: openClawConfig,
+        });
+        bridge.start();
+        app.use('/api/integrations/openclaw', (0, openclawIntegration_js_1.createOpenClawIntegrationRouter)({
+            roomManager: colony.chatRoomManager,
+            mappingStore: openClawMappingStore,
+            idempotencyStore: openClawIdempotencyStore,
+            config: openClawConfig,
+        }));
+        log.info('OpenClaw integration enabled');
+    }
+    else {
+        log.info('OpenClaw integration disabled');
+    }
     app.use(express_1.default.json({ limit: '10mb' }));
     // ── Workflow Events ───────────────────────────────
     app.use('/api/workflow', (0, workflow_js_1.createWorkflowRouter)(colony.chatRoomManager));
