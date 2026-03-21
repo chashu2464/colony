@@ -2,11 +2,7 @@
 
 | Commit | Date | Status | Description |
 |---|---|---|---|
-| `7da16a6` | 2026-03-12 | 🟢 GREEN | fix BUG-INT-002: add missing InvokeOptions import in BaseCLIProvider |
-| `30f7ae8` | 2026-03-12 | 🔵 REFACTOR | fix BUG-SEC-002: remove shared instance state and pass options to buildArgs for thread safety |
-| `2e30167` | 2026-03-12 | 🟢 GREEN | fix BUG-INT-001 and BUG-SEC-001: add token validation and opt-in dangerous params |
-| `80e1320` | 2026-03-12 | 🔵 REFACTOR | migrate CLIInvoker to thin provider wrapper |
-| `e2d5936` | 2026-03-12 | 🟢 GREEN | implement provider-based LLM architecture |
-| `5fe2586` | 2026-03-12 | 🔴 RED | add unit test for unified LLM providers |
+| `4de2e2c` | 2026-03-21 | 🟢 GREEN | implement OpenClaw bridge and webhook path |
+| `9d19643` | 2026-03-21 | 🔴 RED | add OpenClaw integration test matrix |
 
-<!-- SIGNATURE: 9ed1d2f1745f1d7c538f8fd801d03ea4f78ecde766af5f044594ba8aaf193b6a -->
+<!-- SIGNATURE: e008e65095ecbf7f86a1803ed6d2f5892d54c0c6a48ebe86cf12fd6ebd149b60 -->
