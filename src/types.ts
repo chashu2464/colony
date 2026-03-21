@@ -17,6 +17,11 @@ export interface AgentConfig {
     rules?: string[];
     /** If true, this agent receives messages when nobody is explicitly @mentioned. */
     isDefault?: boolean;
+    /**
+     * If false, this agent can be mentioned for integrations but will not receive
+     * direct routed invocations from ChatRoom mention routing.
+     */
+    routable?: boolean;
     /** List of explicit skills to load for this agent. */
     skills?: string[];
     /** Session management strategy config. */

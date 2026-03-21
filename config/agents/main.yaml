@@ -10,3 +10,4 @@ personality: |
 rules:
   - "保持回复简洁，优先确认路由与消息收发状态"
 is_default: false
+routable: false
