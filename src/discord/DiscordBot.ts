@@ -6,8 +6,15 @@ import { Logger } from '../utils/Logger.js';
 import type { DiscordConfig, UserSession, MappingMeta } from './types.js';
 import type { Colony } from '../Colony.js';
 import type { ChannelSessionMapper } from './ChannelSessionMapper.js';
+import type { ChatRoom } from '../conversation/ChatRoom.js';
 
 const log = new Logger('DiscordBot');
+
+type CommandSessionResolution = {
+    sessionId?: string;
+    source: 'mapped_channel' | 'user_session' | 'none';
+    userSession?: UserSession;
+};
 
 export class DiscordBot {
     private client: Client;
@@ -419,9 +426,13 @@ export class DiscordBot {
      * Command: Leave current session.
      */
     private async cmdLeave(message: Message): Promise<void> {
-        const userSession = this.userSessions.get(message.author.id);
+        const resolution = this.resolveSessionIdForCommand(message);
+        if (resolution.source === 'mapped_channel') {
+            await message.reply('✅ This channel is already bound to a session. `/colony leave` is only needed for sessions joined via `/colony join`.');
+            return;
+        }
 
-        if (!userSession?.sessionId) {
+        if (!resolution.userSession?.sessionId) {
             await message.reply('❌ You are not in any session.');
             return;
         }
@@ -434,14 +445,13 @@ export class DiscordBot {
      * Command: Show current session.
      */
     private async cmdCurrent(message: Message): Promise<void> {
-        const userSession = this.userSessions.get(message.author.id);
-
-        if (!userSession?.sessionId) {
+        const resolution = this.resolveSessionIdForCommand(message);
+        if (!resolution.sessionId) {
             await message.reply('You are not in any session.');
             return;
         }
 
-        const room = this.colony.chatRoomManager.getRoom(userSession.sessionId);
+        const room = this.colony.chatRoomManager.getRoom(resolution.sessionId);
         if (!room) {
             await message.reply('❌ Session not found.');
             return;
@@ -456,13 +466,17 @@ export class DiscordBot {
             })
             .join(', ');
 
+        const joinedLine = resolution.source === 'mapped_channel'
+            ? 'Joined: via mapped Discord channel'
+            : `Joined: ${resolution.userSession?.joinedAt.toLocaleString()}`;
+
         await message.reply(
             `📍 Current Session\n\n` +
             `Name: **${info.name}**\n` +
             `ID: \`${info.id}\`\n` +
             `Agents: ${agents}\n` +
             `Messages: ${info.messageCount}\n` +
-            `Joined: ${userSession.joinedAt.toLocaleString()}`
+            `${joinedLine}`
         );
     }
 
@@ -470,15 +484,14 @@ export class DiscordBot {
      * Command: Stop/Pause current session.
      */
     private async cmdStop(message: Message): Promise<void> {
-        const userSession = this.userSessions.get(message.author.id);
-
-        if (!userSession?.sessionId) {
+        const resolution = this.resolveSessionIdForCommand(message);
+        if (!resolution.sessionId) {
             await message.reply('You are not in any session.');
             return;
         }
 
         try {
-            this.colony.chatRoomManager.stopRoom(userSession.sessionId);
+            this.colony.chatRoomManager.stopRoom(resolution.sessionId);
             await message.reply('🛑 All generating agent threads in this session have been stopped.');
         } catch (error) {
             await message.reply(`❌ Failed to stop agents: ${(error as Error).message}`);
@@ -489,9 +502,8 @@ export class DiscordBot {
      * Command: Start/Resume current session.
      */
     private async cmdStart(message: Message): Promise<void> {
-        const userSession = this.userSessions.get(message.author.id);
-
-        if (!userSession?.sessionId) {
+        const resolution = this.resolveSessionIdForCommand(message);
+        if (!resolution.sessionId) {
             await message.reply('You are not in any session.');
             return;
         }
@@ -547,27 +559,30 @@ export class DiscordBot {
      * Command: Delete a session.
      */
     private async cmdDelete(message: Message, args: string[]): Promise<void> {
+        let room: ChatRoom | undefined;
         if (args.length === 0) {
-            await message.reply('Usage: `/colony delete <session-id-or-name>`');
-            return;
-        }
-
-        const identifier = args[0];
-        let room = this.colony.chatRoomManager.getRoom(identifier);
-
-        if (!room) {
-            // Try to find by name
-            const roomsByName = this.colony.chatRoomManager.getRoomByName(identifier);
-            if (roomsByName.length === 1) {
-                room = roomsByName[0];
-            } else if (roomsByName.length > 1) {
-                await message.reply(`❌ Multiple sessions found with the name "${identifier}". Please use the exact Session ID instead.`);
+            const mappedSessionId = this.mapper.getSessionByChannel(message.channelId);
+            if (!mappedSessionId) {
+                await message.reply('❌ This channel is not mapped to a session. Use `/colony delete <session-id-or-name>` to avoid accidental deletion.');
                 return;
             }
+            room = this.colony.chatRoomManager.getRoom(mappedSessionId);
+            if (!room) {
+                await message.reply(`❌ Session not found for mapped channel: \`${mappedSessionId}\``);
+                return;
+            }
+        } else {
+            const identifier = args[0];
+            const resolved = this.resolveRoomByIdentifier(identifier);
+            if (resolved.error) {
+                await message.reply(resolved.error);
+                return;
+            }
+            room = resolved.room;
         }
 
         if (!room) {
-            await message.reply(`❌ Session not found: \`${identifier}\``);
+            await message.reply('❌ Session not found.');
             return;
         }
 
@@ -617,9 +632,8 @@ export class DiscordBot {
      */
     private async cmdUpdate(message: Message, args: string[]): Promise<void> {
         // 1. Identify session
-        const mappedSessionId = this.mapper.getSessionByChannel(message.channelId);
-        const userSession = this.userSessions.get(message.author.id);
-        const sessionId = mappedSessionId || userSession?.sessionId;
+        const resolution = this.resolveSessionIdForCommand(message);
+        const sessionId = resolution.sessionId;
 
         if (!sessionId) {
             await message.reply('❌ You are not in a session. Use `/colony join <name>` first or use this command in a session channel.');
@@ -655,19 +669,64 @@ export class DiscordBot {
             `\`${prefix} create <name> [agents] [--dir /path]\` - Create a new session\n` +
             `\`${prefix} list\` - List all sessions\n` +
             `\`${prefix} join <name|id>\` - Join a session\n` +
-            `\`${prefix} leave\` - Leave current session\n` +
-            `\`${prefix} delete <name|id>\` - Delete a session\n` +
+            `\`${prefix} delete <name|id>\` - Delete a session (or delete mapped session directly when no args in mapped channel)\n` +
             `\`${prefix} update <agent1,agent2,...>\` - Update session agents\n` +
-            `\`${prefix} current\` - Show current session\n` +
-            `\`${prefix} stop\` - Pause current session\n` +
-            `\`${prefix} start\` - Resume current session\n\n` +
+            `\`${prefix} current\` - Show current session (supports mapped channels)\n` +
+            `\`${prefix} stop\` - Pause current session (supports mapped channels)\n` +
+            `\`${prefix} start\` - Resume current session (supports mapped channels)\n` +
+            `\`${prefix} leave\` - Leave only \`/colony join\` sessions; mapped channels do not require leave\n\n` +
             `**Status:**\n` +
             `\`${prefix} status\` - Show system status\n` +
             `\`${prefix} agents\` - List all agents\n\n` +
             `**Messaging:**\n` +
-            `After joining a session, send messages directly to chat with agents.\n` +
+            `In mapped session channels, send messages directly without \`${prefix} join\`.\n` +
             `Use \`@agent-name\` to mention specific agents.`
         );
+    }
+
+    private resolveSessionIdForCommand(message: Message): CommandSessionResolution {
+        const mappedSessionId = this.mapper.getSessionByChannel(message.channelId);
+        if (mappedSessionId) {
+            return {
+                sessionId: mappedSessionId,
+                source: 'mapped_channel',
+            };
+        }
+
+        const userSession = this.userSessions.get(message.author.id);
+        if (userSession?.sessionId) {
+            return {
+                sessionId: userSession.sessionId,
+                source: 'user_session',
+                userSession,
+            };
+        }
+
+        return {
+            source: 'none',
+        };
+    }
+
+    private resolveRoomByIdentifier(identifier: string): { room?: ChatRoom; error?: string } {
+        let room = this.colony.chatRoomManager.getRoom(identifier);
+        if (room) {
+            return { room };
+        }
+
+        const roomsByName = this.colony.chatRoomManager.getRoomByName(identifier);
+        if (roomsByName.length === 1) {
+            return { room: roomsByName[0] };
+        }
+
+        if (roomsByName.length > 1) {
+            return {
+                error: `❌ Multiple sessions found with the name "${identifier}". Please use the exact Session ID instead.`,
+            };
+        }
+
+        return {
+            error: `❌ Session not found: \`${identifier}\``,
+        };
     }
 
     /**
