@@ -27,7 +27,8 @@ export class OpenClawBridge {
         this.deps.messageBus.events.on('message', (message) => {
             const isInboundReplay = Boolean(message.metadata?.openclawInbound);
             const skipByRoomPolicy = this.deps.config.roomIds.size > 0 && !this.deps.config.roomIds.has(message.roomId);
-            if (isInboundReplay || skipByRoomPolicy || message.sender.type !== 'human') {
+            const hasOpenClawMention = message.mentions.includes(this.deps.config.agentId);
+            if (isInboundReplay || skipByRoomPolicy || message.sender.type !== 'human' || !hasOpenClawMention) {
                 return;
             }
 
@@ -41,10 +42,20 @@ export class OpenClawBridge {
                 sessionKey: mapping.sessionKey,
                 traceId: mapping.traceId,
                 senderId: message.sender.id,
-                content: message.content,
+                content: this.stripAgentMention(message.content),
             }).catch((error) => {
                 log.error(`OpenClaw outbound failed: ${(error as Error).message}`);
             });
         });
     }
+
+    private stripAgentMention(content: string): string {
+        const escapedAgentId = escapeRegExp(this.deps.config.agentId);
+        const mentionPattern = new RegExp(`(^|\\s)@${escapedAgentId}(?=\\s|$)`, 'g');
+        return content.replace(mentionPattern, ' ').replace(/\s+/g, ' ').trim();
+    }
+}
+
+function escapeRegExp(value: string): string {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }

@@ -29,7 +29,8 @@ describe('OpenClawClient', () => {
         globalThis.fetch = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
-            json: vi.fn().mockResolvedValue({ id: 'resp-1' }),
+            headers: { get: vi.fn().mockReturnValue('application/json') },
+            text: vi.fn().mockResolvedValue('{"id":"resp-1"}'),
         } as unknown as Response);
 
         const client = new OpenClawClient(config);
@@ -48,7 +49,8 @@ describe('OpenClawClient', () => {
         globalThis.fetch = vi.fn().mockResolvedValue({
             ok: false,
             status: 503,
-            json: vi.fn().mockResolvedValue({ error: 'bad gateway' }),
+            headers: { get: vi.fn().mockReturnValue('text/plain') },
+            text: vi.fn().mockResolvedValue('bad gateway'),
         } as unknown as Response);
 
         const client = new OpenClawClient(config);
@@ -60,20 +62,64 @@ describe('OpenClawClient', () => {
         })).rejects.toThrow('OpenClaw upstream error: 503');
     });
 
-    it('throws on invalid JSON response', async () => {
+    it('accepts 2xx response with empty body', async () => {
         globalThis.fetch = vi.fn().mockResolvedValue({
             ok: true,
             status: 200,
-            json: vi.fn().mockRejectedValue(new Error('invalid json')),
+            headers: { get: vi.fn().mockReturnValue('application/json') },
+            text: vi.fn().mockResolvedValue(''),
         } as unknown as Response);
 
         const client = new OpenClawClient(config);
-        await expect(client.sendMessage({
+        const result = await client.sendMessage({
             sessionKey: 'room-1',
             traceId: 'trace-1',
             senderId: 'user-1',
             content: 'hello',
-        })).rejects.toThrow('OpenClaw invalid JSON response');
+        });
+
+        expect(result.status).toBe(200);
+        expect(result.data).toEqual({});
+    });
+
+    it('accepts 2xx response with plain text body', async () => {
+        globalThis.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            status: 202,
+            headers: { get: vi.fn().mockReturnValue('text/plain') },
+            text: vi.fn().mockResolvedValue('queued'),
+        } as unknown as Response);
+
+        const client = new OpenClawClient(config);
+        const result = await client.sendMessage({
+            sessionKey: 'room-1',
+            traceId: 'trace-1',
+            senderId: 'user-1',
+            content: 'hello',
+        });
+
+        expect(result.status).toBe(202);
+        expect(result.data).toEqual({});
+    });
+
+    it('parses JSON body from text when content-type is missing', async () => {
+        globalThis.fetch = vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            headers: { get: vi.fn().mockReturnValue(null) },
+            text: vi.fn().mockResolvedValue('{"accepted":true}'),
+        } as unknown as Response);
+
+        const client = new OpenClawClient(config);
+        const result = await client.sendMessage({
+            sessionKey: 'room-1',
+            traceId: 'trace-1',
+            senderId: 'user-1',
+            content: 'hello',
+        });
+
+        expect(result.status).toBe(200);
+        expect(result.data).toEqual({ accepted: true });
     });
 
     it('throws timeout error when fetch aborts', async () => {

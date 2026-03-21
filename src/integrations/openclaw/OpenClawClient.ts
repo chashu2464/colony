@@ -50,25 +50,63 @@ export class OpenClawClient {
     }
 
     private async parseResponse(response: Response, req: OpenClawOutboundRequest): Promise<OpenClawOutboundResponse> {
-        let data: Record<string, unknown>;
-        try {
-            data = (await response.json()) as Record<string, unknown>;
-        } catch {
-            throw new Error(`OpenClaw invalid JSON response [traceId=${req.traceId}]`);
-        }
+        const rawBody = await response.text();
+        const data = this.tryParseJsonBody(rawBody, response.headers.get('content-type'));
+        const bodySummary = summarizeBody(rawBody);
 
         if (!response.ok) {
             log.warn('OpenClaw returned non-2xx status', {
                 status: response.status,
                 traceId: req.traceId,
                 sessionKey: req.sessionKey,
+                bodySummary,
             });
-            throw new Error(`OpenClaw upstream error: ${response.status} [traceId=${req.traceId}]`);
+            throw new Error(`OpenClaw upstream error: ${response.status} [traceId=${req.traceId}] body=${bodySummary}`);
+        }
+
+        if (!data) {
+            log.debug('OpenClaw accepted request with non-JSON body', {
+                status: response.status,
+                traceId: req.traceId,
+                sessionKey: req.sessionKey,
+                bodySummary,
+            });
         }
 
         return {
             status: response.status,
-            data,
+            data: data ?? {},
         };
     }
+
+    private tryParseJsonBody(rawBody: string, contentType: string | null): Record<string, unknown> | null {
+        if (!rawBody.trim()) {
+            return null;
+        }
+
+        const normalizedType = (contentType ?? '').toLowerCase();
+        const shouldAttemptJson = normalizedType.includes('application/json') || /^[\[{]/.test(rawBody.trim());
+        if (!shouldAttemptJson) {
+            return null;
+        }
+
+        try {
+            const parsed = JSON.parse(rawBody) as unknown;
+            return isRecord(parsed) ? parsed : { value: parsed };
+        } catch {
+            return null;
+        }
+    }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function summarizeBody(rawBody: string): string {
+    const normalized = rawBody.replace(/\s+/g, ' ').trim();
+    if (!normalized) {
+        return '<empty>';
+    }
+    return normalized.length > 160 ? `${normalized.slice(0, 157)}...` : normalized;
 }

@@ -30,6 +30,7 @@ export interface OpenClawProcessResult {
 
 export function createOpenClawIntegrationRouter(deps: OpenClawIntegrationDeps): Router {
     const router = Router();
+    // Inbound bridge callback from OpenClaw (event backflow), not full-room sync.
     router.post('/events', expressRawJson(), async (req, res) => {
         const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : String(req.body ?? '');
         const result = processOpenClawEvent(
