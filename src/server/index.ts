@@ -13,6 +13,12 @@ import type { ColonyEvent, Message, Participant } from '../types.js';
 import { SessionStore } from '../session/SessionRecord.js';
 import { TranscriptWriter } from '../session/TranscriptWriter.js';
 import { createWorkflowRouter } from './routes/workflow.js';
+import { loadOpenClawConfig } from '../integrations/openclaw/config.js';
+import { OpenClawClient } from '../integrations/openclaw/OpenClawClient.js';
+import { SessionMappingStore } from '../integrations/openclaw/sessionMappingStore.js';
+import { IdempotencyStore } from '../integrations/openclaw/idempotencyStore.js';
+import { OpenClawBridge } from '../integrations/openclaw/OpenClawBridge.js';
+import { createOpenClawIntegrationRouter } from './routes/openclawIntegration.js';
 
 const log = new Logger('Server');
 
@@ -26,8 +32,32 @@ export function createColonyServer(options: ServerOptions) {
     const app = express();
     const server = createServer(app);
     const wss = new WebSocketServer({ server });
+    const openClawConfig = loadOpenClawConfig();
+    const openClawMappingStore = new SessionMappingStore();
+    const openClawIdempotencyStore = new IdempotencyStore();
 
     app.use(cors());
+
+    if (openClawConfig.enabled) {
+        const openClawClient = new OpenClawClient(openClawConfig);
+        const bridge = new OpenClawBridge({
+            messageBus: colony.messageBus,
+            client: openClawClient,
+            mappingStore: openClawMappingStore,
+            config: openClawConfig,
+        });
+        bridge.start();
+        app.use('/api/integrations/openclaw', createOpenClawIntegrationRouter({
+            roomManager: colony.chatRoomManager,
+            mappingStore: openClawMappingStore,
+            idempotencyStore: openClawIdempotencyStore,
+            config: openClawConfig,
+        }));
+        log.info('OpenClaw integration enabled');
+    } else {
+        log.info('OpenClaw integration disabled');
+    }
+
     app.use(express.json({ limit: '10mb' }));
 
     // ── Workflow Events ───────────────────────────────
