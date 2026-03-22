@@ -85,7 +85,8 @@ export function processOpenClawEvent(input: OpenClawProcessInput, deps: OpenClaw
         return { status: 404, body: errorBody('ROOM_NOT_FOUND', 'Mapped room does not exist') };
     }
 
-    translateOpenClawEvent(room, event, deps.config.agentId);
+    const senderAgentId = resolveSenderAgentId(event, mapping.externalAgentId, deps.config.agentId);
+    translateOpenClawEvent(room, event, senderAgentId);
     deps.idempotencyStore.markProcessed(event.eventId);
     log.info('OpenClaw event handled', {
         eventId: event.eventId,
@@ -123,6 +124,7 @@ function parseEvent(rawBody: string): OpenClawInboundEvent | null {
             || typeof parsed.payload !== 'object'
             || parsed.payload === null
             || Array.isArray(parsed.payload)
+            || (parsed.agentId !== undefined && typeof parsed.agentId !== 'string')
         ) {
             return null;
         }
@@ -140,6 +142,18 @@ function isSupportedEventType(eventType: string): boolean {
 
 function errorBody(code: string, message: string): Record<string, unknown> {
     return { error: { code, message } };
+}
+
+function resolveSenderAgentId(event: OpenClawInboundEvent, mappingAgentId: string, configAgentId: string): string {
+    const eventAgentId = event.agentId?.trim();
+    if (eventAgentId) {
+        return eventAgentId;
+    }
+    const mappedAgentId = mappingAgentId.trim();
+    if (mappedAgentId) {
+        return mappedAgentId;
+    }
+    return configAgentId.trim();
 }
 
 function expressRawJson() {

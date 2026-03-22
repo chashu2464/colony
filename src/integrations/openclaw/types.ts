@@ -23,6 +23,7 @@ export interface OpenClawInboundEvent {
     eventId: string;
     sessionKey: string;
     traceId: string;
+    agentId?: string;
     eventType: 'run.started' | 'message.completed' | 'run.failed' | string;
     timestamp: string;
     payload: Record<string, unknown>;

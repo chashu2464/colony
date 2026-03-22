@@ -12,12 +12,14 @@ function sign(rawBody: string, timestamp: string, secret: string): string {
 function makeDeps() {
     const systemEvents: string[] = [];
     const agentEvents: string[] = [];
+    const agentSenders: string[] = [];
     const fakeRoom = {
         id: 'room-a',
         sendSystemMessage: (content: string) => {
             systemEvents.push(content);
         },
-        sendAgentMessage: (_agentId: string, content: string) => {
+        sendAgentMessage: (agentId: string, content: string) => {
+            agentSenders.push(agentId);
             agentEvents.push(content);
         },
     } as any;
@@ -55,6 +57,7 @@ function makeDeps() {
         },
         systemEvents,
         agentEvents,
+        agentSenders,
     };
 }
 
@@ -107,6 +110,26 @@ describe('processOpenClawEvent', () => {
         expect(result.status).toBe(200);
         expect(agentEvents).toHaveLength(0);
         expect(systemEvents[0]).toBe('hello');
+    });
+
+    it('prefers event agentId over configured sender agent', () => {
+        const { deps, agentEvents, agentSenders } = makeDeps();
+        const body = JSON.stringify({
+            eventId: 'evt-event-agent',
+            sessionKey: 'session-a',
+            traceId: 'trace-a',
+            agentId: 'main',
+            eventType: 'message.completed',
+            timestamp: new Date().toISOString(),
+            payload: { text: 'hello from main' },
+        });
+        const ts = `${Date.now()}`;
+        const signature = sign(body, ts, deps.config.webhookSecret);
+
+        const result = processOpenClawEvent({ rawBody: body, requestTimestamp: ts, signature }, deps);
+        expect(result.status).toBe(200);
+        expect(agentEvents[0]).toBe('hello from main');
+        expect(agentSenders[0]).toBe('main');
     });
 
     it('rejects invalid signature', () => {
