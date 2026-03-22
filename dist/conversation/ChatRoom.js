@@ -297,7 +297,9 @@ class ChatRoom {
             // Both agents and humans: only route to the FIRST mentioned agent (prevent fan-out)
             const otherIds = mentionIds.filter(id => id !== senderId);
             const agentOnlyIds = otherIds.filter(id => this.agents.has(id));
-            const routeTargets = agentOnlyIds.slice(0, 1); // skip user mentions, pick first agent
+            const routableAgentIds = agentOnlyIds.filter((id) => this.agents.get(id)?.config.routable !== false);
+            const skippedNonRoutableIds = agentOnlyIds.filter((id) => !routableAgentIds.includes(id));
+            const routeTargets = routableAgentIds.slice(0, 1); // skip user mentions, pick first routable agent
             for (const mentionedId of routeTargets) {
                 const agent = this.agents.get(mentionedId);
                 if (agent) {
@@ -307,8 +309,11 @@ class ChatRoom {
                     });
                 }
             }
-            if (agentOnlyIds.length > 1) {
-                log.warn(`${senderIsAgent ? 'Agent' : 'Human'} "${message.sender.name}" mentioned ${agentOnlyIds.length} agents, only routing to first one`);
+            if (skippedNonRoutableIds.length > 0) {
+                log.info(`${senderIsAgent ? 'Agent' : 'Human'} "${message.sender.name}" mentioned ${skippedNonRoutableIds.length} non-routable agent(s), skipping direct agent routing`);
+            }
+            if (routableAgentIds.length > 1) {
+                log.warn(`${senderIsAgent ? 'Agent' : 'Human'} "${message.sender.name}" mentioned ${routableAgentIds.length} routable agents, only routing to first one`);
             }
         }
         else if (!senderIsAgent) {
