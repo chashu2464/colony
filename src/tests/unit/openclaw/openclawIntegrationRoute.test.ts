@@ -10,11 +10,15 @@ function sign(rawBody: string, timestamp: string, secret: string): string {
 }
 
 function makeDeps() {
-    const events: string[] = [];
+    const systemEvents: string[] = [];
+    const agentEvents: string[] = [];
     const fakeRoom = {
         id: 'room-a',
         sendSystemMessage: (content: string) => {
-            events.push(content);
+            systemEvents.push(content);
+        },
+        sendAgentMessage: (_agentId: string, content: string) => {
+            agentEvents.push(content);
         },
     } as any;
 
@@ -49,13 +53,14 @@ function makeDeps() {
             idempotencyStore: new IdempotencyStore(),
             config,
         },
-        events,
+        systemEvents,
+        agentEvents,
     };
 }
 
 describe('processOpenClawEvent', () => {
     it('handles supported event', () => {
-        const { deps, events } = makeDeps();
+        const { deps, agentEvents } = makeDeps();
         const body = JSON.stringify({
             eventId: 'evt-1',
             sessionKey: 'session-a',
@@ -69,7 +74,39 @@ describe('processOpenClawEvent', () => {
 
         const result = processOpenClawEvent({ rawBody: body, requestTimestamp: ts, signature }, deps);
         expect(result.status).toBe(200);
-        expect(events[0]).toContain('Run started');
+        expect(agentEvents[0]).toContain('Run started');
+    });
+
+    it('falls back to system sender when configured agent is missing in room', () => {
+        const { deps, systemEvents, agentEvents } = makeDeps();
+        const body = JSON.stringify({
+            eventId: 'evt-fallback',
+            sessionKey: 'session-a',
+            traceId: 'trace-a',
+            eventType: 'message.completed',
+            timestamp: new Date().toISOString(),
+            payload: { text: 'hello' },
+        });
+        const ts = `${Date.now()}`;
+        const signature = sign(body, ts, deps.config.webhookSecret);
+
+        const fakeRoomWithoutAgent = {
+            id: 'room-a',
+            sendSystemMessage: (content: string) => {
+                systemEvents.push(content);
+            },
+            sendAgentMessage: () => {
+                throw new Error('Agent "agent-1" is not in this room');
+            },
+        } as any;
+        deps.roomManager = {
+            getRoom: (id: string) => (id === 'room-a' ? fakeRoomWithoutAgent : undefined),
+        } as any;
+
+        const result = processOpenClawEvent({ rawBody: body, requestTimestamp: ts, signature }, deps);
+        expect(result.status).toBe(200);
+        expect(agentEvents).toHaveLength(0);
+        expect(systemEvents[0]).toBe('hello');
     });
 
     it('rejects invalid signature', () => {

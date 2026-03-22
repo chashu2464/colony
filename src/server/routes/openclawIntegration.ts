@@ -85,7 +85,7 @@ export function processOpenClawEvent(input: OpenClawProcessInput, deps: OpenClaw
         return { status: 404, body: errorBody('ROOM_NOT_FOUND', 'Mapped room does not exist') };
     }
 
-    translateOpenClawEvent(room, event);
+    translateOpenClawEvent(room, event, deps.config.agentId);
     deps.idempotencyStore.markProcessed(event.eventId);
     log.info('OpenClaw event handled', {
         eventId: event.eventId,
