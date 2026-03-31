@@ -4,6 +4,7 @@ import { Logger } from '../../utils/Logger.js';
 
 const log = new Logger('WorkflowRouter');
 const VALID_ROLES = new Set(['architect', 'developer', 'qa_lead', 'designer', 'tech_lead']);
+const ALLOWED_DECISION_SOURCES = new Set(['stage_map']);
 const eventDispatchAudit = new Map<string, { status: 'success' | 'failed'; dispatchedAt: string; failureReason?: string }>();
 
 type StageEventBody = {
@@ -15,6 +16,11 @@ type StageEventBody = {
     next_actor_role: string;
     next_actor: string;
     decision_source: string;
+};
+
+type RoomAgentLike = {
+    id?: string;
+    name?: string;
 };
 
 function invalid(res: any, details: string[]) {
@@ -44,6 +50,45 @@ function validateContract(body: StageEventBody): string[] {
     return details;
 }
 
+function normalizeRole(value: string | undefined): string | null {
+    if (!value) return null;
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+
+    const normalized = trimmed.toLowerCase().replace(/-/g, '_').replace(/\s+/g, '_');
+    if (VALID_ROLES.has(normalized)) return normalized;
+
+    if (normalized === '架构师') return 'architect';
+    if (normalized === '开发者') return 'developer';
+    if (normalized === 'qa负责人') return 'qa_lead';
+    if (normalized === '设计师') return 'designer';
+    if (normalized === '技术负责人') return 'tech_lead';
+    return null;
+}
+
+function findRoutableAgent(agents: RoomAgentLike[], nextActor: string): RoomAgentLike | undefined {
+    return agents.find((agent) => agent.id === nextActor || agent.name === nextActor);
+}
+
+function validateRoutingSemantics(
+    body: StageEventBody,
+    routableAgent: RoomAgentLike | undefined,
+): string[] {
+    const details: string[] = [];
+    if (!ALLOWED_DECISION_SOURCES.has(body.decision_source)) {
+        details.push('decision_source must be stage_map');
+    }
+
+    if (!routableAgent) return details;
+
+    const expectedRole = normalizeRole(body.next_actor_role);
+    const actorRole = normalizeRole(routableAgent.id) ?? normalizeRole(routableAgent.name);
+    if (expectedRole && actorRole && expectedRole !== actorRole) {
+        details.push(`next_actor_role "${body.next_actor_role}" does not match next_actor "${body.next_actor}"`);
+    }
+    return details;
+}
+
 export function createWorkflowRouter(roomManager: ChatRoomManager) {
     const router = Router();
 
@@ -64,8 +109,9 @@ export function createWorkflowRouter(roomManager: ChatRoomManager) {
                 return;
             }
 
-            const routable = room.getAgents().some((agent) => agent.id === next_actor || agent.name === next_actor);
-            if (!routable) {
+            const agents = room.getAgents() as RoomAgentLike[];
+            const routedAgent = findRoutableAgent(agents, next_actor);
+            if (!routedAgent) {
                 const details = [`actor "${next_actor}" is not routable in room "${roomId}"`];
                 log.warn('Workflow routing blocked: non-routable actor', {
                     code: 'WF_ROUTING_NON_ROUTABLE_AGENT',
@@ -85,7 +131,23 @@ export function createWorkflowRouter(roomManager: ChatRoomManager) {
                 return;
             }
 
-            const previous = eventDispatchAudit.get(event_id);
+            const semanticErrors = validateRoutingSemantics(body, routedAgent);
+            if (semanticErrors.length > 0) {
+                log.warn('Workflow routing blocked: invalid semantics', {
+                    code: 'WF_STAGE_TRANSITION_INVALID',
+                    event_id,
+                    roomId,
+                    next_actor,
+                    next_actor_role,
+                    decision_source,
+                    semanticErrors,
+                });
+                invalid(res, semanticErrors);
+                return;
+            }
+
+            const auditKey = `${roomId}:${event_id}`;
+            const previous = eventDispatchAudit.get(auditKey);
             if (previous?.status === 'success') {
                 log.info('Workflow event replay ignored (already dispatched)', {
                     event_id,
@@ -125,7 +187,7 @@ export function createWorkflowRouter(roomManager: ChatRoomManager) {
                 const message = `🔄 工作流已从 Stage ${from_stage} 推进到 Stage ${to_stage}。 @${next_actor} 请开始处理。`;
                 room.sendSystemMessage(message, [next_actor]);
                 const dispatchedAt = new Date().toISOString();
-                eventDispatchAudit.set(event_id, { status: 'success', dispatchedAt });
+                eventDispatchAudit.set(auditKey, { status: 'success', dispatchedAt });
 
                 res.json({
                     success: true,
@@ -138,7 +200,7 @@ export function createWorkflowRouter(roomManager: ChatRoomManager) {
             } catch (dispatchError: any) {
                 const failureReason = dispatchError?.message ?? 'unknown dispatch error';
                 const dispatchedAt = new Date().toISOString();
-                eventDispatchAudit.set(event_id, {
+                eventDispatchAudit.set(auditKey, {
                     status: 'failed',
                     dispatchedAt,
                     failureReason,

@@ -5,25 +5,31 @@ import { createWorkflowRouter } from '../../../server/routes/workflow.js';
 type FakeAgent = { id: string; name: string };
 
 function makeServer(options?: { throwOnSend?: boolean | (() => boolean) }) {
-    const sentMessages: Array<{ content: string; mentions?: string[] }> = [];
+    const sentMessages: Array<{ roomId: string; content: string; mentions?: string[] }> = [];
     const agents: FakeAgent[] = [
+        { id: 'architect', name: '架构师' },
         { id: 'developer', name: '开发者' },
         { id: 'qa-lead', name: 'QA负责人' },
     ];
 
-    const room = {
+    const room = (roomId: string) => ({
         getAgents: () => agents,
         sendSystemMessage: (content: string, mentions?: string[]) => {
             const shouldThrow = typeof options?.throwOnSend === 'function'
                 ? options.throwOnSend()
                 : options?.throwOnSend;
             if (shouldThrow) throw new Error('simulated dispatch transport failure');
-            sentMessages.push({ content, mentions });
+            sentMessages.push({ roomId, content, mentions });
         },
-    };
+    });
+
+    const rooms = new Map([
+        ['room-1', room('room-1')],
+        ['room-2', room('room-2')],
+    ]);
 
     const roomManager = {
-        getRoom: (id: string) => (id === 'room-1' ? room : undefined),
+        getRoom: (id: string) => rooms.get(id),
     } as any;
 
     const app = express();
@@ -135,6 +141,30 @@ describe('workflow route /api/workflow/events', () => {
         expect(sentMessages).toHaveLength(1);
     });
 
+    it('isolates idempotency by room scope for same event_id across rooms', async () => {
+        const { server, port, sentMessages } = makeServer();
+        const payload = {
+            type: 'WORKFLOW_STAGE_CHANGED',
+            from_stage: 6,
+            to_stage: 7,
+            event_id: 'wf-idemp-cross-room-001',
+            next_actor_role: 'qa_lead',
+            next_actor: 'qa-lead',
+            decision_source: 'stage_map',
+        };
+
+        const room1 = await post(port, { ...payload, roomId: 'room-1' });
+        const room2 = await post(port, { ...payload, roomId: 'room-2' });
+        server.close();
+
+        expect(room1.status).toBe(200);
+        expect(room2.status).toBe(200);
+        expect(room1.body.status).toBeUndefined();
+        expect(room2.body.status).toBeUndefined();
+        expect(sentMessages).toHaveLength(2);
+        expect(sentMessages.map((msg) => msg.roomId).sort()).toEqual(['room-1', 'room-2']);
+    });
+
     it('allows controlled retry after prior dispatch failure for same event_id', async () => {
         let attempts = 0;
         const { server, port, sentMessages } = makeServer({
@@ -163,5 +193,43 @@ describe('workflow route /api/workflow/events', () => {
         expect(second.status).toBe(200);
         expect(second.body.replay).toBe(true);
         expect(sentMessages).toHaveLength(1);
+    });
+
+    it('rejects forged decision_source fail-closed', async () => {
+        const { server, port, sentMessages } = makeServer();
+        const result = await post(port, {
+            type: 'WORKFLOW_STAGE_CHANGED',
+            roomId: 'room-1',
+            from_stage: 6,
+            to_stage: 7,
+            event_id: 'wf-sec-forged-source-001',
+            next_actor_role: 'qa_lead',
+            next_actor: 'qa-lead',
+            decision_source: 'manual_override',
+        });
+        server.close();
+
+        expect(result.status).toBe(400);
+        expect(result.body.error.code).toBe('WF_STAGE_TRANSITION_INVALID');
+        expect(sentMessages).toHaveLength(0);
+    });
+
+    it('rejects forged role/actor mismatch fail-closed', async () => {
+        const { server, port, sentMessages } = makeServer();
+        const result = await post(port, {
+            type: 'WORKFLOW_STAGE_CHANGED',
+            roomId: 'room-1',
+            from_stage: 6,
+            to_stage: 7,
+            event_id: 'wf-sec-forged-role-001',
+            next_actor_role: 'architect',
+            next_actor: 'developer',
+            decision_source: 'stage_map',
+        });
+        server.close();
+
+        expect(result.status).toBe(400);
+        expect(result.body.error.code).toBe('WF_STAGE_TRANSITION_INVALID');
+        expect(sentMessages).toHaveLength(0);
     });
 });
