@@ -3,7 +3,7 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for src/session/SessionBootstrap.ts</title>
+    <title>Code coverage report for src/conversation/MentionRouter.ts</title>
     <meta charset="utf-8" />
     <link rel="stylesheet" href="../../prettify.css" />
     <link rel="stylesheet" href="../../base.css" />
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/session</a> SessionBootstrap.ts</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/conversation</a> MentionRouter.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">76% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>19/25</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">56.25% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>9/16</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/2</span>
+                <span class='fraction'>5/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">80% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/7</span>
+                <span class='fraction'>16/20</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -111,7 +111,9 @@
 <a name='L46'></a><a href='#L46'>46</a>
 <a name='L47'></a><a href='#L47'>47</a>
 <a name='L48'></a><a href='#L48'>48</a>
-<a name='L49'></a><a href='#L49'>49</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L49'></a><a href='#L49'>49</a>
+<a name='L50'></a><a href='#L50'>50</a>
+<a name='L51'></a><a href='#L51'>51</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -128,83 +130,87 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">15x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// ── Colony: Session Bootstrap ────────────────────────────
-// Builds the context injection packet for new sessions.
-// Tells the agent who it is, what came before, and how to look up old records.
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import * as fs from 'fs';
+import * as path from 'path';
+import * as yaml from 'yaml';
+import type { Message } from '../types.js';
 &nbsp;
-import type { SessionRecord } from './SessionRecord.js';
-&nbsp;
-export interface BootstrapPacket {
-    /** The synthesized preamble to prepend to the first prompt */
-    preamble: string;
+export interface MentionRoutingRule {
+    sourceMention: string;
+    intentKeywords: string[];
+    targetMention: string;
+    routingHint: string;
 }
 &nbsp;
-export class SessionBootstrap {
-    /**
-     * Build the bootstrap preamble for a new session.
-     * @param newSession the freshly created session record (status: active)
-     * @param previousSession the sealed session that preceded this one
-     */
-<span class="fstat-no" title="function not covered" >    build(n</span>ewSession: SessionRecord, previousSession: SessionRecord): BootstrapPacket {
-        const digest = <span class="cstat-no" title="statement not covered" >previousSession.digest ?? '（摘要生成失败，请使用搜索工具查询旧记录）';</span>
-        const chainNum = <span class="cstat-no" title="statement not covered" >newSession.chainIndex + 1;</span>
-        const prevNum = <span class="cstat-no" title="statement not covered" >previousSession.chainIndex + 1;</span>
+interface MentionRoutingConfig {
+    rules?: MentionRoutingRule[];
+}
 &nbsp;
-        const preamble = <span class="cstat-no" title="statement not covered" >`## ⚡ Session 连续性说明（系统自动注入）</span>
+export class MentionRouter {
+    constructor(private readonly rules: MentionRoutingRule[]) {}
 &nbsp;
-你是 **Session #${chainNum}**（接续自 Session #${prevNum}，因上下文接近上限自动交接）。
-&nbsp;
-### 上一个 Session 的工作摘要
-${digest}
-&nbsp;
-### 可用的回溯工具
-如果你不确定之前做过什么、为什么这样决策、某个文件从哪来，**不要猜**：
-- 使用 \`get-session-history\` 技能搜索旧 session 记录
-- 搜索关键词即可定位到具体的对话片段
-&nbsp;
-### 你的当前任务
-继续处理以下消息：`;
-&nbsp;
-<span class="cstat-no" title="statement not covered" >        return { preamble };</span>
+    static fromDefaultConfig(): MentionRouter {
+        const configPath = process.env.COLONY_ROUTING_CONFIG
+            ?? path.join(process.cwd(), 'config', 'routing.yaml');
+        <span class="missing-if-branch" title="if path not taken" >I</span>if (!fs.existsSync(configPath)) <span class="cstat-no" title="statement not covered" >return new MentionRouter([]);</span>
+        try {
+            const raw = fs.readFileSync(configPath, 'utf-8');
+            const parsed = yaml.parse(raw) as MentionRoutingConfig;
+            return new MentionRouter(parsed?.rules ?? <span class="branch-1 cbranch-no" title="branch not covered" >[])</span>;
+        } catch {
+<span class="cstat-no" title="statement not covered" >            return new MentionRouter([]);</span>
+        }
     }
 &nbsp;
-    /**
-     * Inject the bootstrap preamble into an existing prompt string.
-     */
-<span class="fstat-no" title="function not covered" >    injectInto(p</span>rompt: string, newSession: SessionRecord, previousSession: SessionRecord): string {
-        const packet = <span class="cstat-no" title="statement not covered" >this.build(newSession, previousSession);</span>
-<span class="cstat-no" title="statement not covered" >        return `${packet.preamble}\n\n${prompt}`;</span>
+    route(message: Message, resolvedMentions: string[], resolveMention: (mention: string) =&gt; string | null): { mentionIds: string[]; routingHint?: string } {
+        const content = message.content.toLowerCase();
+        const rawMentions = [...message.content.matchAll(/@(\S+)/g)].map(m =&gt; m[1].toLowerCase());
+        for (const rule of this.rules) {
+            const sourceId = resolveMention(rule.sourceMention);
+            const sourceMention = rule.sourceMention.toLowerCase();
+            const sourceMatched = rawMentions.includes(sourceMention)
+                || resolvedMentions.includes(rule.sourceMention)
+                || (!!sourceId &amp;&amp; <span class="branch-3 cbranch-no" title="branch not covered" >resolvedMentions.includes(sourceId));</span>
+            const keywordMatched = rule.intentKeywords.some(k =&gt; content.includes(k.toLowerCase()));
+            <span class="missing-if-branch" title="else path not taken" >E</span>if (!sourceMatched || <span class="branch-1 cbranch-no" title="branch not covered" >!keywordMatched) c</span>ontinue;
+            const targetId = <span class="cstat-no" title="statement not covered" >resolveMention(rule.targetMention);</span>
+<span class="cstat-no" title="statement not covered" >            if (!targetId) <span class="cstat-no" title="statement not covered" >continue;</span></span>
+<span class="cstat-no" title="statement not covered" >            return { mentionIds: [targetId], routingHint: rule.routingHint };</span>
+        }
+        return { mentionIds: resolvedMentions };
     }
 }
 &nbsp;</pre></td></tr></table></pre>

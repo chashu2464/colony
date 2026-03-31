@@ -23,30 +23,30 @@
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">64.7% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/17</span>
+                <span class='fraction'>11/17</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">50% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>0/6</span>
+                <span class='fraction'>3/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">40% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>0/5</span>
+                <span class='fraction'>2/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">0% </span>
+                <span class="strong">68.75% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/16</span>
+                <span class='fraction'>11/16</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line low'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -113,23 +113,23 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">22x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
+<span class="cline-any cline-yes">8x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -156,23 +156,23 @@ type Listener&lt;T&gt; = (data: T) =&gt; void;
 &nbsp;
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export class EventBus&lt;EventMap extends {}&gt; {
-    private listeners = <span class="cstat-no" title="statement not covered" >new Map&lt;keyof EventMap, Set&lt;Listener&lt;never&gt;&gt;&gt;();</span>
+    private listeners = new Map&lt;keyof EventMap, Set&lt;Listener&lt;never&gt;&gt;&gt;();
 &nbsp;
-<span class="fstat-no" title="function not covered" >    on&lt;K extends keyof EventMap&gt;(e</span>vent: K, listener: Listener&lt;EventMap[K]&gt;): () =&gt; void {
-<span class="cstat-no" title="statement not covered" >        if (!this.listeners.has(event)) {</span>
-<span class="cstat-no" title="statement not covered" >            this.listeners.set(event, new Set());</span>
+    on&lt;K extends keyof EventMap&gt;(event: K, listener: Listener&lt;EventMap[K]&gt;): () =&gt; void {
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (!this.listeners.has(event)) {
+            this.listeners.set(event, new Set());
         }
-        const set = <span class="cstat-no" title="statement not covered" >this.listeners.get(event)!;</span>
-<span class="cstat-no" title="statement not covered" >        set.add(listener as Listener&lt;never&gt;);</span>
-<span class="cstat-no" title="statement not covered" >        return <span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>et.delete(listener as Listener&lt;never&gt;);</span></span>
+        const set = this.listeners.get(event)!;
+        set.add(listener as Listener&lt;never&gt;);
+        return <span class="fstat-no" title="function not covered" >() =&gt; <span class="cstat-no" title="statement not covered" >s</span>et.delete(listener as Listener&lt;never&gt;);</span>
     }
 &nbsp;
-<span class="fstat-no" title="function not covered" >    emit&lt;K extends keyof EventMap&gt;(e</span>vent: K, data: EventMap[K]): void {
-        const set = <span class="cstat-no" title="statement not covered" >this.listeners.get(event);</span>
-<span class="cstat-no" title="statement not covered" >        if (set) {</span>
-<span class="cstat-no" title="statement not covered" >            for (const listener of set) {</span>
-<span class="cstat-no" title="statement not covered" >                try {</span>
-                    (<span class="cstat-no" title="statement not covered" >listener as Listener&lt;EventMap[K]&gt;)(data);</span>
+    emit&lt;K extends keyof EventMap&gt;(event: K, data: EventMap[K]): void {
+        const set = this.listeners.get(event);
+        if (set) {
+            for (const listener of set) {
+                try {
+                    (listener as Listener&lt;EventMap[K]&gt;)(data);
                 } catch (err) {
 <span class="cstat-no" title="statement not covered" >                    console.error(`[EventBus] Error in listener for "${String(event)}":`, err);</span>
                 }
@@ -199,7 +199,7 @@ export class EventBus&lt;EventMap extends {}&gt; {
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2026-03-20T16:11:54.326Z
+                at 2026-03-31T09:14:36.456Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

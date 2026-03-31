@@ -210,32 +210,170 @@ function get_next_actor_role() {
       elif [ ! -z "$tl" ] && [ "$tl" != "null" ]; then
         echo "tech_lead"
       else
-        echo "developer"
+        echo "architect"
       fi
       ;;
-    *) echo "developer" ;;
+    *) echo "" ;;
   esac
+}
+
+function generate_event_id() {
+  local from="$1"
+  local to="$2"
+  local ts
+  ts=$(date -u +"%Y%m%dT%H%M%SZ")
+  local rand
+  rand=$(openssl rand -hex 4 2>/dev/null || echo "$RANDOM")
+  echo "wf_${ROOM_ID}_${from}_${to}_${ts}_${rand}"
+}
+
+function resolve_routing_decision() {
+  local to="$1"
+  local role
+  role=$(get_next_actor_role "$to")
+  if [ -z "$role" ] || [ "$role" == "null" ]; then
+    jq -n --arg to "$to" \
+      '{"result":"block","reason":"WF_STAGE_TRANSITION_INVALID","details":["no stage-role mapping for target stage \($to)"]}'
+    return 0
+  fi
+  local actor
+  actor=$(jq -r --arg role "$role" '.assignments[$role] // .roles[$role] // empty' "$WORKFLOW_FILE")
+
+  if [ -z "$actor" ] || [ "$actor" == "null" ]; then
+    jq -n --arg role "$role" \
+      '{"result":"block","reason":"WF_ROUTING_MISSING_ASSIGNMENT","details":["assignment for role \($role) is empty"]}'
+    return 0
+  fi
+
+  jq -n --arg role "$role" --arg actor "$actor" \
+    '{"result":"ok","routing":{"next_actor_role":$role,"next_actor":$actor,"decision_source":"stage_map"}}'
 }
 
 function notify_server() {
   local from=$1
   local to=$2
-  local role=$(get_next_actor_role $to)
-  local actor=$(jq -r --arg role "$role" '.assignments[$role] // empty' "$WORKFLOW_FILE")
-  
-  if [ ! -z "$actor" ] && [ "$actor" != "null" ]; then
-    local port="${PORT:-3001}"
-    (sleep 2 && curl -X POST "http://localhost:${port}/api/workflow/events" \
-      -H "Content-Type: application/json" \
-      -d "{
-        \"type\": \"WORKFLOW_STAGE_CHANGED\",
-        \"roomId\": \"$ROOM_ID\",
-        \"from_stage\": $from,
-        \"to_stage\": $to,
-        \"next_actor\": \"$actor\"
-      }" \
-      --silent --show-error > /dev/null 2>&1 || echo "Warning: Failed to send workflow event notification" >&2) &
+  local event_id="${3:-}"
+
+  # Stage 9 is terminal; no wake-up target required.
+  if [ "$to" -ge 9 ]; then
+    local terminal_event_id
+    terminal_event_id="${event_id:-$(generate_event_id "$from" "$to")}"
+    jq -n --arg event_id "$terminal_event_id" \
+      '{"result":"ok","event_id":$event_id,"routing":null,"dispatch":{"status":"skipped","dispatched_at":null}}'
+    return 0
   fi
+
+  local routing_result
+  routing_result=$(resolve_routing_decision "$to")
+  if [ "$(echo "$routing_result" | jq -r '.result')" != "ok" ]; then
+    echo "$routing_result"
+    return 0
+  fi
+
+  local role actor decision_source
+  role=$(echo "$routing_result" | jq -r '.routing.next_actor_role')
+  actor=$(echo "$routing_result" | jq -r '.routing.next_actor')
+  decision_source=$(echo "$routing_result" | jq -r '.routing.decision_source')
+  local current_event_id
+  current_event_id="${event_id:-$(generate_event_id "$from" "$to")}"
+  local port="${PORT:-3001}"
+  local url="http://localhost:${port}/api/workflow/events"
+
+  local payload
+  payload=$(jq -n \
+    --arg room_id "$ROOM_ID" \
+    --arg event_id "$current_event_id" \
+    --arg role "$role" \
+    --arg actor "$actor" \
+    --arg decision_source "$decision_source" \
+    --argjson from "$from" \
+    --argjson to "$to" \
+    '{
+      type: "WORKFLOW_STAGE_CHANGED",
+      roomId: $room_id,
+      from_stage: $from,
+      to_stage: $to,
+      event_id: $event_id,
+      next_actor_role: $role,
+      next_actor: $actor,
+      decision_source: $decision_source
+    }')
+
+  local response_file="${WORKFLOW_FILE}.notify.response.$$"
+  local http_code
+  http_code=$(curl -sS -o "$response_file" -w "%{http_code}" -X POST "$url" \
+    -H "Content-Type: application/json" \
+    -d "$payload" 2>/dev/null || echo "000")
+  local response_body
+  response_body=$(cat "$response_file" 2>/dev/null || echo '{}')
+  rm -f "$response_file"
+  if ! echo "$response_body" | jq . >/dev/null 2>&1; then
+    response_body='{}'
+  fi
+
+  if [ "$http_code" == "200" ]; then
+    local dispatch_status dispatched_at failure_reason replay
+    dispatch_status=$(echo "$response_body" | jq -r '.dispatch.status // "success"')
+    dispatched_at=$(echo "$response_body" | jq -r '.dispatch.dispatched_at // empty')
+    failure_reason=$(echo "$response_body" | jq -r '.dispatch.failure_reason // empty')
+    replay=$(echo "$response_body" | jq -r '.replay // false')
+    jq -n \
+      --arg event_id "$current_event_id" \
+      --arg role "$role" \
+      --arg actor "$actor" \
+      --arg decision_source "$decision_source" \
+      --arg status "$dispatch_status" \
+      --arg dispatched_at "$dispatched_at" \
+      --arg failure_reason "$failure_reason" \
+      --argjson replay "$replay" \
+      '{
+        result: "ok",
+        event_id: $event_id,
+        routing: { next_actor_role: $role, next_actor: $actor, decision_source: $decision_source },
+        dispatch: {
+          status: $status,
+          dispatched_at: (if $dispatched_at == "" then null else $dispatched_at end),
+          failure_reason: (if $failure_reason == "" then null else $failure_reason end),
+          replay: $replay
+        }
+      }'
+    return 0
+  fi
+
+  if [ "$http_code" == "400" ] && echo "$response_body" | jq -e '.reason == "WF_ROUTING_NON_ROUTABLE_AGENT"' >/dev/null 2>&1; then
+    echo "$response_body"
+    return 0
+  fi
+
+  if [ "$http_code" == "400" ] && echo "$response_body" | jq -e '.error.code == "WF_STAGE_TRANSITION_INVALID"' >/dev/null 2>&1; then
+    echo "$response_body" | jq -c '{result:"block",reason:"WF_STAGE_TRANSITION_INVALID",details:(.error.details // ["invalid workflow stage transition event contract"])}'
+    return 0
+  fi
+
+  local failure_detail
+  if [ "$http_code" == "000" ]; then
+    failure_detail="event route unavailable"
+  else
+    failure_detail="workflow event route returned HTTP $http_code"
+  fi
+
+  jq -n \
+    --arg event_id "$current_event_id" \
+    --arg role "$role" \
+    --arg actor "$actor" \
+    --arg decision_source "$decision_source" \
+    --arg failure "$failure_detail" \
+    '{
+      result: "ok",
+      event_id: $event_id,
+      routing: { next_actor_role: $role, next_actor: $actor, decision_source: $decision_source },
+      dispatch: {
+        status: "failed",
+        dispatched_at: (now | todateiso8601),
+        failure_reason: "WF_EVENT_DISPATCH_FAILED: \($failure)",
+        replay: false
+      }
+    }'
 }
 
 # --- Git Helpers ---
@@ -674,6 +812,13 @@ case "$ACTION" in
       fi
     fi
 
+    NOTIFY_RESULT=$(notify_server "$CURRENT" "$NEXT")
+    NOTIFY_OUTCOME=$(echo "$NOTIFY_RESULT" | jq -r '.result // "ok"')
+    if [ "$NOTIFY_OUTCOME" == "block" ]; then
+      echo "$NOTIFY_RESULT"
+      exit $EXIT_VALIDATION
+    fi
+
     # Advance Stage
     TASK_ID=$(echo "$STATE" | jq -r '.task_id')
     BRANCH_NAME="feature/task-$TASK_ID"
@@ -719,9 +864,34 @@ case "$ACTION" in
     STATUS="active"
     if [ "$NEXT" -eq 9 ]; then STATUS="completed"; fi
     
+    ROUTING_AUDIT=$(echo "$NOTIFY_RESULT" | jq -c '.routing // null')
+    DISPATCH_AUDIT=$(echo "$NOTIFY_RESULT" | jq -c '.dispatch // null')
+    EVENT_ID=$(echo "$NOTIFY_RESULT" | jq -r '.event_id // empty')
     UCD_AUDIT_ENTRY=$(echo "$STATE" | jq -c '.ucd')
-    ENTRY=$(jq -n --argjson from "$CURRENT" --argjson to "$NEXT" --arg act "next" --arg actor "$COLONY_AGENT_ID" --arg notes "$NOTES" --arg hash "$HASH" --argjson ucd "$UCD_AUDIT_ENTRY" \
-      '{from_stage: $from, to_stage: $to, action: $act, actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'", ucd: $ucd }')
+    ENTRY=$(jq -n \
+      --argjson from "$CURRENT" \
+      --argjson to "$NEXT" \
+      --arg act "next" \
+      --arg actor "$COLONY_AGENT_ID" \
+      --arg notes "$NOTES" \
+      --arg hash "$HASH" \
+      --arg event_id "$EVENT_ID" \
+      --argjson ucd "$UCD_AUDIT_ENTRY" \
+      --argjson routing "$ROUTING_AUDIT" \
+      --argjson dispatch "$DISPATCH_AUDIT" \
+      '{
+        from_stage: $from,
+        to_stage: $to,
+        action: $act,
+        actor: $actor,
+        notes: $notes,
+        git_commit_hash: $hash,
+        timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'",
+        event_id: (if $event_id == "" then null else $event_id end),
+        routing: $routing,
+        dispatch: $dispatch,
+        ucd: $ucd
+      }')
     
     NEW_STATE=$(echo "$STATE" | jq --arg next "$NEXT" --arg name "${STAGES[$NEXT]}" --arg status "$STATUS" --argjson entry "$ENTRY" \
       '.current_stage = ($next|tonumber) | .stage_name = $name | .status = $status | .history += [$entry]')
@@ -732,7 +902,6 @@ case "$ACTION" in
     fi
 
     save_state "$NEW_STATE"
-    notify_server $CURRENT $NEXT
     echo "$NEW_STATE"
     ;;
 
@@ -783,15 +952,44 @@ case "$ACTION" in
       exit $EXIT_GENERAL
     fi
 
+    NOTIFY_RESULT=$(notify_server "$CURRENT" "$TARGET")
+    NOTIFY_OUTCOME=$(echo "$NOTIFY_RESULT" | jq -r '.result // "ok"')
+    if [ "$NOTIFY_OUTCOME" == "block" ]; then
+      echo "$NOTIFY_RESULT"
+      exit $EXIT_VALIDATION
+    fi
+
     HASH=$(get_git_hash)
-    ENTRY=$(jq -n --argjson from "$CURRENT" --argjson to "$TARGET" --arg act "$ACTION" --arg actor "$COLONY_AGENT_ID" --arg notes "$REASON" --arg hash "$HASH" \
-      '{from_stage: $from, to_stage: $to, action: $act, actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'" }')
+    ROUTING_AUDIT=$(echo "$NOTIFY_RESULT" | jq -c '.routing // null')
+    DISPATCH_AUDIT=$(echo "$NOTIFY_RESULT" | jq -c '.dispatch // null')
+    EVENT_ID=$(echo "$NOTIFY_RESULT" | jq -r '.event_id // empty')
+    ENTRY=$(jq -n \
+      --argjson from "$CURRENT" \
+      --argjson to "$TARGET" \
+      --arg act "$ACTION" \
+      --arg actor "$COLONY_AGENT_ID" \
+      --arg notes "$REASON" \
+      --arg hash "$HASH" \
+      --arg event_id "$EVENT_ID" \
+      --argjson routing "$ROUTING_AUDIT" \
+      --argjson dispatch "$DISPATCH_AUDIT" \
+      '{
+        from_stage: $from,
+        to_stage: $to,
+        action: $act,
+        actor: $actor,
+        notes: $notes,
+        git_commit_hash: $hash,
+        timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'",
+        event_id: (if $event_id == "" then null else $event_id end),
+        routing: $routing,
+        dispatch: $dispatch
+      }')
     
     NEW_STATE=$(echo "$STATE" | jq --arg target "$TARGET" --arg name "${STAGES[$TARGET]}" --argjson entry "$ENTRY" \
       '.current_stage = ($target|tonumber) | .stage_name = $name | .status = "active" | .history += [$entry]')
     
     save_state "$NEW_STATE"
-    notify_server $CURRENT $TARGET
     echo "$NEW_STATE"
     ;;
 

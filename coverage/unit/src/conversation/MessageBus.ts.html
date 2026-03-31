@@ -3,15 +3,15 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for src/llm/providers/GeminiProvider.ts</title>
+    <title>Code coverage report for src/conversation/MessageBus.ts</title>
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="../../../prettify.css" />
-    <link rel="stylesheet" href="../../../base.css" />
-    <link rel="shortcut icon" type="image/x-icon" href="../../../favicon.png" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style type='text/css'>
         .coverage-summary .sorter {
-            background-image: url(../../../sort-arrow-sprite.png);
+            background-image: url(../../sort-arrow-sprite.png);
         }
     </style>
 </head>
@@ -19,34 +19,34 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../../../index.html">All files</a> / <a href="index.html">src/llm/providers</a> GeminiProvider.ts</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">src/conversation</a> MessageBus.ts</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">83.33% </span>
+                <span class="strong">73.91% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>20/24</span>
+                <span class='fraction'>17/23</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">69.69% </span>
+                <span class="strong">50% </span>
                 <span class="quiet">Branches</span>
-                <span class='fraction'>23/33</span>
+                <span class='fraction'>3/6</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">100% </span>
+                <span class="strong">40% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>5/5</span>
+                <span class='fraction'>2/5</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
-                <span class="strong">86.95% </span>
+                <span class="strong">73.91% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>20/23</span>
+                <span class='fraction'>17/23</span>
             </div>
         
             
@@ -61,7 +61,7 @@
             </div>
         </template>
     </div>
-    <div class='status-line high'></div>
+    <div class='status-line medium'></div>
     <pre><table class="coverage">
 <tr><td class="line-count quiet"><a name='L1'></a><a href='#L1'>1</a>
 <a name='L2'></a><a href='#L2'>2</a>
@@ -129,7 +129,23 @@
 <a name='L64'></a><a href='#L64'>64</a>
 <a name='L65'></a><a href='#L65'>65</a>
 <a name='L66'></a><a href='#L66'>66</a>
-<a name='L67'></a><a href='#L67'>67</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L67'></a><a href='#L67'>67</a>
+<a name='L68'></a><a href='#L68'>68</a>
+<a name='L69'></a><a href='#L69'>69</a>
+<a name='L70'></a><a href='#L70'>70</a>
+<a name='L71'></a><a href='#L71'>71</a>
+<a name='L72'></a><a href='#L72'>72</a>
+<a name='L73'></a><a href='#L73'>73</a>
+<a name='L74'></a><a href='#L74'>74</a>
+<a name='L75'></a><a href='#L75'>75</a>
+<a name='L76'></a><a href='#L76'>76</a>
+<a name='L77'></a><a href='#L77'>77</a>
+<a name='L78'></a><a href='#L78'>78</a>
+<a name='L79'></a><a href='#L79'>79</a>
+<a name='L80'></a><a href='#L80'>80</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -137,45 +153,32 @@
 <span class="cline-any cline-yes">2x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">7x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">2x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">1x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-yes">3x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -184,81 +187,117 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-yes">4x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-yes">1x</span>
-<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">3x</span>
+<span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-yes">3x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { BaseCLIProvider } from '../BaseCLIProvider.js';
-import { LLMCapabilities, TokenUsage, ToolCall } from '../types.js';
-import { Logger } from '../../utils/Logger.js';
-import { InvokeOptions } from '../../types.js';
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-yes">11x</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">// ── Colony: Message Bus ──────────────────────────────────
+// Pub-sub message routing for chat rooms.
+// Supports broadcast and targeted (@mention) delivery.
 &nbsp;
-const log = new Logger('GeminiProvider');
+import { EventBus } from '../utils/EventBus.js';
+import { Logger } from '../utils/Logger.js';
+import type { Message, ColonyEvent } from '../types.js';
 &nbsp;
-export class GeminiProvider extends BaseCLIProvider {
-    readonly name = 'gemini';
-    readonly capabilities: LLMCapabilities = {
-        streaming: true,
-        toolUse: true,
-        attachments: false, // Gemini CLI doesn't support --file yet
-        sessionResume: true,
-    };
+const log = new Logger('MessageBus');
 &nbsp;
-    protected buildArgs(prompt: string, sessionId: string | null, files: string[], options: InvokeOptions): string[] {
-        const args = ['-p', prompt, '--output-format', 'stream-json', '--yolo'];
-        <span class="missing-if-branch" title="if path not taken" >I</span>if (sessionId) <span class="cstat-no" title="statement not covered" >args.push('--resume', sessionId);</span>
-        <span class="missing-if-branch" title="if path not taken" >I</span>if (files &amp;&amp; files.length &gt; 0) {
-<span class="cstat-no" title="statement not covered" >            log.warn(`Gemini CLI does not support --file parameter. Skipping ${files.length} attachment(s).`);</span>
+interface MessageBusEvents {
+    'message': Message;
+    'colony_event': ColonyEvent;
+}
+&nbsp;
+export class MessageBus {
+    readonly events = new EventBus&lt;MessageBusEvents&gt;();
+&nbsp;
+    // Per-room subscriber callbacks
+    private roomSubscribers = new Map&lt;string, Set&lt;(message: Message) =&gt; void&gt;&gt;();
+&nbsp;
+    /**
+     * Subscribe to messages in a specific room.
+     * Returns unsubscribe function.
+     */
+    subscribe(roomId: string, callback: (message: Message) =&gt; void): () =&gt; void {
+        <span class="missing-if-branch" title="else path not taken" >E</span>if (!this.roomSubscribers.has(roomId)) {
+            this.roomSubscribers.set(roomId, new Set());
         }
-        return args;
+        const subs = this.roomSubscribers.get(roomId)!;
+        subs.add(callback);
+&nbsp;
+        log.debug(`New subscriber for room ${roomId} (total: ${subs.size})`);
+&nbsp;
+        return <span class="fstat-no" title="function not covered" >() =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >            subs.delete(callback);</span>
+<span class="cstat-no" title="statement not covered" >            if (subs.size === 0) {</span>
+<span class="cstat-no" title="statement not covered" >                this.roomSubscribers.delete(roomId);</span>
+            }
+        };
     }
 &nbsp;
-    protected extractText(event: Record&lt;string, unknown&gt;): string | null {
-        if (event.type === 'message' &amp;&amp; event.role === 'assistant') {
-            return (event.content as string) ?? <span class="branch-1 cbranch-no" title="branch not covered" >null;</span>
+    /**
+     * Publish a message to a room — delivered to all subscribers.
+     */
+    publish(message: Message): void {
+        log.debug(`Publishing message in room ${message.roomId} from ${message.sender.name}`);
+&nbsp;
+        // Room-specific delivery
+        const subs = this.roomSubscribers.get(message.roomId);
+        if (subs) {
+            for (const callback of subs) {
+                try {
+                    callback(message);
+                } catch (err) {
+<span class="cstat-no" title="statement not covered" >                    log.error('Subscriber error:', err);</span>
+                }
+            }
         }
-        return null;
+&nbsp;
+        // Global event
+        this.events.emit('message', message);
+        this.events.emit('colony_event', { type: 'message', data: message });
     }
 &nbsp;
-    protected extractSessionId(event: Record&lt;string, unknown&gt;): string | null {
-        if (event.type === 'init' &amp;&amp; event.session_id) {
-            return event.session_id as string;
-        }
-        return null;
+    /**
+     * Dispatch a ColonyEvent to subscribers.
+     */
+<span class="fstat-no" title="function not covered" >    emitColonyEvent(e</span>vent: ColonyEvent): void {
+<span class="cstat-no" title="statement not covered" >        this.events.emit('colony_event', event);</span>
     }
 &nbsp;
-    protected extractToolUse(event: Record&lt;string, unknown&gt;): ToolCall[] {
-        <span class="missing-if-branch" title="if path not taken" >I</span>if (event.type === 'tool_use') {
-<span class="cstat-no" title="statement not covered" >            return [{</span>
-                id: event.tool_id as string,
-                name: event.tool_name as string,
-                input: (event.parameters ?? {}) as Record&lt;string, unknown&gt;,
-            }];
-        <span class="missing-if-branch" title="if path not taken" >I</span>} else if (event.type === 'tool_result') {
-<span class="cstat-no" title="statement not covered" >            return [{</span>
-                id: event.tool_id as string,
-                name: 'tool_result_placeholder', // Name will be overridden by merge if ID exists
-                result: event.output as string,
-                isError: event.status === 'error',
-                input: {} // Result doesn't have input, but interface requires it
-            }];
-        }
-        return [];
-    }
-&nbsp;
-    protected extractTokenUsage(event: Record&lt;string, unknown&gt;): TokenUsage | null {
-        if (event.type === 'result' &amp;&amp; (event.usage || event.stats)) {
-            const usage = (event.usage ?? <span class="branch-1 cbranch-no" title="branch not covered" >event.stats) as Record&lt;string, number&gt;;</span>
-            return { input: usage.input_tokens ?? <span class="branch-1 cbranch-no" title="branch not covered" >0, o</span>utput: usage.output_tokens ?? <span class="branch-1 cbranch-no" title="branch not covered" >0 }</span>;
-        }
-        return null;
+    /**
+     * Remove all subscribers for a room.
+     */
+<span class="fstat-no" title="function not covered" >    clearRoom(r</span>oomId: string): void {
+<span class="cstat-no" title="statement not covered" >        this.roomSubscribers.delete(roomId);</span>
     }
 }
 &nbsp;</pre></td></tr></table></pre>
@@ -270,14 +309,14 @@ export class GeminiProvider extends BaseCLIProvider {
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
                 at 2026-03-31T09:14:36.456Z
             </div>
-        <script src="../../../prettify.js"></script>
+        <script src="../../prettify.js"></script>
         <script>
             window.onload = function () {
                 prettyPrint();
             };
         </script>
-        <script src="../../../sorter.js"></script>
-        <script src="../../../block-navigation.js"></script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
     </body>
 </html>
     
