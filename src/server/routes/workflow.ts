@@ -7,6 +7,7 @@ import { Logger } from '../../utils/Logger.js';
 const log = new Logger('WorkflowRouter');
 const ROUTABLE_ROLES = new Set(['architect', 'developer', 'qa_lead', 'designer']);
 const ALLOWED_DECISION_SOURCES = new Set(['stage_map']);
+const ALLOWED_WORKFLOW_VERSIONS = new Set(['v1', 'v2']);
 
 type DispatchState = {
     status: 'success' | 'failed';
@@ -16,6 +17,7 @@ type DispatchState = {
 };
 
 type WorkflowRoutingRecord = {
+    workflow_version: string;
     from_stage: number;
     to_stage: number;
     next_actor_role: string;
@@ -37,7 +39,7 @@ function loadWorkflowRoutingRecord(roomId: string, eventId: string): WorkflowRou
     }
     try {
         const raw = fs.readFileSync(stateFile, 'utf8');
-        const parsed = JSON.parse(raw) as { history?: unknown[] };
+        const parsed = JSON.parse(raw) as { workflow_version?: string; history?: unknown[] };
         if (!Array.isArray(parsed.history)) {
             return null;
         }
@@ -47,6 +49,7 @@ function loadWorkflowRoutingRecord(roomId: string, eventId: string): WorkflowRou
                 continue;
             }
             return {
+                workflow_version: String(entry.workflow_version ?? parsed.workflow_version ?? 'v1'),
                 from_stage: Number(entry.from_stage),
                 to_stage: Number(entry.to_stage),
                 next_actor_role: String(entry.routing?.next_actor_role ?? ''),
@@ -77,6 +80,7 @@ export function createWorkflowRouter(roomManager: ChatRoomManager) {
             const {
                 type,
                 roomId,
+                workflow_version,
                 from_stage,
                 to_stage,
                 next_actor_role,
@@ -88,6 +92,7 @@ export function createWorkflowRouter(roomManager: ChatRoomManager) {
             const missingFields = [
                 ['type', type],
                 ['roomId', roomId],
+                ['workflow_version', workflow_version],
                 ['from_stage', from_stage],
                 ['to_stage', to_stage],
                 ['next_actor_role', next_actor_role],
@@ -109,6 +114,10 @@ export function createWorkflowRouter(roomManager: ChatRoomManager) {
             }
             if (!Number.isInteger(from_stage) || !Number.isInteger(to_stage)) {
                 invalidTransition(res, ['from_stage and to_stage must be integers']);
+                return;
+            }
+            if (!ALLOWED_WORKFLOW_VERSIONS.has(String(workflow_version))) {
+                invalidTransition(res, [`workflow_version is invalid: ${String(workflow_version)}`]);
                 return;
             }
             if (!ROUTABLE_ROLES.has(next_actor_role)) {
@@ -136,6 +145,7 @@ export function createWorkflowRouter(roomManager: ChatRoomManager) {
             if (
                 expectedRouting.from_stage !== from_stage ||
                 expectedRouting.to_stage !== to_stage ||
+                expectedRouting.workflow_version !== workflow_version ||
                 expectedRouting.next_actor_role !== next_actor_role ||
                 expectedRouting.next_actor !== next_actor ||
                 expectedRouting.decision_source !== decision_source
@@ -178,6 +188,7 @@ export function createWorkflowRouter(roomManager: ChatRoomManager) {
                 room.sendSystemMessage(message, [next_actor], {
                     workflow_event_id: event_id,
                     workflow_room_id: roomId,
+                    workflow_version,
                     workflow_from_stage: from_stage,
                     workflow_to_stage: to_stage,
                     workflow_next_actor_role: next_actor_role,

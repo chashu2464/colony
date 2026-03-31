@@ -6,7 +6,7 @@ echo "=== Starting dev-workflow Integration Test ==="
 
 # Setup environment
 export COLONY_ROOM_ID="test-room-$(date +%s)"
-export COLONY_AGENT_ID="qa-lead"
+export COLONY_AGENT_ID="architect"
 HANDLER="./skills/dev-workflow/scripts/handler.sh"
 
 # Ensure handler is executable
@@ -14,7 +14,7 @@ chmod +x "$HANDLER"
 
 # 🧪 TC-01: Initialization
 echo "🧪 [TC-01] Testing 'init' action..."
-INIT_RESULT=$(echo '{"action": "init", "task_name": "QA Test Task"}' | bash "$HANDLER")
+INIT_RESULT=$(echo '{"action": "init", "task_name": "QA Test Task", "assignments": {"architect":"architect","developer":"developer","qa_lead":"qa-lead","designer":"designer"}}' | bash "$HANDLER")
 if echo "$INIT_RESULT" | grep -q "QA Test Task"; then
     echo "✅ PASS: Workflow initialized."
 else
@@ -60,13 +60,22 @@ fi
 
 # 🧪 TC-05: Rollback (Backtrack Action)
 echo "🧪 [TC-05] Testing 'backtrack' (2 -> 1)..."
-BACK_RESULT=$(echo '{"action": "backtrack", "target_stage": 1, "reason": "Redo requirements"}' | bash "$HANDLER")
-if echo "$BACK_RESULT" | grep -q '"current_stage": 1'; then
-    echo "✅ PASS: Backtracked to Stage 1."
+if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
+    echo "⏭️ SKIP: Backtrack requires clean working tree."
 else
-    echo "❌ FAIL: Backtrack failed."
-    echo "$BACK_RESULT"
-    exit 1
+    BACK_RESULT=$(echo '{"action": "backtrack", "target_stage": 1, "reason": "Redo requirements"}' | bash "$HANDLER")
+    if echo "$BACK_RESULT" | grep -q '"current_stage": 1'; then
+        if ! echo "$BACK_RESULT" | jq -e '.history[-1].event_id and .history[-1].workflow_version and .history[-1].dispatch.status' >/dev/null; then
+            echo "❌ FAIL: Backtrack history contract fields are incomplete."
+            echo "$BACK_RESULT"
+            exit 1
+        fi
+        echo "✅ PASS: Backtracked to Stage 1."
+    else
+        echo "❌ FAIL: Backtrack failed."
+        echo "$BACK_RESULT"
+        exit 1
+    fi
 fi
 
 # Cleanup

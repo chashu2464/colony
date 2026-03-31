@@ -29,7 +29,7 @@ ROOM_ID="${COLONY_ROOM_ID:-default}"
 WORKFLOW_FILE="$WORKFLOW_DIR/$ROOM_ID.json"
 LOCK_DIR="$WORKFLOW_FILE.lock"
 
-STAGES=(
+STAGES_V1=(
   "0. Brainstorming"
   "1. Initial Requirements (IR)"
   "2. System/Architectural Design (SR/AR)"
@@ -40,6 +40,15 @@ STAGES=(
   "7. Integration Testing"
   "8. Go-Live Review"
   "9. Completed"
+)
+
+STAGES_V2=(
+  "0. Discovery"
+  "1. Design"
+  "2. Build"
+  "3. Verify"
+  "4. Release"
+  "5. Completed"
 )
 
 # --- Concurrency Control ---
@@ -181,10 +190,103 @@ function validate_ucd_gate() {
   node "$validator" "$payload"
 }
 
+# --- Workflow Version Helpers ---
+
+function workflow_version_or_default() {
+  local version="$1"
+  if [ "$version" == "v2" ]; then
+    echo "v2"
+    return 0
+  fi
+  echo "v1"
+}
+
+function stages_count_for_version() {
+  local version="$1"
+  if [ "$version" == "v2" ]; then
+    echo "${#STAGES_V2[@]}"
+    return 0
+  fi
+  echo "${#STAGES_V1[@]}"
+}
+
+function stage_name_for_version() {
+  local version="$1"
+  local stage="$2"
+  if [ "$version" == "v2" ]; then
+    echo "${STAGES_V2[$stage]}"
+    return 0
+  fi
+  echo "${STAGES_V1[$stage]}"
+}
+
+function owner_role_for_stage() {
+  local version="$1"
+  local stage="$2"
+  if [ "$version" == "v2" ]; then
+    case "$stage" in
+      0|1|4) echo "architect" ;;
+      2) echo "developer" ;;
+      3) echo "qa_lead" ;;
+      *) echo "" ;;
+    esac
+    return 0
+  fi
+  case "$stage" in
+    0|1|2|8) echo "architect" ;;
+    3|6) echo "developer" ;;
+    4|5|7) echo "qa_lead" ;;
+    *) echo "" ;;
+  esac
+}
+
+function stage_requires_approval() {
+  local version="$1"
+  local stage="$2"
+  if [ "$version" == "v2" ]; then
+    case "$stage" in
+      1|3|4) return 0 ;;
+      *) return 1 ;;
+    esac
+  fi
+  case "$stage" in
+    2|3|4|5|7|8) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+function validate_extensions_payload() {
+  local extensions="$1"
+  if [ -z "$extensions" ] || [ "$extensions" == "null" ]; then
+    echo '{"ok":true}'
+    return 0
+  fi
+
+  local result
+  result=$(echo "$extensions" | jq -c '
+    if type != "object" then
+      {ok:false,error:"extensions must be an object"}
+    elif (.board.blocked // [] | type) != "array" then
+      {ok:false,error:"extensions.board.blocked must be an array"}
+    elif (.board.blocked // [] | map(has("block_reason") and (.block_reason|type=="string") and (.block_reason|length>0)) | all) != true then
+      {ok:false,error:"extensions.board.blocked entries must include non-empty block_reason"}
+    elif (.board.blocked // [] | map(has("owner") and (.owner|type=="string") and (.owner|length>0)) | all) != true then
+      {ok:false,error:"extensions.board.blocked entries must include non-empty owner"}
+    elif (.cross_agent.task_cards // [] | map((.status // "") | IN("todo","in_progress","blocked","done")) | all) != true then
+      {ok:false,error:"extensions.cross_agent.task_cards status must be one of todo/in_progress/blocked/done"}
+    elif (.cross_agent.task_cards // [] | length) > 100 then
+      {ok:false,error:"extensions.cross_agent.task_cards exceeds max size 100"}
+    else
+      {ok:true}
+    end')
+  echo "$result"
+}
+
 # --- Notification Helper ---
 
 function get_next_actor_role() {
   local stage=$1
+  local version="${2:-v1}"
   
   # Try to use the new SSOT parser
   local script_path="scripts/parse-workflow-table.js"
@@ -197,11 +299,21 @@ function get_next_actor_role() {
   fi
 
   # Fallback to hardcoded logic
-  case $stage in
+  if [ "$version" == "v2" ]; then
+    case "$stage" in
+      0|1|4) echo "architect" ;;
+      2) echo "developer" ;;
+      3) echo "qa_lead" ;;
+      *) echo "developer" ;;
+    esac
+    return 0
+  fi
+
+  case "$stage" in
     0|1|2) echo "architect" ;;
     3|6) echo "developer" ;;
     4|5|7) echo "qa_lead" ;;
-    8) 
+    8)
       # Stage 8 approval owner migrated to architect; keep tech_lead fallback for legacy states.
       local ar=$(jq -r '.assignments["architect"] // .roles["architect"] // empty' "$WORKFLOW_FILE")
       local tl=$(jq -r '.assignments["tech_lead"] // .roles["tech_lead"] // empty' "$WORKFLOW_FILE")
@@ -238,16 +350,20 @@ function resolve_routing_decision() {
   local state_json="$1"
   local from_stage="$2"
   local to_stage="$3"
+  local version="$4"
+  local stages_count
+  stages_count=$(stages_count_for_version "$version")
+  local terminal_stage=$((stages_count - 1))
 
-  # Stage 9 (Completed) is terminal - no routing needed
-  if [ "$to_stage" -eq 9 ]; then
+  # Completed stage is terminal - no routing needed
+  if [ "$to_stage" -eq "$terminal_stage" ]; then
     jq -n \
       '{result:"pass",routing:{next_actor_role:"none",next_actor:"system",decision_source:"terminal_state"}}'
     return 0
   fi
 
   local role
-  role=$(get_next_actor_role "$to_stage")
+  role=$(get_next_actor_role "$to_stage" "$version")
   if [ -z "$role" ] || [ "$role" == "null" ] || ! is_routable_role "$role"; then
     jq -n \
       --argjson from "$from_stage" \
@@ -290,19 +406,21 @@ function notify_server() {
   local actor="$4"
   local event_id="$5"
   local decision_source="${6:-stage_map}"
+  local workflow_version="${7:-v1}"
   local port="${PORT:-3001}"
 
   local payload
   payload=$(jq -n \
     --arg type "WORKFLOW_STAGE_CHANGED" \
     --arg roomId "$ROOM_ID" \
+    --arg workflow_version "$workflow_version" \
     --argjson from_stage "$from" \
     --argjson to_stage "$to" \
     --arg next_actor_role "$role" \
     --arg next_actor "$actor" \
     --arg event_id "$event_id" \
     --arg decision_source "$decision_source" \
-    '{type:$type,roomId:$roomId,from_stage:$from_stage,to_stage:$to_stage,next_actor_role:$next_actor_role,next_actor:$next_actor,event_id:$event_id,decision_source:$decision_source}')
+    '{type:$type,roomId:$roomId,workflow_version:$workflow_version,from_stage:$from_stage,to_stage:$to_stage,next_actor_role:$next_actor_role,next_actor:$next_actor,event_id:$event_id,decision_source:$decision_source}')
 
   local response
   response=$(curl -X POST "http://localhost:${port}/api/workflow/events" \
@@ -595,12 +713,27 @@ case "$ACTION" in
     OVERRIDE_REQUESTED=$(echo "$INPUT" | jq -r '.override_requested // false')
     OVERRIDE_REASON=$(echo "$INPUT" | jq -r '.override_reason // ""')
     OVERRIDE_UCD_REQUIRED=$(echo "$INPUT" | jq -r 'if has("override_ucd_required") then .override_ucd_required else "null" end')
+    WORKFLOW_VERSION=$(echo "$INPUT" | jq -r '.workflow_version // "v1"')
+    WORKFLOW_VERSION=$(workflow_version_or_default "$WORKFLOW_VERSION")
     ASSIGNMENTS=$(echo "$INPUT" | jq -c '.assignments // .roles // {"architect":null,"qa_lead":null,"developer":null,"designer":null}')
+    EXTENSIONS=$(echo "$INPUT" | jq -c '.extensions // {
+      board_mode: false,
+      cross_agent_mode: false,
+      board: {todo: [], in_progress: [], blocked: [], done: []},
+      cross_agent: {enabled: false, main_owner: null, contributors: [], task_cards: []}
+    }')
     
     # Simple ID validation
     INVALID_ID=$(echo "$ASSIGNMENTS" | jq -r 'to_entries[] | select(.value != null) | select(.value | contains("/") or contains("@")) | .key')
     if [ ! -z "$INVALID_ID" ]; then
       echo "{\"error\": \"Invalid agent ID for role(s): $INVALID_ID\", \"exit_code\": $EXIT_VALIDATION}"
+      exit $EXIT_VALIDATION
+    fi
+
+    EXT_VALIDATION=$(validate_extensions_payload "$EXTENSIONS")
+    if [ "$(echo "$EXT_VALIDATION" | jq -r '.ok')" != "true" ]; then
+      EXT_ERROR=$(echo "$EXT_VALIDATION" | jq -r '.error')
+      echo "{\"error\": \"$EXT_ERROR\", \"exit_code\": $EXIT_VALIDATION}"
       exit $EXIT_VALIDATION
     fi
 
@@ -637,8 +770,9 @@ case "$ACTION" in
     # Create sandbox worktree immediately on init to support parallel work from start
     create_sandbox "$TASK_ID" "$BRANCH_NAME" || exit $?
 
-    STATE=$(jq -n --arg id "$TASK_ID" --arg name "$TASK_NAME" --arg desc "$DESCRIPTION" --argjson assign "$ASSIGNMENTS" --arg stage_name "${STAGES[0]}" --argjson ucd "$UCD_AUDIT" \
-      '{task_id: $id, task_name: $name, description: $desc, current_stage: 0, stage_name: $stage_name, status: "active", assignments: $assign, ucd: $ucd, artifacts: [], reviews: [], history: []}')
+    STAGE_ZERO_NAME=$(stage_name_for_version "$WORKFLOW_VERSION" 0)
+    STATE=$(jq -n --arg id "$TASK_ID" --arg name "$TASK_NAME" --arg desc "$DESCRIPTION" --arg workflow_version "$WORKFLOW_VERSION" --argjson assign "$ASSIGNMENTS" --arg stage_name "$STAGE_ZERO_NAME" --argjson ucd "$UCD_AUDIT" --argjson extensions "$EXTENSIONS" \
+      '{task_id: $id, task_name: $name, description: $desc, workflow_version: $workflow_version, current_stage: 0, stage_name: $stage_name, status: "active", assignments: $assign, extensions: $extensions, ucd: $ucd, artifacts: [], reviews: [], history: []}')
     
     # Log history
     HASH=$(get_git_hash)
@@ -652,6 +786,10 @@ case "$ACTION" in
 
   next)
     STATE=$(load_state) || exit $?
+    WORKFLOW_VERSION=$(echo "$STATE" | jq -r '.workflow_version // "v1"')
+    WORKFLOW_VERSION=$(workflow_version_or_default "$WORKFLOW_VERSION")
+    STAGE_COUNT=$(stages_count_for_version "$WORKFLOW_VERSION")
+    TERMINAL_STAGE=$((STAGE_COUNT - 1))
     STATE=$(echo "$STATE" | jq '.ucd = (.ucd // {
       ucd_required: false,
       ucd_reason_codes: ["NON_UI_TEXT_ONLY"],
@@ -666,8 +804,15 @@ case "$ACTION" in
     CURRENT=$(echo "$STATE" | jq -r '.current_stage')
     NEXT=$((CURRENT + 1))
     
-    if [ $NEXT -ge ${#STAGES[@]} ]; then
+    if [ "$NEXT" -ge "$STAGE_COUNT" ]; then
       echo "{\"error\": \"Workflow already completed\", \"exit_code\": $EXIT_GENERAL}"
+      exit $EXIT_GENERAL
+    fi
+
+    OWNER_ROLE=$(owner_role_for_stage "$WORKFLOW_VERSION" "$CURRENT")
+    OWNER_ACTOR=$(echo "$STATE" | jq -r --arg role "$OWNER_ROLE" '.assignments[$role] // empty')
+    if [ -n "$OWNER_ROLE" ] && [ -n "$OWNER_ACTOR" ] && [ "$COLONY_AGENT_ID" != "$OWNER_ACTOR" ]; then
+      echo "{\"error\": \"Only stage owner can advance workflow\", \"reason\": \"WF_PERMISSION_DENIED\", \"details\": [\"owner role: $OWNER_ROLE\", \"required actor: $OWNER_ACTOR\"], \"exit_code\": $EXIT_GENERAL}"
       exit $EXIT_GENERAL
     fi
 
@@ -699,15 +844,8 @@ case "$ACTION" in
     fi
 
     # Approval Gates
-    case $CURRENT in
-      2|3|4|5|7)
-        APPROVED=$(echo "$STATE" | jq --arg stage "$CURRENT" '.reviews | map(select(.stage == ($stage|tonumber) and .status == "approved")) | length')
-        if [ "$APPROVED" -eq 0 ]; then
-          echo "{\"error\": \"Stage $CURRENT (${STAGES[$CURRENT]}) requires an approved review before proceeding\", \"exit_code\": $EXIT_GENERAL}"
-          exit $EXIT_GENERAL
-        fi
-        ;;
-      8)
+    if stage_requires_approval "$WORKFLOW_VERSION" "$CURRENT"; then
+      if [ "$WORKFLOW_VERSION" == "v1" ] && [ "$CURRENT" -eq 8 ]; then
         # Clean tree check
         if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
           if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
@@ -721,8 +859,15 @@ case "$ACTION" in
           echo "{\"error\": \"Stage 8 requires approval from the assigned architect/leader ($LEAD_ACTOR)\", \"exit_code\": $EXIT_GENERAL}"
           exit $EXIT_GENERAL
         fi
-        ;;
-    esac
+      else
+        APPROVED=$(echo "$STATE" | jq --arg stage "$CURRENT" '.reviews | map(select(.stage == ($stage|tonumber) and .status == "approved")) | length')
+        if [ "$APPROVED" -eq 0 ]; then
+          CURRENT_STAGE_NAME=$(stage_name_for_version "$WORKFLOW_VERSION" "$CURRENT")
+          echo "{\"error\": \"Stage $CURRENT ($CURRENT_STAGE_NAME) requires an approved review before proceeding\", \"exit_code\": $EXIT_GENERAL}"
+          exit $EXIT_GENERAL
+        fi
+      fi
+    fi
 
     # UCD Gate (Phase 1: dev-workflow only)
     if [ "$CURRENT" -ge 1 ] && [ "$CURRENT" -le 8 ]; then
@@ -750,7 +895,7 @@ case "$ACTION" in
     fi
 
     # TDD Quality Gates (Stage 6 -> 7)
-    if [ "$CURRENT" -eq 6 ]; then
+    if [ "$WORKFLOW_VERSION" == "v1" ] && [ "$CURRENT" -eq 6 ]; then
       export TASK_ID=$(echo "$STATE" | jq -r '.task_id')
       BRANCH_NAME="feature/task-$TASK_ID"
       export COLONY_AGENT_ID
@@ -775,7 +920,7 @@ case "$ACTION" in
       fi
     fi
 
-    ROUTING_DECISION=$(resolve_routing_decision "$STATE" "$CURRENT" "$NEXT")
+    ROUTING_DECISION=$(resolve_routing_decision "$STATE" "$CURRENT" "$NEXT" "$WORKFLOW_VERSION")
     ROUTING_RESULT=$(echo "$ROUTING_DECISION" | jq -r '.result // "block"')
     if [ "$ROUTING_RESULT" != "pass" ]; then
       echo "$ROUTING_DECISION"
@@ -794,19 +939,22 @@ case "$ACTION" in
       COMMIT_WORKSPACE="$PROJ_ROOT"
     fi
     
-    # Ensure sandbox exists for implementation stages (Stage 6)
-    if [ "$NEXT" -ge 6 ] && [ "$NEXT" -le 8 ]; then
+    # Ensure sandbox exists for implementation stages.
+    if [ "$WORKFLOW_VERSION" == "v1" ] && [ "$NEXT" -ge 6 ] && [ "$NEXT" -le 8 ]; then
       create_sandbox "$TASK_ID" "$BRANCH_NAME" || exit $?
     fi
 
-    if [ "$NEXT" -le 7 ]; then ensure_feature_branch "$BRANCH_NAME"; fi
+    if [ "$WORKFLOW_VERSION" == "v1" ] && [ "$NEXT" -le 7 ]; then
+      ensure_feature_branch "$BRANCH_NAME"
+    fi
 
-    if [ "$NEXT" -eq 9 ]; then
+    if [ "$NEXT" -eq "$TERMINAL_STAGE" ]; then
       # Completion logic (Merge)
       # 1. Perform safety check before merge (this also checks the worktree if it exists)
       cleanup_sandbox "$TASK_ID" || exit $?
 
-      do_git_commit "$CURRENT" "${STAGES[$CURRENT]}" "$NOTES" "$COMMIT_WORKSPACE"
+      CURRENT_STAGE_NAME=$(stage_name_for_version "$WORKFLOW_VERSION" "$CURRENT")
+      do_git_commit "$CURRENT" "$CURRENT_STAGE_NAME" "$NOTES" "$COMMIT_WORKSPACE"
       MAIN=$(get_main_branch)
       if [ ! -z "$MAIN" ]; then
         git checkout "$MAIN" >/dev/null 2>&1
@@ -823,13 +971,14 @@ case "$ACTION" in
         fi
       fi
     else
-      do_git_commit "$NEXT" "${STAGES[$NEXT]}" "$NOTES" "$COMMIT_WORKSPACE"
+      NEXT_STAGE_NAME=$(stage_name_for_version "$WORKFLOW_VERSION" "$NEXT")
+      do_git_commit "$NEXT" "$NEXT_STAGE_NAME" "$NOTES" "$COMMIT_WORKSPACE"
     fi
 
     # Update State
     HASH=$(get_git_hash)
     STATUS="active"
-    if [ "$NEXT" -eq 9 ]; then STATUS="completed"; fi
+    if [ "$NEXT" -eq "$TERMINAL_STAGE" ]; then STATUS="completed"; fi
     
     UCD_AUDIT_ENTRY=$(echo "$STATE" | jq -c '.ucd')
     ENTRY=$(jq -n \
@@ -840,13 +989,15 @@ case "$ACTION" in
       --arg notes "$NOTES" \
       --arg hash "$HASH" \
       --arg event_id "$EVENT_ID" \
+      --arg workflow_version "$WORKFLOW_VERSION" \
       --arg next_actor_role "$NEXT_ACTOR_ROLE" \
       --arg next_actor "$NEXT_ACTOR" \
       --arg decision_source "$DECISION_SOURCE" \
       --argjson ucd "$UCD_AUDIT_ENTRY" \
-      '{from_stage: $from, to_stage: $to, action: $act, actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'", event_id: $event_id, routing: {next_actor_role: $next_actor_role, next_actor: $next_actor, decision_source: $decision_source}, dispatch: {status: "pending"}, ucd: $ucd }')
+      '{from_stage: $from, to_stage: $to, action: $act, actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'", event_id: $event_id, workflow_version: $workflow_version, routing: {next_actor_role: $next_actor_role, next_actor: $next_actor, decision_source: $decision_source}, dispatch: {status: "pending"}, ucd: $ucd }')
     
-    NEW_STATE=$(echo "$STATE" | jq --arg next "$NEXT" --arg name "${STAGES[$NEXT]}" --arg status "$STATUS" --argjson entry "$ENTRY" \
+    NEW_STAGE_NAME=$(stage_name_for_version "$WORKFLOW_VERSION" "$NEXT")
+    NEW_STATE=$(echo "$STATE" | jq --arg next "$NEXT" --arg name "$NEW_STAGE_NAME" --arg status "$STATUS" --argjson entry "$ENTRY" \
       '.current_stage = ($next|tonumber) | .stage_name = $name | .status = $status | .history += [$entry]')
     
     if [ ! -z "$EVIDENCE" ] && [ "$EVIDENCE" != "null" ]; then
@@ -856,7 +1007,7 @@ case "$ACTION" in
 
     save_state "$NEW_STATE"
 
-    DISPATCH_RESULT=$(notify_server "$CURRENT" "$NEXT" "$NEXT_ACTOR_ROLE" "$NEXT_ACTOR" "$EVENT_ID" "$DECISION_SOURCE")
+    DISPATCH_RESULT=$(notify_server "$CURRENT" "$NEXT" "$NEXT_ACTOR_ROLE" "$NEXT_ACTOR" "$EVENT_ID" "$DECISION_SOURCE" "$WORKFLOW_VERSION")
     DISPATCH_STATUS=$(echo "$DISPATCH_RESULT" | jq -r '.status // "failed"')
     if [ "$DISPATCH_STATUS" == "success" ]; then
       NEW_STATE=$(echo "$NEW_STATE" | jq \
@@ -901,6 +1052,8 @@ case "$ACTION" in
 
   prev|backtrack)
     STATE=$(load_state) || exit $?
+    WORKFLOW_VERSION=$(echo "$STATE" | jq -r '.workflow_version // "v1"')
+    WORKFLOW_VERSION=$(workflow_version_or_default "$WORKFLOW_VERSION")
     CURRENT=$(echo "$STATE" | jq -r '.current_stage')
     
     if [ "$ACTION" == "prev" ]; then
@@ -923,20 +1076,59 @@ case "$ACTION" in
     fi
 
     HASH=$(get_git_hash)
-    ENTRY=$(jq -n --argjson from "$CURRENT" --argjson to "$TARGET" --arg act "$ACTION" --arg actor "$COLONY_AGENT_ID" --arg notes "$REASON" --arg hash "$HASH" \
-      '{from_stage: $from, to_stage: $to, action: $act, actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'" }')
-    
-    NEW_STATE=$(echo "$STATE" | jq --arg target "$TARGET" --arg name "${STAGES[$TARGET]}" --argjson entry "$ENTRY" \
-      '.current_stage = ($target|tonumber) | .stage_name = $name | .status = "active" | .history += [$entry]')
-    
-    save_state "$NEW_STATE"
-    BACKTRACK_ROUTING=$(resolve_routing_decision "$NEW_STATE" "$CURRENT" "$TARGET")
-    if [ "$(echo "$BACKTRACK_ROUTING" | jq -r '.result // "block"')" == "pass" ]; then
+    BACKTRACK_ROUTING=$(resolve_routing_decision "$STATE" "$CURRENT" "$TARGET" "$WORKFLOW_VERSION")
+    BT_ROUTING_RESULT=$(echo "$BACKTRACK_ROUTING" | jq -r '.result // "block"')
+    BT_EVENT_ID=$(generate_workflow_event_id)
+    BT_ROLE=""
+    BT_ACTOR=""
+    BT_SOURCE=""
+    BT_BLOCK_REASON=""
+    BT_BLOCK_DETAILS='[]'
+    if [ "$BT_ROUTING_RESULT" == "pass" ]; then
       BT_ROLE=$(echo "$BACKTRACK_ROUTING" | jq -r '.routing.next_actor_role')
       BT_ACTOR=$(echo "$BACKTRACK_ROUTING" | jq -r '.routing.next_actor')
       BT_SOURCE=$(echo "$BACKTRACK_ROUTING" | jq -r '.routing.decision_source')
-      BT_EVENT_ID=$(generate_workflow_event_id)
-      notify_server "$CURRENT" "$TARGET" "$BT_ROLE" "$BT_ACTOR" "$BT_EVENT_ID" "$BT_SOURCE" >/dev/null
+    else
+      BT_BLOCK_REASON=$(echo "$BACKTRACK_ROUTING" | jq -r '.reason // "WF_STAGE_TRANSITION_INVALID"')
+      BT_BLOCK_DETAILS=$(echo "$BACKTRACK_ROUTING" | jq -c '.details // []')
+    fi
+    ENTRY=$(jq -n \
+      --argjson from "$CURRENT" \
+      --argjson to "$TARGET" \
+      --arg act "$ACTION" \
+      --arg actor "$COLONY_AGENT_ID" \
+      --arg notes "$REASON" \
+      --arg hash "$HASH" \
+      --arg event_id "$BT_EVENT_ID" \
+      --arg workflow_version "$WORKFLOW_VERSION" \
+      --arg routing_result "$BT_ROUTING_RESULT" \
+      --arg next_actor_role "$BT_ROLE" \
+      --arg next_actor "$BT_ACTOR" \
+      --arg decision_source "$BT_SOURCE" \
+      --arg block_reason "$BT_BLOCK_REASON" \
+      --argjson routing_details "$BT_BLOCK_DETAILS" \
+      '{from_stage: $from, to_stage: $to, action: $act, actor: $actor, notes: $notes, git_commit_hash: $hash, timestamp: "'"$(date -u +"%Y-%m-%dT%H:%M:%SZ")"'", event_id: $event_id, workflow_version: $workflow_version, routing: (if $routing_result == "pass" then {next_actor_role: $next_actor_role, next_actor: $next_actor, decision_source: $decision_source} else {result: "block", reason: $block_reason, details: $routing_details} end), dispatch: (if $routing_result == "pass" then {status: "pending"} else {status: "skipped", failure_reason: "WF_STAGE_TRANSITION_INVALID"} end)}')
+    
+    TARGET_STAGE_NAME=$(stage_name_for_version "$WORKFLOW_VERSION" "$TARGET")
+    NEW_STATE=$(echo "$STATE" | jq --arg target "$TARGET" --arg name "$TARGET_STAGE_NAME" --argjson entry "$ENTRY" \
+      '.current_stage = ($target|tonumber) | .stage_name = $name | .status = "active" | .history += [$entry]')
+    
+    save_state "$NEW_STATE"
+    if [ "$BT_ROUTING_RESULT" == "pass" ]; then
+      DISPATCH_RESULT=$(notify_server "$CURRENT" "$TARGET" "$BT_ROLE" "$BT_ACTOR" "$BT_EVENT_ID" "$BT_SOURCE" "$WORKFLOW_VERSION")
+      DISPATCH_STATUS=$(echo "$DISPATCH_RESULT" | jq -r '.status // "failed"')
+      if [ "$DISPATCH_STATUS" == "success" ]; then
+        NEW_STATE=$(echo "$NEW_STATE" | jq \
+          --arg dispatched_at "$(echo "$DISPATCH_RESULT" | jq -r '.dispatched_at')" \
+          '.history[-1].dispatch = {status: "success", dispatched_at: $dispatched_at}')
+      else
+        DISPATCH_FAILURE_REASON=$(echo "$DISPATCH_RESULT" | jq -r '.failure_reason // "WF_EVENT_DISPATCH_FAILED"')
+        NEW_STATE=$(echo "$NEW_STATE" | jq \
+          --arg reason "$DISPATCH_FAILURE_REASON" \
+          --arg at "$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
+          '.history[-1].dispatch = {status: "failed", failure_reason: $reason, dispatched_at: $at}')
+      fi
+      save_state "$NEW_STATE"
     fi
     echo "$NEW_STATE"
     ;;
@@ -947,7 +1139,10 @@ case "$ACTION" in
 
   update)
     STATE=$(load_state) || exit $?
+    WORKFLOW_VERSION=$(echo "$STATE" | jq -r '.workflow_version // "v1"')
+    WORKFLOW_VERSION=$(workflow_version_or_default "$WORKFLOW_VERSION")
     NEW_ASSIGNMENTS=$(echo "$INPUT" | jq -c '.assignments // .roles // empty')
+    NEW_EXTENSIONS=$(echo "$INPUT" | jq -c '.extensions // empty')
     NEW_STATE="$STATE"
     TASK_ID=$(echo "$STATE" | jq -r '.task_id')
 
@@ -962,6 +1157,16 @@ case "$ACTION" in
 
     if [ ! -z "$NEW_ASSIGNMENTS" ] && [ "$NEW_ASSIGNMENTS" != "null" ]; then
       NEW_STATE=$(echo "$NEW_STATE" | jq --argjson assign "$NEW_ASSIGNMENTS" '.assignments = $assign')
+    fi
+
+    if [ ! -z "$NEW_EXTENSIONS" ] && [ "$NEW_EXTENSIONS" != "null" ]; then
+      EXT_VALIDATION=$(validate_extensions_payload "$NEW_EXTENSIONS")
+      if [ "$(echo "$EXT_VALIDATION" | jq -r '.ok')" != "true" ]; then
+        EXT_ERROR=$(echo "$EXT_VALIDATION" | jq -r '.error')
+        echo "{\"error\": \"$EXT_ERROR\", \"exit_code\": $EXIT_VALIDATION}"
+        exit $EXIT_VALIDATION
+      fi
+      NEW_STATE=$(echo "$NEW_STATE" | jq --argjson ext "$NEW_EXTENSIONS" '.extensions = $ext')
     fi
     
     TASK_NAME=$(echo "$INPUT" | jq -r '.task_name // empty')

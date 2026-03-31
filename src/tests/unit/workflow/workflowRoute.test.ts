@@ -42,6 +42,7 @@ function basePayload(eventId: string) {
     return {
         type: 'WORKFLOW_STAGE_CHANGED',
         roomId: 'room-1',
+        workflow_version: 'v1',
         from_stage: 5,
         to_stage: 6,
         next_actor_role: 'developer',
@@ -77,6 +78,7 @@ function writeWorkflowState(roomId: string, eventId: string, patch?: Partial<Rec
         statePath,
         JSON.stringify(
             {
+                workflow_version: 'v1',
                 history: [mergedEntry],
             },
             null,
@@ -166,6 +168,16 @@ describe('workflow route contract and routing behavior', () => {
     it('rejects unknown event type with deterministic invalid-transition code', async () => {
         currentServer = await startServer(roomManager);
         const payload = { ...basePayload('wf-unknown-type'), type: 'UNKNOWN_TYPE' };
+        const response = await postEvent(currentServer.port, payload);
+
+        expect(response.status).toBe(400);
+        expect(response.body.reason).toBe('WF_STAGE_TRANSITION_INVALID');
+        expect(sendSystemMessage).not.toHaveBeenCalled();
+    });
+
+    it('rejects invalid workflow_version with deterministic invalid-transition code', async () => {
+        currentServer = await startServer(roomManager);
+        const payload = { ...basePayload('wf-invalid-version'), workflow_version: 'v9' };
         const response = await postEvent(currentServer.port, payload);
 
         expect(response.status).toBe(400);
