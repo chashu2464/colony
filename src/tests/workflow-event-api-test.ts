@@ -13,7 +13,10 @@ async function testWorkflowEventAPI() {
         roomId: roomId,
         from_stage: 5,
         to_stage: 6,
-        next_actor: 'developer'
+        next_actor_role: 'developer',
+        next_actor: 'developer',
+        event_id: `wf-test-${Date.now()}`,
+        decision_source: 'stage_map'
     };
 
     console.log(`Sending POST request to ${url} for room ${roomId}...`);
