@@ -239,6 +239,13 @@ function resolve_routing_decision() {
   local from_stage="$2"
   local to_stage="$3"
 
+  # Stage 9 (Completed) is terminal - no routing needed
+  if [ "$to_stage" -eq 9 ]; then
+    jq -n \
+      '{result:"pass",routing:{next_actor_role:"none",next_actor:"system",decision_source:"terminal_state"}}'
+    return 0
+  fi
+
   local role
   role=$(get_next_actor_role "$to_stage")
   if [ -z "$role" ] || [ "$role" == "null" ] || ! is_routable_role "$role"; then
