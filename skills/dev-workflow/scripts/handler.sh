@@ -74,6 +74,12 @@ function release_lock() {
 # Ensure lock is released on exit
 trap release_lock EXIT
 
+BOARD_SCRIPT="$PROJ_ROOT/skills/dev-workflow/scripts/board.sh"
+if [ -f "$BOARD_SCRIPT" ]; then
+  # shellcheck source=/dev/null
+  source "$BOARD_SCRIPT"
+fi
+
 # --- State Management ---
 
 function save_state() {
@@ -700,6 +706,60 @@ fi
 acquire_lock || exit $?
 
 case "$ACTION" in
+  board.get)
+    STATE=$(load_state) || exit $?
+    RESULT=$(board_get "$STATE")
+    if [ $? -ne 0 ]; then
+      echo "$RESULT"
+      exit $EXIT_GENERAL
+    fi
+    echo "$RESULT"
+    ;;
+
+  board.events)
+    STATE=$(load_state) || exit $?
+    LIMIT=$(echo "$INPUT" | jq -r '.limit // 50')
+    OFFSET=$(echo "$INPUT" | jq -r '.offset // 0')
+    SINCE_EVENT_ID=$(echo "$INPUT" | jq -r '.since_event_id // empty')
+    RESULT=$(board_events "$STATE" "$LIMIT" "$OFFSET" "$SINCE_EVENT_ID")
+    if [ $? -ne 0 ]; then
+      echo "$RESULT"
+      exit $EXIT_GENERAL
+    fi
+    echo "$RESULT"
+    ;;
+
+  board.blockers)
+    STATE=$(load_state) || exit $?
+    OWNER=$(echo "$INPUT" | jq -r '.owner // empty')
+    RESULT=$(board_blockers "$STATE" "$OWNER")
+    if [ $? -ne 0 ]; then
+      echo "$RESULT"
+      exit $EXIT_GENERAL
+    fi
+    echo "$RESULT"
+    ;;
+
+  board.update)
+    STATE=$(load_state) || exit $?
+    OPERATIONS=$(echo "$INPUT" | jq -c '
+      if (.operations // null) != null then .operations
+      elif (.operation // null) != null then [ .operation ]
+      else []
+      end
+    ')
+    RESULT=$(board_update "$STATE" "$OPERATIONS" "$COLONY_AGENT_ID")
+    if [ $? -ne 0 ]; then
+      echo "$RESULT"
+      exit $EXIT_GENERAL
+    fi
+    NEW_STATE=$(echo "$RESULT" | jq -c '.state')
+    UPDATED_EVENTS=$(echo "$RESULT" | jq -c '.updated_events')
+    save_state "$NEW_STATE"
+    echo "$NEW_STATE" | jq --argjson updated "$UPDATED_EVENTS" \
+      '{board: .extensions.board, updated_events: $updated, board_event_count: (.board_events | length)}'
+    ;;
+
   init)
     TASK_NAME=$(echo "$INPUT" | jq -r '.task_name // empty')
     if [ -z "$TASK_NAME" ] || [ "$TASK_NAME" == "null" ]; then
@@ -716,12 +776,21 @@ case "$ACTION" in
     WORKFLOW_VERSION=$(echo "$INPUT" | jq -r '.workflow_version // "v1"')
     WORKFLOW_VERSION=$(workflow_version_or_default "$WORKFLOW_VERSION")
     ASSIGNMENTS=$(echo "$INPUT" | jq -c '.assignments // .roles // {"architect":null,"qa_lead":null,"developer":null,"designer":null}')
-    EXTENSIONS=$(echo "$INPUT" | jq -c '.extensions // {
-      board_mode: false,
-      cross_agent_mode: false,
-      board: {todo: [], in_progress: [], blocked: [], done: []},
-      cross_agent: {enabled: false, main_owner: null, contributors: [], task_cards: []}
-    }')
+    if [ "$WORKFLOW_VERSION" == "v2" ]; then
+      EXTENSIONS=$(echo "$INPUT" | jq -c '.extensions // {
+        board_mode: true,
+        cross_agent_mode: false,
+        board: {todo: [], in_progress: [], blocked: [], done: [], last_updated_at: null},
+        cross_agent: {enabled: false, main_owner: null, contributors: [], task_cards: []}
+      }')
+    else
+      EXTENSIONS=$(echo "$INPUT" | jq -c '.extensions // {
+        board_mode: false,
+        cross_agent_mode: false,
+        board: {todo: [], in_progress: [], blocked: [], done: [], last_updated_at: null},
+        cross_agent: {enabled: false, main_owner: null, contributors: [], task_cards: []}
+      }')
+    fi
     
     # Simple ID validation
     INVALID_ID=$(echo "$ASSIGNMENTS" | jq -r 'to_entries[] | select(.value != null) | select(.value | contains("/") or contains("@")) | .key')
@@ -772,7 +841,7 @@ case "$ACTION" in
 
     STAGE_ZERO_NAME=$(stage_name_for_version "$WORKFLOW_VERSION" 0)
     STATE=$(jq -n --arg id "$TASK_ID" --arg name "$TASK_NAME" --arg desc "$DESCRIPTION" --arg workflow_version "$WORKFLOW_VERSION" --argjson assign "$ASSIGNMENTS" --arg stage_name "$STAGE_ZERO_NAME" --argjson ucd "$UCD_AUDIT" --argjson extensions "$EXTENSIONS" \
-      '{task_id: $id, task_name: $name, description: $desc, workflow_version: $workflow_version, current_stage: 0, stage_name: $stage_name, status: "active", assignments: $assign, extensions: $extensions, ucd: $ucd, artifacts: [], reviews: [], history: []}')
+      '{task_id: $id, task_name: $name, description: $desc, workflow_version: $workflow_version, current_stage: 0, stage_name: $stage_name, status: "active", assignments: $assign, extensions: $extensions, board_events: [], ucd: $ucd, artifacts: [], reviews: [], history: []}')
     
     # Log history
     HASH=$(get_git_hash)

@@ -1,0 +1,91 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "BoardSnapshot",
+  "type": "object",
+  "required": [
+    "todo",
+    "in_progress",
+    "blocked",
+    "done",
+    "last_updated_at"
+  ],
+  "properties": {
+    "todo": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/board_card"
+      }
+    },
+    "in_progress": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/board_card"
+      }
+    },
+    "blocked": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/blocked_card"
+      }
+    },
+    "done": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/board_card"
+      }
+    },
+    "last_updated_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "definitions": {
+    "board_card": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "owner"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "owner": {
+          "type": "string",
+          "minLength": 1
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": true
+    },
+    "blocked_card": {
+      "allOf": [
+        {
+          "$ref": "#/definitions/board_card"
+        },
+        {
+          "type": "object",
+          "required": [
+            "block_reason"
+          ],
+          "properties": {
+            "block_reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      ]
+    }
+  },
+  "additionalProperties": true
+}
