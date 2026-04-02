@@ -1,0 +1,5 @@
+{
+  "error": "BOARD_VALIDATION_ERROR",
+  "reason": "BOARD_IDEMPOTENCY_CONFLICT",
+  "message": "idempotency key was reused with different operations"
+}

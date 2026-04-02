@@ -1,0 +1,37 @@
+{
+  "board": {
+    "todo": [
+      {
+        "id": "B_IDEMP_1",
+        "title": "idempotent",
+        "owner": "developer",
+        "created_at": "2026-04-02T11:34:08.577Z"
+      }
+    ],
+    "in_progress": [],
+    "blocked": [],
+    "done": [],
+    "last_updated_at": "2026-04-02T11:34:08.577Z",
+    "idempotency_registry": [
+      {
+        "idempotency_key": "4eeae4a3:wf_stage_evt_1:sync_stage_to_board",
+        "source_stage_event_id": "wf_stage_evt_1",
+        "action": "sync_stage_to_board",
+        "operations_hash": "af1a56181efa0b2aa92e93e5615b3a65bdaadbed8cb149f9fced275f0fed9fa9",
+        "applied_event_ids": [
+          "be_13d9258a-1d4e-4be1-98af-1b743b820a74"
+        ],
+        "first_applied_at": "2026-04-02T11:34:08.577Z",
+        "last_seen_at": "2026-04-02T11:34:08.817Z"
+      }
+    ]
+  },
+  "updated_events": [],
+  "board_event_count": 1,
+  "idempotency": {
+    "status": "already_applied",
+    "key": "4eeae4a3:wf_stage_evt_1:sync_stage_to_board",
+    "first_applied_at": "2026-04-02T11:34:08.577Z",
+    "last_seen_at": "2026-04-02T11:34:08.817Z"
+  }
+}

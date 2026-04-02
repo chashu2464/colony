@@ -1,0 +1,21 @@
+82:board_events() {
+86:  local since_event_id="$4"
+94:    board_error_json "BOARD_VALIDATION_ERROR" "limit and offset must be non-negative integers"
+98:    board_error_json "BOARD_VALIDATION_ERROR" "limit must be <= 200"
+108:  if [ -n "$since_event_id" ] && [ "$since_event_id" != "null" ]; then
+110:    since_seq=$(echo "$filtered" | jq -r --arg eid "$since_event_id" 'map(select(.event_id == $eid) | .seq) | max // empty')
+112:      board_error_json "BOARD_VALIDATION_ERROR" "since_event_id was not found"
+185:    board_error_json "BOARD_VALIDATION_ERROR" "operation.action is required"
+195:        board_error_json "BOARD_VALIDATION_ERROR" "add requires card payload"
+199:        board_error_json "BOARD_VALIDATION_ERROR" "invalid to_column"
+205:        board_error_json "BOARD_VALIDATION_ERROR" "invalid card id format"
+209:        board_error_json "BOARD_VALIDATION_ERROR" "card id already exists"
+222:        board_error_json "BOARD_VALIDATION_ERROR" "move requires card_id and valid to_column"
+230:        board_error_json "BOARD_VALIDATION_ERROR" "move to blocked requires block_reason"
+234:        board_error_json "BOARD_VALIDATION_ERROR" "block_reason length must be <= 200"
+255:        board_error_json "BOARD_VALIDATION_ERROR" "remove requires card_id"
+272:        board_error_json "BOARD_VALIDATION_ERROR" "block requires card_id and block_reason"
+276:        board_error_json "BOARD_VALIDATION_ERROR" "block_reason length must be <= 200"
+295:        board_error_json "BOARD_VALIDATION_ERROR" "unblock requires card_id and non-blocked to_column"
+310:      board_error_json "BOARD_VALIDATION_ERROR" "unsupported board action"
+326:    board_error_json "BOARD_VALIDATION_ERROR" "operations must be a non-empty array"

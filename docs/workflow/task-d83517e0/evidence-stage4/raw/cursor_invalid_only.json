@@ -1,0 +1,5 @@
+{
+  "error": "BOARD_VALIDATION_ERROR",
+  "reason": "BOARD_CURSOR_INVALID",
+  "message": "cursor_version is invalid"
+}

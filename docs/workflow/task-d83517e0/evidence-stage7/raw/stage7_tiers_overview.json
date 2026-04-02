@@ -1,0 +1,22 @@
+{
+  "tiers": [
+    {
+      "parallel": 12,
+      "total": 120,
+      "response_summary": "stage7_tier_12_response_summary.json",
+      "latency_summary": "stage7_tier_12_latency_summary.json"
+    },
+    {
+      "parallel": 24,
+      "total": 240,
+      "response_summary": "stage7_tier_24_response_summary.json",
+      "latency_summary": "stage7_tier_24_latency_summary.json"
+    },
+    {
+      "parallel": 48,
+      "total": 480,
+      "response_summary": "stage7_tier_48_response_summary.json",
+      "latency_summary": "stage7_tier_48_latency_summary.json"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "tier_parallel": 12,
+  "total": 120,
+  "ok_count": 120,
+  "error_count": 0,
+  "timeout_count": 0,
+  "error_rate_pct": 0,
+  "timeout_rate_pct": 0
+}

@@ -1,0 +1,422 @@
+[
+  {
+    "timestamp": "2026-04-02T11:33:56.502Z",
+    "trace_id": "trace_554cce12-a7e2-4f09-8431-2773e803cbb6",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 2,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:33:56.776Z",
+    "trace_id": "trace_b08e8eab-fe9a-443e-b30c-a298856e9bdd",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:33:57.497Z",
+    "trace_id": "trace_ec8d784f-cf5b-43ee-9b36-5f80df15f2e7",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:33:57.735Z",
+    "trace_id": "trace_1cbbf3c9-1d5c-445f-867c-e20051fe9f83",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:33:57.974Z",
+    "trace_id": "trace_790d943b-a733-4a29-a2dd-0ce15dc5f6e4",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:33:58.214Z",
+    "trace_id": "trace_a3afa5cb-168c-4246-b27b-9de6e078c209",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:33:58.463Z",
+    "trace_id": "trace_21b97c1c-a070-4c43-8bd9-be1a38844354",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:33:58.702Z",
+    "trace_id": "trace_c418df44-a7fd-4776-979b-4fba9cf8c80d",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:33:58.947Z",
+    "trace_id": "trace_8058cb99-cf43-4890-99f7-92be83cc61d1",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:33:59.190Z",
+    "trace_id": "trace_dc3470e1-eaba-46e1-92ae-94fb9b36b472",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:33:59.437Z",
+    "trace_id": "trace_3b9c5282-5271-42e4-8e27-c1a2619eb952",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:33:59.679Z",
+    "trace_id": "trace_b01b58fb-c497-4458-83ee-bb62b2715952",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:33:59.919Z",
+    "trace_id": "trace_2ed601b2-aa7c-4bb4-aac9-be9509e4ccac",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:34:00.201Z",
+    "trace_id": "trace_4b0b39b5-7074-48db-8708-c6ee6b0e59cc",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:34:00.452Z",
+    "trace_id": "trace_bdac3e8e-25ac-4a32-a248-8136f705cd3b",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:34:00.695Z",
+    "trace_id": "trace_ce6589cf-3df9-459f-bc8d-313d05828d6f",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:34:00.940Z",
+    "trace_id": "trace_abf86c4b-f757-43b5-b3f7-fea637993ff9",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:34:01.184Z",
+    "trace_id": "trace_804c3eaf-822a-4dbe-a589-2f6043b931c5",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:34:01.434Z",
+    "trace_id": "trace_70920d71-98e4-474e-b09d-1834d58fc9be",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:34:01.677Z",
+    "trace_id": "trace_0200b4c9-0774-4d85-9668-d3306d2ba5e3",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:34:01.920Z",
+    "trace_id": "trace_1458d286-d2aa-47c3-aea1-a076e5b652da",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:34:02.163Z",
+    "trace_id": "trace_741e8629-77bc-4c01-ad67-857ea288eb25",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "archive",
+    "latency_ms": 54,
+    "total_scanned": 3,
+    "total_available": 3
+  },
+  {
+    "timestamp": "2026-04-02T11:34:02.434Z",
+    "trace_id": "trace_b1f99cef-b817-49cf-8428-8b76362ff2ef",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:02.702Z",
+    "trace_id": "trace_917d8b6a-5f57-462b-9c50-4b7d86bb0260",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:02.970Z",
+    "trace_id": "trace_532186b8-1c51-483b-8048-151c694f50bd",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:03.244Z",
+    "trace_id": "trace_ffb2ca05-73d5-4b61-9de0-eea3070c4127",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:03.516Z",
+    "trace_id": "trace_57897e5e-45f5-4b43-ac16-5295dcf87938",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:03.787Z",
+    "trace_id": "trace_03420cc6-6875-4764-bdbf-adafd81d3c37",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:04.054Z",
+    "trace_id": "trace_b437e33f-9d4a-412a-87f6-63866351b74c",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:04.325Z",
+    "trace_id": "trace_9fe7ccd4-6707-4294-a9c5-393b64ac023f",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:04.598Z",
+    "trace_id": "trace_4f87f6a2-0935-4379-ba4c-91780cc5da39",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:04.868Z",
+    "trace_id": "trace_96944017-3209-4a4f-9774-30cdb10b2ad4",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:05.141Z",
+    "trace_id": "trace_b5d3351b-97d2-465d-90cd-528bdd5af2e3",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:05.415Z",
+    "trace_id": "trace_2774fdd5-2f4d-493e-b7ab-501e35a3f2d7",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:05.687Z",
+    "trace_id": "trace_2fcd802c-517c-45bd-9dd7-294a96772cc8",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:05.958Z",
+    "trace_id": "trace_d5d7b20e-9a37-4a40-b534-14b5512877e4",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:06.229Z",
+    "trace_id": "trace_b46463d1-78e4-4e1f-a119-a7842ec776fe",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:06.515Z",
+    "trace_id": "trace_37f8307f-b27d-49b8-8a82-016c52ee5339",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:06.873Z",
+    "trace_id": "trace_df78e92d-4758-4bb6-aed2-3cc2abcccd68",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:07.149Z",
+    "trace_id": "trace_00d5389d-fd87-49dc-956b-30cf532eea62",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:07.427Z",
+    "trace_id": "trace_37ae6516-9c0b-4f39-883d-4af231dc3389",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  },
+  {
+    "timestamp": "2026-04-02T11:34:07.703Z",
+    "trace_id": "trace_e3e6b9d1-751a-4e23-a989-7bcefb906867",
+    "actor": "developer",
+    "workflow_id": "920162fa",
+    "layer": "online",
+    "latency_ms": 50,
+    "total_scanned": 1,
+    "total_available": 1
+  }
+]

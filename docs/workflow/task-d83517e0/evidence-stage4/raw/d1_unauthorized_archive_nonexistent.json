@@ -1,0 +1,5 @@
+{
+  "error": "WF_PERMISSION_DENIED",
+  "reason": "WF_PERMISSION_DENIED",
+  "message": "actor is not assigned to this workflow"
+}

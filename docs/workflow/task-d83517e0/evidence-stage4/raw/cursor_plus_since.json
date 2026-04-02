@@ -1,0 +1,5 @@
+{
+  "error": "BOARD_VALIDATION_ERROR",
+  "reason": "BOARD_CURSOR_CONFLICT",
+  "message": "cursor and since_event_id cannot be used together"
+}

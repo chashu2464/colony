@@ -1,0 +1,36 @@
+{
+  "board": {
+    "todo": [
+      {
+        "id": "CARD_1",
+        "title": "x",
+        "owner": "developer",
+        "created_at": "2026-04-02T09:52:16.3NZ"
+      }
+    ],
+    "in_progress": [],
+    "blocked": [],
+    "done": [],
+    "last_updated_at": "2026-04-02T09:52:16.3NZ"
+  },
+  "updated_events": [
+    {
+      "seq": 1,
+      "event_id": "be_24e441d9-b5ec-4235-abb0-763afa5d3394",
+      "task_id": "21979c88",
+      "actor": "architect",
+      "action": "add",
+      "timestamp": "2026-04-02T09:52:16.3NZ",
+      "metadata": {
+        "action": "add",
+        "to_column": "todo",
+        "card": {
+          "id": "CARD_1",
+          "title": "x",
+          "owner": "developer"
+        }
+      }
+    }
+  ],
+  "board_event_count": 1
+}

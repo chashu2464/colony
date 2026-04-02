@@ -1,0 +1,7 @@
+{
+  "window_start_utc": "2026-04-02T13:58:22Z",
+  "window_end_utc": "2026-04-02T14:00:33Z",
+  "soak_runs": 6,
+  "burst_total": 120,
+  "burst_parallel": 12
+}

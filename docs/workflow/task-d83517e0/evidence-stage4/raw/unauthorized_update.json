@@ -1,0 +1,9 @@
+{
+  "error": "Only stage owner can update board",
+  "reason": "WF_PERMISSION_DENIED",
+  "details": [
+    "owner role: architect",
+    "required actor: architect",
+    "actual actor: qa-lead"
+  ]
+}

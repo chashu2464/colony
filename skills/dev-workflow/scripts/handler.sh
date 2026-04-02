@@ -721,12 +721,16 @@ case "$ACTION" in
     LIMIT=$(echo "$INPUT" | jq -r '.limit // 50')
     OFFSET=$(echo "$INPUT" | jq -r '.offset // 0')
     SINCE_EVENT_ID=$(echo "$INPUT" | jq -r '.since_event_id // empty')
-    RESULT=$(board_events "$STATE" "$LIMIT" "$OFFSET" "$SINCE_EVENT_ID")
+    CURSOR=$(echo "$INPUT" | jq -c '.cursor // empty')
+    TRACE_ID=$(board_generate_trace_id)
+    RESULT=$(board_events "$STATE" "$LIMIT" "$OFFSET" "$SINCE_EVENT_ID" "$CURSOR" "$COLONY_AGENT_ID" "$TRACE_ID")
     if [ $? -ne 0 ]; then
       echo "$RESULT"
       exit $EXIT_GENERAL
     fi
-    echo "$RESULT"
+    NEW_STATE=$(echo "$RESULT" | jq -c '.state')
+    save_state "$NEW_STATE"
+    echo "$RESULT" | jq 'del(.state)'
     ;;
 
   board.blockers)
@@ -748,7 +752,8 @@ case "$ACTION" in
       else []
       end
     ')
-    RESULT=$(board_update "$STATE" "$OPERATIONS" "$COLONY_AGENT_ID")
+    IDEMPOTENCY=$(echo "$INPUT" | jq -c '.idempotency // empty')
+    RESULT=$(board_update "$STATE" "$OPERATIONS" "$COLONY_AGENT_ID" "$IDEMPOTENCY")
     if [ $? -ne 0 ]; then
       echo "$RESULT"
       exit $EXIT_GENERAL
@@ -756,8 +761,37 @@ case "$ACTION" in
     NEW_STATE=$(echo "$RESULT" | jq -c '.state')
     UPDATED_EVENTS=$(echo "$RESULT" | jq -c '.updated_events')
     save_state "$NEW_STATE"
-    echo "$NEW_STATE" | jq --argjson updated "$UPDATED_EVENTS" \
-      '{board: .extensions.board, updated_events: $updated, board_event_count: (.board_events | length)}'
+    echo "$RESULT" | jq --argjson updated "$UPDATED_EVENTS" \
+      '{board: .state.extensions.board, updated_events: $updated, board_event_count: (.state.board_events | length), idempotency: (.idempotency // null)}'
+    ;;
+
+  board.sync)
+    STATE=$(load_state) || exit $?
+    FORCE=$(echo "$INPUT" | jq -r '.force // false')
+    SIMULATE_FAIL=$(echo "$INPUT" | jq -r '.simulate_failure // false')
+    FORCED_DRIFT=$(echo "$INPUT" | jq -r '.forced_drift_seconds // empty')
+    RESULT=$(board_sync "$STATE" "$COLONY_AGENT_ID" "$FORCE" "$SIMULATE_FAIL" "$FORCED_DRIFT")
+    if [ $? -ne 0 ]; then
+      echo "$RESULT"
+      exit $EXIT_GENERAL
+    fi
+    NEW_STATE=$(echo "$RESULT" | jq -c '.state')
+    save_state "$NEW_STATE"
+    echo "$RESULT" | jq 'del(.state)'
+    ;;
+
+  board.archive)
+    STATE=$(load_state) || exit $?
+    CUTOFF_SEQ=$(echo "$INPUT" | jq -r '.cutoff_seq // empty')
+    TRACE_ID=$(board_generate_trace_id)
+    RESULT=$(board_archive "$STATE" "$COLONY_AGENT_ID" "$CUTOFF_SEQ" "$TRACE_ID")
+    if [ $? -ne 0 ]; then
+      echo "$RESULT"
+      exit $EXIT_GENERAL
+    fi
+    NEW_STATE=$(echo "$RESULT" | jq -c '.state')
+    save_state "$NEW_STATE"
+    echo "$RESULT" | jq 'del(.state)'
     ;;
 
   init)

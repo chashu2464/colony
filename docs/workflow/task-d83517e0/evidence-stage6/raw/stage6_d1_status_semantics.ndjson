@@ -1,0 +1,2 @@
+{"target":"existing","exit_code":1,"error":"WF_PERMISSION_DENIED","reason":"WF_PERMISSION_DENIED","message":"actor is not assigned to this workflow","status_semantic":"DENIED"}
+{"target":"nonexistent","exit_code":1,"error":"WF_PERMISSION_DENIED","reason":"WF_PERMISSION_DENIED","message":"actor is not assigned to this workflow","status_semantic":"DENIED"}

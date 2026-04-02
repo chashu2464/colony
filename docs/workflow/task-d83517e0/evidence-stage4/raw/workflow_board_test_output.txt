@@ -1,0 +1,1 @@
+PASS: workflow-board contracts (get/events/blockers/update) satisfy phase-1 behavior.

@@ -25,6 +25,15 @@ run_handler() {
     bash -lc "echo '$payload' | bash '$HANDLER'"
 }
 
+assert_iso_parseable() {
+  local iso="$1"
+  local message="$2"
+  if ! node -e 'const v = process.argv[1]; process.exit(Number.isNaN(Date.parse(v)) ? 1 : 0);' "$iso"; then
+    echo "FAIL: $message ($iso)"
+    exit 1
+  fi
+}
+
 INIT='{"action":"init","task_name":"Workflow Board Test","workflow_version":"v2","assignments":{"architect":"architect","developer":"developer","qa_lead":"qa-lead","designer":"designer"}}'
 INIT_RESULT=$(run_handler "architect" "$INIT")
 
@@ -60,6 +69,38 @@ if [ "$(echo "$ADD_RESULT" | jq -r '.board.todo | length')" != "1" ]; then
 fi
 if [ "$(echo "$ADD_RESULT" | jq -r '.updated_events[0].seq')" != "1" ]; then
   echo "FAIL: first board event seq should be 1"
+  exit 1
+fi
+
+IDEMP_ADD_1=$(run_handler "architect" '{"action":"board.update","idempotency":{"source_stage_event_id":"wf_stage_evt_1","action":"sync_stage_to_board"},"operations":[{"action":"add","to_column":"todo","card":{"id":"B_2","title":"Idempotent add","owner":"developer"}}]}')
+if [ "$(echo "$IDEMP_ADD_1" | jq -r '.idempotency.status')" != "applied" ]; then
+  echo "FAIL: first idempotent board.update should be applied"
+  exit 1
+fi
+assert_iso_parseable "$(echo "$IDEMP_ADD_1" | jq -r '.board.last_updated_at')" "idempotency first apply board.last_updated_at must be parseable RFC3339"
+assert_iso_parseable "$(echo "$IDEMP_ADD_1" | jq -r '.updated_events[0].timestamp')" "idempotency first apply event timestamp must be parseable RFC3339"
+assert_iso_parseable "$(echo "$IDEMP_ADD_1" | jq -r '.idempotency.first_applied_at')" "idempotency first_applied_at must be parseable RFC3339"
+assert_iso_parseable "$(echo "$IDEMP_ADD_1" | jq -r '.idempotency.last_seen_at')" "idempotency last_seen_at must be parseable RFC3339"
+
+IDEMP_ADD_2=$(run_handler "architect" '{"action":"board.update","idempotency":{"source_stage_event_id":"wf_stage_evt_1","action":"sync_stage_to_board"},"operations":[{"action":"add","to_column":"todo","card":{"id":"B_2","title":"Idempotent add","owner":"developer"}}]}')
+if [ "$(echo "$IDEMP_ADD_2" | jq -r '.idempotency.status')" != "already_applied" ]; then
+  echo "FAIL: repeated idempotent board.update should be already_applied"
+  exit 1
+fi
+if [ "$(echo "$IDEMP_ADD_2" | jq -r '.updated_events | length')" != "0" ]; then
+  echo "FAIL: repeated idempotent board.update should not emit new events"
+  exit 1
+fi
+if [ "$(echo "$IDEMP_ADD_2" | jq -r '.board_event_count')" != "2" ]; then
+  echo "FAIL: repeated idempotent board.update should keep board_event_count unchanged"
+  exit 1
+fi
+assert_iso_parseable "$(echo "$IDEMP_ADD_2" | jq -r '.idempotency.first_applied_at')" "idempotency first_applied_at should remain parseable RFC3339 on replay"
+assert_iso_parseable "$(echo "$IDEMP_ADD_2" | jq -r '.idempotency.last_seen_at')" "idempotency last_seen_at should remain parseable RFC3339 on replay"
+
+IDEMP_CONFLICT=$(run_handler "architect" '{"action":"board.update","idempotency":{"source_stage_event_id":"wf_stage_evt_1","action":"sync_stage_to_board"},"operations":[{"action":"remove","card_id":"B_2"}]}' || true)
+if ! echo "$IDEMP_CONFLICT" | jq -e '.error == "BOARD_VALIDATION_ERROR" and .reason == "BOARD_IDEMPOTENCY_CONFLICT"' >/dev/null; then
+  echo "FAIL: conflicting idempotency payload should fail closed"
   exit 1
 fi
 
@@ -119,6 +160,28 @@ if [ "$(echo "$INCR" | jq -r '.meta.supports_incremental')" != "true" ]; then
 fi
 if [ "$(echo "$INCR" | jq -r '.events[0].seq')" != "3" ]; then
   echo "FAIL: incremental events should start after since_event_id"
+  exit 1
+fi
+
+CURSOR_INCR=$(run_handler "developer" "{\"action\":\"board.events\",\"limit\":10,\"offset\":0,\"cursor\":{\"cursor_version\":\"v1\",\"layer\":\"online\",\"event_id\":\"$SECOND_EVENT_ID\",\"ts_ms\":0}}")
+if [ "$(echo "$CURSOR_INCR" | jq -r '.meta.supports_incremental')" != "true" ]; then
+  echo "FAIL: board.events cursor should mark supports_incremental=true"
+  exit 1
+fi
+if [ "$(echo "$CURSOR_INCR" | jq -r '.events[0].seq')" != "3" ]; then
+  echo "FAIL: cursor incremental events should start after cursor.event_id"
+  exit 1
+fi
+
+CURSOR_CONFLICT=$(run_handler "developer" "{\"action\":\"board.events\",\"limit\":10,\"offset\":0,\"since_event_id\":\"$SECOND_EVENT_ID\",\"cursor\":{\"cursor_version\":\"v1\",\"layer\":\"online\",\"event_id\":\"$SECOND_EVENT_ID\",\"ts_ms\":0}}" || true)
+if ! echo "$CURSOR_CONFLICT" | jq -e '.error == "BOARD_VALIDATION_ERROR" and .reason == "BOARD_CURSOR_CONFLICT"' >/dev/null; then
+  echo "FAIL: cursor+since_event_id should fail with BOARD_CURSOR_CONFLICT"
+  exit 1
+fi
+
+BAD_CURSOR_VERSION=$(run_handler "developer" "{\"action\":\"board.events\",\"limit\":10,\"offset\":0,\"cursor\":{\"cursor_version\":\"v2\",\"layer\":\"online\",\"event_id\":\"$SECOND_EVENT_ID\",\"ts_ms\":0}}" || true)
+if ! echo "$BAD_CURSOR_VERSION" | jq -e '.error == "BOARD_VALIDATION_ERROR" and .reason == "BOARD_CURSOR_INVALID"' >/dev/null; then
+  echo "FAIL: invalid cursor_version should fail with BOARD_CURSOR_INVALID"
   exit 1
 fi
 

@@ -1,0 +1,1699 @@
+
+ RUN  v4.0.18 /Users/casu/Documents/Colony
+
+stdout | .worktrees/task-13bceb13/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:42.492Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-0a193180/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:42.494Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-118fc29f/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:42.496Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-0a2a499d/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:42.501Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-042ba97c/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:42.504Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:42.503Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-184029d4/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:42.507Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-0a193180/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:42.533Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-0a193180/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 123ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     ✓ ignores duplicate event_id after a successful dispatch 78ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 39ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+ ❯ .worktrees/task-0a2a499d/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 2 failed | 7 skipped) 131ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 92ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 38ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+ ❯ .worktrees/task-13bceb13/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 2 failed | 7 skipped) 127ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 84ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 42ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+ ❯ .worktrees/task-184029d4/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 2 failed | 7 skipped) 133ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 85ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 47ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+ ❯ .worktrees/task-042ba97c/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 2 failed | 7 skipped) 131ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 87ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 44ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+ ❯ .worktrees/task-118fc29f/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 133ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     ✓ ignores duplicate event_id after a successful dispatch 81ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 51ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+ ❯ src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 2 failed | 7 skipped) 150ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 101ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 47ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-2b3a94ef/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:42.901Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-174d5d1c/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:42.900Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-2b3a94ef/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:42.913Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-2b3a94ef/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:42.917Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ✓ .worktrees/task-2b3a94ef/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 7 skipped) 63ms
+stdout | .worktrees/task-2e1b878a/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:42.911Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-2e1b878a/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:42.940Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-174d5d1c/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:42.949Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-2e1b878a/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:42.959Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-174d5d1c/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:42.953Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-174d5d1c/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 116ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 79ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 37ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+ ❯ .worktrees/task-2e1b878a/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 119ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 87ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 31ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-21979c88/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:42.974Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-19267294/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:42.974Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-2b8b023a/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:42.990Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-2b8b023a/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:42.992Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-2b8b023a/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 122ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 108ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 12ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+ ❯ .worktrees/task-19267294/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 2 failed | 7 skipped) 124ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 87ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 36ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+ ❯ .worktrees/task-21979c88/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 2 failed | 7 skipped) 162ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 107ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 54ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-31a5ac4e/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.049Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-31a5ac4e/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.052Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-31a5ac4e/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 190ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 159ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 31ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-46307818/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:43.283Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-4273b901/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:43.285Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-42d8bbec/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:43.288Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-4273b901/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.297Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-46307818/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.312Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-46307818/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.315Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-46307818/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 84ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 68ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 14ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-477863e2/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.321Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-477863e2/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.324Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-477863e2/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 87ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 76ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 10ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-4273b901/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.338Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-42d8bbec/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.339Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ✓ .worktrees/task-4273b901/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 7 skipped) 99ms
+ ❯ .worktrees/task-42d8bbec/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 2 failed | 7 skipped) 99ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 86ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 11ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-4c4b07ea/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:43.357Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-6022b354/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:43.367Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-4c4b07ea/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.388Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-4c4b07ea/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.408Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ✓ .worktrees/task-4c4b07ea/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 7 skipped) 132ms
+ ❯ .worktrees/task-6022b354/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 2 failed | 7 skipped) 122ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 103ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 18ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-5c3f0f1e/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.489Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-5c3f0f1e/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.493Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-5c3f0f1e/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 173ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 153ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 18ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-6dc2f9c6/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:43.628Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-6dc2f9c6/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.640Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-6026532c/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:43.650Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-7595e41d/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:43.652Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-6dc2f9c6/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.656Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-75da868a/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:43.658Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-6026532c/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.666Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-6026532c/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.668Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-6026532c/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 80ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 71ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 8ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-7595e41d/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.698Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ✓ .worktrees/task-6dc2f9c6/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 7 skipped) 132ms
+stdout | .worktrees/task-7595e41d/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.719Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-7595e41d/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 117ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 89ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 26ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+ ❯ .worktrees/task-75da868a/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 2 failed | 7 skipped) 118ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 109ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 7ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-7a61d408/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.755Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-7a61d408/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.758Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-7a61d408/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 120ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 110ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 9ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-7cac4c0f/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.789Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-7cac4c0f/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.791Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-7cac4c0f/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 121ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 99ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 20ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-8ff2eecd/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.859Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-8ff2eecd/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:43.862Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-8ff2eecd/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 151ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 143ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 7ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-9370bc16/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:43.987Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-9370bc16/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.005Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-9370bc16/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.010Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ✓ .worktrees/task-9370bc16/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 7 skipped) 72ms
+stdout | .worktrees/task-9d89a4bf/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:44.038Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-b43c3d0a/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:44.054Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-88434b8e/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:44.054Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-b43c3d0a/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.068Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-9d89a4bf/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[31m[2026-04-02T09:52:44.066Z] [ERROR] [WorkflowRouter][0m Failed to read workflow state for room=room-1: SyntaxError: Unexpected end of JSON input
+    at JSON.parse (<anonymous>)
+    at loadWorkflowRoutingRecord (/Users/casu/Documents/Colony/.worktrees/task-9d89a4bf/src/server/routes/workflow.ts:42:29)
+    at /Users/casu/Documents/Colony/.worktrees/task-9d89a4bf/src/server/routes/workflow.ts:138:37
+    at Layer.handleRequest (/Users/casu/Documents/Colony/node_modules/router/lib/layer.js:152:17)
+    at next (/Users/casu/Documents/Colony/node_modules/router/lib/route.js:157:13)
+    at Route.dispatch (/Users/casu/Documents/Colony/node_modules/router/lib/route.js:117:3)
+    at handle (/Users/casu/Documents/Colony/node_modules/router/index.js:435:11)
+    at Layer.handleRequest (/Users/casu/Documents/Colony/node_modules/router/lib/layer.js:152:17)
+    at /Users/casu/Documents/Colony/node_modules/router/index.js:295:15
+    at processParams (/Users/casu/Documents/Colony/node_modules/router/index.js:582:12)
+
+stdout | .worktrees/task-b43c3d0a/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.072Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-9d89a4bf/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.088Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-88434b8e/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.084Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-b43c3d0a/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 74ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 61ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 11ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-acfcbc94/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:44.092Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+ ❯ .worktrees/task-9d89a4bf/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 111ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     ✓ ignores duplicate event_id after a successful dispatch 73ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 36ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-acfcbc94/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.104Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-88434b8e/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.106Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-88434b8e/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 122ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 93ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 28ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+ ❯ .worktrees/task-acfcbc94/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 2 failed | 7 skipped) 96ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 79ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 15ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-9018e6ea/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.164Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-9018e6ea/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.167Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-9018e6ea/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 155ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 139ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 15ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-bb0d13b9/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.250Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-bb0d13b9/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.253Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-bb0d13b9/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 175ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 157ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 16ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-bb51bee7/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:44.387Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-bb51bee7/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.400Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-bb51bee7/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.406Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-ccc70813/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:44.412Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+ ✓ .worktrees/task-bb51bee7/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 7 skipped) 68ms
+stdout | .worktrees/task-c797415b/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:44.421Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-ccc70813/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.425Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-ccc70813/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.430Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-ccc70813/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 78ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 62ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 14ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-c797415b/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.442Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-c797415b/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.446Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-c797415b/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 79ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 68ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 10ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-cc5d81ad/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:44.485Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-c2e65c33/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.497Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-c2e65c33/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.501Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-c2e65c33/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 119ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 71ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 47ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+ ❯ .worktrees/task-cc5d81ad/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 2 failed | 7 skipped) 125ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 86ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     × isolates idempotency by roomId to avoid cross-room duplicate collisions 37ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-cd0d4ce2/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.588Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-cd0d4ce2/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.594Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-cd0d4ce2/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 126ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 109ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 14ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-d1433033/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.606Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-d1433033/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.608Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-d1433033/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 92ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 82ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 9ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-d83517e0/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:44.700Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-d83517e0/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.712Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-d83517e0/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.715Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ✓ .worktrees/task-d83517e0/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 7 skipped) 57ms
+stdout | .worktrees/task-eab044ba/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:44.724Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-eab044ba/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.732Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-eab044ba/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.735Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-eab044ba/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 59ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 50ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 7ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-ed3a8e69/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:44.745Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-fa676278/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+[36m[2026-04-02T09:52:44.750Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-dedup-success
+
+stdout | .worktrees/task-ed3a8e69/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.754Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-ed3a8e69/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.757Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-ed3a8e69/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 63ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 53ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 8ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-fa676278/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.767Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-fa676278/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.769Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-fa676278/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 56ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 46ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 9ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+stdout | .worktrees/task-e0887ead/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.789Z] [INFO] [WorkflowRouter][0m Workflow event in room room-1: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+stdout | .worktrees/task-e0887ead/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+[36m[2026-04-02T09:52:44.791Z] [INFO] [WorkflowRouter][0m Workflow event in room room-2: Stage 5 -> 6, role=developer, actor=developer, event_id=wf-cross-room-replay
+
+ ❯ .worktrees/task-e0887ead/src/tests/unit/workflow/workflowRoute.test.ts (9 tests | 1 failed | 7 skipped) 54ms
+     ↓ returns WF_STAGE_TRANSITION_INVALID when contract field is missing
+     ↓ returns WF_ROUTING_NON_ROUTABLE_AGENT for unroutable target agent
+     ↓ returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message
+     × ignores duplicate event_id after a successful dispatch 46ms
+     ↓ rejects unknown event type with deterministic invalid-transition code
+     ↓ rejects invalid workflow_version with deterministic invalid-transition code
+     ✓ isolates idempotency by roomId to avoid cross-room duplicate collisions 6ms
+     ↓ rejects forged decision_source with deterministic fail-closed code
+     ↓ rejects forged role/actor metadata when contract mismatches workflow history
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 52 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ src/tests/unit/workflow/workflowRoute.test.ts:163:31
+    161|         expect(first.status).toBe(200);
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+       |                               ^
+    164|         expect(second.body.duplicate_ignored).toBe(true);
+    165|         expect(sendSystemMessage).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/52]⎯
+
+ FAIL  src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ src/tests/unit/workflow/workflowRoute.test.ts:197:32
+    195|         const roomTwo = await postEvent(currentServer.port, { ...baseP…
+    196| 
+    197|         expect(roomOne.status).toBe(200);
+       |                                ^
+    198|         expect(roomOne.body.duplicate_ignored).toBe(false);
+    199|         expect(roomTwo.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/52]⎯
+
+ FAIL  .worktrees/task-0a2a499d/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+Error: ENOTEMPTY, Directory not empty: /Users/casu/Documents/Colony/.data/workflows '/Users/casu/Documents/Colony/.data/workflows'
+ ❯ .worktrees/task-0a2a499d/src/tests/unit/workflow/workflowRoute.test.ts:106:12
+    104|         room.getAgents.mockClear();
+    105|         roomManager.getRoom.mockClear();
+    106|         fs.rmSync(path.resolve(process.cwd(), '.data', 'workflows'), {…
+       |            ^
+    107|         if (currentServer) {
+    108|             await currentServer.close();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/52]⎯
+
+ FAIL  .worktrees/task-0a2a499d/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+Error: ENOENT: no such file or directory, open '/Users/casu/Documents/Colony/.data/workflows/room-1.json'
+ ❯ writeWorkflowState .worktrees/task-0a2a499d/src/tests/unit/workflow/workflowRoute.test.ts:77:8
+     75|         },
+     76|     };
+     77|     fs.writeFileSync(
+       |        ^
+     78|         statePath,
+     79|         JSON.stringify(
+ ❯ .worktrees/task-0a2a499d/src/tests/unit/workflow/workflowRoute.test.ts:191:9
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/52]⎯
+
+ FAIL  .worktrees/task-0a193180/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-0a193180/src/tests/unit/workflow/workflowRoute.test.ts:199:32
+    197|         expect(roomOne.status).toBe(200);
+    198|         expect(roomOne.body.duplicate_ignored).toBe(false);
+    199|         expect(roomTwo.status).toBe(200);
+       |                                ^
+    200|         expect(roomTwo.body.duplicate_ignored).toBe(false);
+    201|         expect(sendSystemMessage).toHaveBeenCalledTimes(2);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/52]⎯
+
+ FAIL  .worktrees/task-042ba97c/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-042ba97c/src/tests/unit/workflow/workflowRoute.test.ts:163:31
+    161|         expect(first.status).toBe(200);
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+       |                               ^
+    164|         expect(second.body.duplicate_ignored).toBe(true);
+    165|         expect(sendSystemMessage).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/52]⎯
+
+ FAIL  .worktrees/task-042ba97c/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-042ba97c/src/tests/unit/workflow/workflowRoute.test.ts:197:32
+    195|         const roomTwo = await postEvent(currentServer.port, { ...baseP…
+    196| 
+    197|         expect(roomOne.status).toBe(200);
+       |                                ^
+    198|         expect(roomOne.body.duplicate_ignored).toBe(false);
+    199|         expect(roomTwo.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/52]⎯
+
+ FAIL  .worktrees/task-118fc29f/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-118fc29f/src/tests/unit/workflow/workflowRoute.test.ts:197:32
+    195|         const roomTwo = await postEvent(currentServer.port, { ...baseP…
+    196| 
+    197|         expect(roomOne.status).toBe(200);
+       |                                ^
+    198|         expect(roomOne.body.duplicate_ignored).toBe(false);
+    199|         expect(roomTwo.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/52]⎯
+
+ FAIL  .worktrees/task-13bceb13/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+Error: ENOTEMPTY, Directory not empty: /Users/casu/Documents/Colony/.data/workflows '/Users/casu/Documents/Colony/.data/workflows'
+ ❯ .worktrees/task-13bceb13/src/tests/unit/workflow/workflowRoute.test.ts:106:12
+    104|         room.getAgents.mockClear();
+    105|         roomManager.getRoom.mockClear();
+    106|         fs.rmSync(path.resolve(process.cwd(), '.data', 'workflows'), {…
+       |            ^
+    107|         if (currentServer) {
+    108|             await currentServer.close();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/52]⎯
+
+ FAIL  .worktrees/task-13bceb13/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-13bceb13/src/tests/unit/workflow/workflowRoute.test.ts:197:32
+    195|         const roomTwo = await postEvent(currentServer.port, { ...baseP…
+    196| 
+    197|         expect(roomOne.status).toBe(200);
+       |                                ^
+    198|         expect(roomOne.body.duplicate_ignored).toBe(false);
+    199|         expect(roomTwo.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/52]⎯
+
+ FAIL  .worktrees/task-184029d4/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-184029d4/src/tests/unit/workflow/workflowRoute.test.ts:163:31
+    161|         expect(first.status).toBe(200);
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+       |                               ^
+    164|         expect(second.body.duplicate_ignored).toBe(true);
+    165|         expect(sendSystemMessage).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/52]⎯
+
+ FAIL  .worktrees/task-184029d4/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-184029d4/src/tests/unit/workflow/workflowRoute.test.ts:197:32
+    195|         const roomTwo = await postEvent(currentServer.port, { ...baseP…
+    196| 
+    197|         expect(roomOne.status).toBe(200);
+       |                                ^
+    198|         expect(roomOne.body.duplicate_ignored).toBe(false);
+    199|         expect(roomTwo.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/52]⎯
+
+ FAIL  .worktrees/task-174d5d1c/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-174d5d1c/src/tests/unit/workflow/workflowRoute.test.ts:163:31
+    161|         expect(first.status).toBe(200);
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+       |                               ^
+    164|         expect(second.body.duplicate_ignored).toBe(true);
+    165|         expect(sendSystemMessage).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/52]⎯
+
+ FAIL  .worktrees/task-21979c88/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-21979c88/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/52]⎯
+
+ FAIL  .worktrees/task-21979c88/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-21979c88/src/tests/unit/workflow/workflowRoute.test.ts:199:32
+    197|         expect(roomOne.status).toBe(200);
+    198|         expect(roomOne.body.duplicate_ignored).toBe(false);
+    199|         expect(roomTwo.status).toBe(200);
+       |                                ^
+    200|         expect(roomTwo.body.duplicate_ignored).toBe(false);
+    201|         expect(sendSystemMessage).toHaveBeenCalledTimes(2);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/52]⎯
+
+ FAIL  .worktrees/task-19267294/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-19267294/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/52]⎯
+
+ FAIL  .worktrees/task-19267294/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-19267294/src/tests/unit/workflow/workflowRoute.test.ts:199:32
+    197|         expect(roomOne.status).toBe(200);
+    198|         expect(roomOne.body.duplicate_ignored).toBe(false);
+    199|         expect(roomTwo.status).toBe(200);
+       |                                ^
+    200|         expect(roomTwo.body.duplicate_ignored).toBe(false);
+    201|         expect(sendSystemMessage).toHaveBeenCalledTimes(2);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/52]⎯
+
+ FAIL  .worktrees/task-2b8b023a/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-2b8b023a/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/52]⎯
+
+ FAIL  .worktrees/task-2e1b878a/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-2e1b878a/src/tests/unit/workflow/workflowRoute.test.ts:163:31
+    161|         expect(first.status).toBe(200);
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+       |                               ^
+    164|         expect(second.body.duplicate_ignored).toBe(true);
+    165|         expect(sendSystemMessage).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/52]⎯
+
+ FAIL  .worktrees/task-31a5ac4e/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-31a5ac4e/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/52]⎯
+
+ FAIL  .worktrees/task-46307818/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-46307818/src/tests/unit/workflow/workflowRoute.test.ts:163:31
+    161|         expect(first.status).toBe(200);
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+       |                               ^
+    164|         expect(second.body.duplicate_ignored).toBe(true);
+    165|         expect(sendSystemMessage).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/52]⎯
+
+ FAIL  .worktrees/task-42d8bbec/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-42d8bbec/src/tests/unit/workflow/workflowRoute.test.ts:163:31
+    161|         expect(first.status).toBe(200);
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+       |                               ^
+    164|         expect(second.body.duplicate_ignored).toBe(true);
+    165|         expect(sendSystemMessage).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/52]⎯
+
+ FAIL  .worktrees/task-42d8bbec/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-42d8bbec/src/tests/unit/workflow/workflowRoute.test.ts:199:32
+    197|         expect(roomOne.status).toBe(200);
+    198|         expect(roomOne.body.duplicate_ignored).toBe(false);
+    199|         expect(roomTwo.status).toBe(200);
+       |                                ^
+    200|         expect(roomTwo.body.duplicate_ignored).toBe(false);
+    201|         expect(sendSystemMessage).toHaveBeenCalledTimes(2);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/52]⎯
+
+ FAIL  .worktrees/task-477863e2/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-477863e2/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/52]⎯
+
+ FAIL  .worktrees/task-5c3f0f1e/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-5c3f0f1e/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/52]⎯
+
+ FAIL  .worktrees/task-6022b354/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-6022b354/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/52]⎯
+
+ FAIL  .worktrees/task-6022b354/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-6022b354/src/tests/unit/workflow/workflowRoute.test.ts:197:32
+    195|         const roomTwo = await postEvent(currentServer.port, { ...baseP…
+    196| 
+    197|         expect(roomOne.status).toBe(200);
+       |                                ^
+    198|         expect(roomOne.body.duplicate_ignored).toBe(false);
+    199|         expect(roomTwo.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/52]⎯
+
+ FAIL  .worktrees/task-6026532c/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-6026532c/src/tests/unit/workflow/workflowRoute.test.ts:163:31
+    161|         expect(first.status).toBe(200);
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+       |                               ^
+    164|         expect(second.body.duplicate_ignored).toBe(true);
+    165|         expect(sendSystemMessage).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/52]⎯
+
+ FAIL  .worktrees/task-75da868a/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-75da868a/src/tests/unit/workflow/workflowRoute.test.ts:163:31
+    161|         expect(first.status).toBe(200);
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+       |                               ^
+    164|         expect(second.body.duplicate_ignored).toBe(true);
+    165|         expect(sendSystemMessage).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/52]⎯
+
+ FAIL  .worktrees/task-75da868a/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-75da868a/src/tests/unit/workflow/workflowRoute.test.ts:197:32
+    195|         const roomTwo = await postEvent(currentServer.port, { ...baseP…
+    196| 
+    197|         expect(roomOne.status).toBe(200);
+       |                                ^
+    198|         expect(roomOne.body.duplicate_ignored).toBe(false);
+    199|         expect(roomTwo.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/52]⎯
+
+ FAIL  .worktrees/task-7595e41d/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-7595e41d/src/tests/unit/workflow/workflowRoute.test.ts:163:31
+    161|         expect(first.status).toBe(200);
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+       |                               ^
+    164|         expect(second.body.duplicate_ignored).toBe(true);
+    165|         expect(sendSystemMessage).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/52]⎯
+
+ FAIL  .worktrees/task-7a61d408/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-7a61d408/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/52]⎯
+
+ FAIL  .worktrees/task-7cac4c0f/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-7cac4c0f/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/52]⎯
+
+ FAIL  .worktrees/task-8ff2eecd/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-8ff2eecd/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/52]⎯
+
+ FAIL  .worktrees/task-9018e6ea/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-9018e6ea/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/52]⎯
+
+ FAIL  .worktrees/task-9d89a4bf/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-9d89a4bf/src/tests/unit/workflow/workflowRoute.test.ts:197:32
+    195|         const roomTwo = await postEvent(currentServer.port, { ...baseP…
+    196| 
+    197|         expect(roomOne.status).toBe(200);
+       |                                ^
+    198|         expect(roomOne.body.duplicate_ignored).toBe(false);
+    199|         expect(roomTwo.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/52]⎯
+
+ FAIL  .worktrees/task-88434b8e/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-88434b8e/src/tests/unit/workflow/workflowRoute.test.ts:163:31
+    161|         expect(first.status).toBe(200);
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+       |                               ^
+    164|         expect(second.body.duplicate_ignored).toBe(true);
+    165|         expect(sendSystemMessage).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/52]⎯
+
+ FAIL  .worktrees/task-b43c3d0a/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+Error: ENOTEMPTY, Directory not empty: /Users/casu/Documents/Colony/.data/workflows '/Users/casu/Documents/Colony/.data/workflows'
+ ❯ .worktrees/task-b43c3d0a/src/tests/unit/workflow/workflowRoute.test.ts:106:12
+    104|         room.getAgents.mockClear();
+    105|         roomManager.getRoom.mockClear();
+    106|         fs.rmSync(path.resolve(process.cwd(), '.data', 'workflows'), {…
+       |            ^
+    107|         if (currentServer) {
+    108|             await currentServer.close();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/52]⎯
+
+ FAIL  .worktrees/task-acfcbc94/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-acfcbc94/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/52]⎯
+
+ FAIL  .worktrees/task-acfcbc94/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-acfcbc94/src/tests/unit/workflow/workflowRoute.test.ts:199:32
+    197|         expect(roomOne.status).toBe(200);
+    198|         expect(roomOne.body.duplicate_ignored).toBe(false);
+    199|         expect(roomTwo.status).toBe(200);
+       |                                ^
+    200|         expect(roomTwo.body.duplicate_ignored).toBe(false);
+    201|         expect(sendSystemMessage).toHaveBeenCalledTimes(2);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/52]⎯
+
+ FAIL  .worktrees/task-bb0d13b9/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-bb0d13b9/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/52]⎯
+
+ FAIL  .worktrees/task-c797415b/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-c797415b/src/tests/unit/workflow/workflowRoute.test.ts:163:31
+    161|         expect(first.status).toBe(200);
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+       |                               ^
+    164|         expect(second.body.duplicate_ignored).toBe(true);
+    165|         expect(sendSystemMessage).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/52]⎯
+
+ FAIL  .worktrees/task-ccc70813/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-ccc70813/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/52]⎯
+
+ FAIL  .worktrees/task-c2e65c33/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-c2e65c33/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[44/52]⎯
+
+ FAIL  .worktrees/task-cc5d81ad/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-cc5d81ad/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[45/52]⎯
+
+ FAIL  .worktrees/task-cc5d81ad/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > isolates idempotency by roomId to avoid cross-room duplicate collisions
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-cc5d81ad/src/tests/unit/workflow/workflowRoute.test.ts:197:32
+    195|         const roomTwo = await postEvent(currentServer.port, { ...baseP…
+    196| 
+    197|         expect(roomOne.status).toBe(200);
+       |                                ^
+    198|         expect(roomOne.body.duplicate_ignored).toBe(false);
+    199|         expect(roomTwo.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[46/52]⎯
+
+ FAIL  .worktrees/task-cd0d4ce2/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-cd0d4ce2/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[47/52]⎯
+
+ FAIL  .worktrees/task-d1433033/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-d1433033/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[48/52]⎯
+
+ FAIL  .worktrees/task-eab044ba/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-eab044ba/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[49/52]⎯
+
+ FAIL  .worktrees/task-ed3a8e69/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-ed3a8e69/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[50/52]⎯
+
+ FAIL  .worktrees/task-fa676278/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-fa676278/src/tests/unit/workflow/workflowRoute.test.ts:163:31
+    161|         expect(first.status).toBe(200);
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+       |                               ^
+    164|         expect(second.body.duplicate_ignored).toBe(true);
+    165|         expect(sendSystemMessage).toHaveBeenCalledTimes(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[51/52]⎯
+
+ FAIL  .worktrees/task-e0887ead/src/tests/unit/workflow/workflowRoute.test.ts > workflow route contract and routing behavior > ignores duplicate event_id after a successful dispatch
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ .worktrees/task-e0887ead/src/tests/unit/workflow/workflowRoute.test.ts:161:30
+    159|         const second = await postEvent(currentServer.port, basePayload…
+    160| 
+    161|         expect(first.status).toBe(200);
+       |                              ^
+    162|         expect(first.body.duplicate_ignored).toBe(false);
+    163|         expect(second.status).toBe(200);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[52/52]⎯
+
+
+ Test Files  40 failed | 7 passed (47)
+      Tests  52 failed | 42 passed | 329 skipped (423)
+   Start at  17:52:42
+   Duration  2.70s (transform 1.96s, setup 0ms, import 4.87s, tests 5.24s, environment 4ms)
+
