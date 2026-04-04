@@ -3,8 +3,8 @@
 ## Given
 
 - Windowing plan from `raw/stage7_windowing.json`:
-  - start: `2026-04-02T11:58:24Z`
-  - end: `2026-04-02T15:58:24Z`
+  - start: `2026-04-02T12:11:15Z`
+  - end: `2026-04-02T16:11:15Z`
   - window_count: `8`
   - interval_minutes: `30`
 

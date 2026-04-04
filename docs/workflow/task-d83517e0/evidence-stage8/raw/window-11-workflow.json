@@ -1,0 +1,1117 @@
+{
+  "task_id": "537d83e9",
+  "task_name": "Workflow Board M2.1 Test",
+  "description": "",
+  "workflow_version": "v2",
+  "current_stage": 0,
+  "stage_name": "0. Discovery",
+  "status": "active",
+  "assignments": {
+    "architect": "architect",
+    "developer": "developer",
+    "qa_lead": "qa-lead",
+    "designer": "designer"
+  },
+  "extensions": {
+    "board_mode": true,
+    "cross_agent_mode": false,
+    "board": {
+      "todo": [
+        {
+          "id": "M21_2",
+          "title": "Card2",
+          "owner": "developer",
+          "created_at": "2026-04-03T13:57:57.094Z"
+        }
+      ],
+      "in_progress": [
+        {
+          "id": "M21_1",
+          "title": "Card1",
+          "owner": "developer",
+          "created_at": "2026-04-03T13:57:56.801Z"
+        }
+      ],
+      "blocked": [],
+      "done": [],
+      "last_updated_at": "2026-04-03T13:57:57.358Z",
+      "idempotency_registry": []
+    },
+    "cross_agent": {
+      "enabled": false,
+      "main_owner": null,
+      "contributors": [],
+      "task_cards": []
+    },
+    "board_sync": {
+      "interval_seconds": 60,
+      "retry_schedule_seconds": [
+        60,
+        120,
+        240,
+        480,
+        900
+      ],
+      "retry_count": 0,
+      "attempt_count": 6,
+      "pending_queue_depth": 0,
+      "last_error": null,
+      "last_synced_at": "2026-04-03T13:57:59.266Z",
+      "last_synced_event_id": "be_5ec51532-6c0d-4871-87ba-eff004f6e1cd",
+      "next_sync_at": "2026-04-03T13:58:59.266Z",
+      "scheduler_history": [
+        {
+          "scheduled_at": "2026-04-03T13:58:57.790Z",
+          "run_at": "2026-04-03T13:57:57.790Z",
+          "drift_seconds": 12,
+          "retry_count": 1,
+          "success": false,
+          "pending_queue_depth": 1
+        },
+        {
+          "scheduled_at": "2026-04-03T13:59:58.061Z",
+          "run_at": "2026-04-03T13:57:58.061Z",
+          "drift_seconds": 18,
+          "retry_count": 2,
+          "success": false,
+          "pending_queue_depth": 2
+        },
+        {
+          "scheduled_at": "2026-04-03T14:01:58.316Z",
+          "run_at": "2026-04-03T13:57:58.316Z",
+          "drift_seconds": 19,
+          "retry_count": 3,
+          "success": false,
+          "pending_queue_depth": 3
+        },
+        {
+          "scheduled_at": "2026-04-03T14:05:58.574Z",
+          "run_at": "2026-04-03T13:57:58.574Z",
+          "drift_seconds": 10,
+          "retry_count": 4,
+          "success": false,
+          "pending_queue_depth": 4
+        },
+        {
+          "scheduled_at": "2026-04-03T14:12:58.831Z",
+          "run_at": "2026-04-03T13:57:58.831Z",
+          "drift_seconds": 9,
+          "retry_count": 5,
+          "success": false,
+          "pending_queue_depth": 5
+        },
+        {
+          "scheduled_at": "2026-04-03T13:58:59.266Z",
+          "run_at": "2026-04-03T13:57:59.266Z",
+          "drift_seconds": 8,
+          "retry_count": 0,
+          "success": true,
+          "pending_queue_depth": 0
+        }
+      ]
+    },
+    "board_metrics": {
+      "query_logs": [
+        {
+          "timestamp": "2026-04-03T13:57:59.883Z",
+          "trace_id": "trace_ab53846e-ca50-4910-84e4-21d5e493d4a7",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 2,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:00.212Z",
+          "trace_id": "trace_37b11907-d8cb-4709-8a1f-228546524f4e",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:01.047Z",
+          "trace_id": "trace_6d4ca5e2-bd77-46e0-85da-9871f3935a5e",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:01.329Z",
+          "trace_id": "trace_8e00dee4-e3da-4398-beb1-416180cb881c",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:01.607Z",
+          "trace_id": "trace_0baf6fc1-1c9e-49cc-997c-7946086612bf",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:01.896Z",
+          "trace_id": "trace_09d4045f-a81f-42d4-8257-d15a559c0ac5",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:02.175Z",
+          "trace_id": "trace_1a948f22-f3de-42cd-9ab1-a91c59aa4030",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:02.472Z",
+          "trace_id": "trace_3a637372-1bb6-4b56-a6b9-a073c83c8686",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:02.746Z",
+          "trace_id": "trace_b0c49d6d-450c-47d8-984a-8d4cc739e93b",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:03.023Z",
+          "trace_id": "trace_c79b525e-3f2b-4195-8d25-441f18fea377",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:03.299Z",
+          "trace_id": "trace_f0cafe56-dc8e-402a-bf01-72c4f19f2abc",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:03.579Z",
+          "trace_id": "trace_95652dcf-155b-4c3c-8388-c22de779be2e",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:03.858Z",
+          "trace_id": "trace_4f8c62cb-1a4d-45ee-813d-9738b26a38d1",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:04.138Z",
+          "trace_id": "trace_1aca3248-c81e-43e2-9082-9909a6301b2d",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:04.423Z",
+          "trace_id": "trace_b4fcd679-90be-4f51-b65e-0d0f384573f1",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:04.720Z",
+          "trace_id": "trace_7fab0204-64a6-4129-8ad7-8343dda8f20f",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:05.031Z",
+          "trace_id": "trace_90853423-4a9f-43ba-a469-23f12bdadd30",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:05.310Z",
+          "trace_id": "trace_9262eb5d-1f42-4d2f-8deb-592137e78dca",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:05.632Z",
+          "trace_id": "trace_3c6ba610-b131-4432-b603-194371031c6e",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:05.913Z",
+          "trace_id": "trace_bb619447-de17-4a48-8324-43f78321a51f",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:06.203Z",
+          "trace_id": "trace_0bcf61db-d02c-4a1c-8c77-6223b4808d80",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:06.486Z",
+          "trace_id": "trace_a4b431db-d627-4473-8861-f20b32d11dcd",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "archive",
+          "latency_ms": 54,
+          "total_scanned": 3,
+          "total_available": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:58:06.801Z",
+          "trace_id": "trace_86c7401f-b9af-4d17-8191-d805ef938322",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:07.109Z",
+          "trace_id": "trace_3b20c85e-5a0f-489c-8311-bc1b9256a972",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:07.418Z",
+          "trace_id": "trace_9c1a0399-7966-4eae-8112-52abb922bb60",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:07.730Z",
+          "trace_id": "trace_8e9f5c34-bc5c-4dff-818d-a886a04988c4",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:08.045Z",
+          "trace_id": "trace_05abe950-cbb0-4f3f-9f95-5c0c90990eec",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:08.357Z",
+          "trace_id": "trace_3af2b14a-bcff-44f4-9d7e-eda4ebe8115d",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:08.667Z",
+          "trace_id": "trace_377275fc-dc99-4840-b756-910e2cd313a4",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:08.995Z",
+          "trace_id": "trace_4fa06bbe-2829-442b-a8db-9cd362606fd9",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:09.329Z",
+          "trace_id": "trace_19118c3d-9aa8-4aa3-bb61-e1926e1650dd",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:09.643Z",
+          "trace_id": "trace_3e63d0bb-679c-4b34-93c1-5bed04b115b9",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:09.960Z",
+          "trace_id": "trace_28c0ad34-7bba-448d-962a-9a9a8238ce2f",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:10.294Z",
+          "trace_id": "trace_e1e03eda-fdd9-4f8f-bf82-4426080b11d6",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:10.606Z",
+          "trace_id": "trace_dd73637e-b38c-471a-a6e4-4b3bb19298ed",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:10.919Z",
+          "trace_id": "trace_900a0aeb-8a6f-43a6-bbcb-d5eb81f43e3b",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:11.237Z",
+          "trace_id": "trace_a0cef7ca-e9c7-44ac-995e-69ada8839add",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:11.555Z",
+          "trace_id": "trace_96408d89-8f80-497d-8ffa-0aa5ac2051a6",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:11.874Z",
+          "trace_id": "trace_649c9df1-1d5e-451e-a197-194387167a03",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:12.198Z",
+          "trace_id": "trace_6c6fbb73-bf53-4cc5-a405-cc336eb22964",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:12.510Z",
+          "trace_id": "trace_bd8b61ff-9c9f-4835-9803-8e79a6c2193b",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:58:12.839Z",
+          "trace_id": "trace_a9d9e5c8-821d-41b5-9cd0-9234f59943cd",
+          "actor": "developer",
+          "workflow_id": "537d83e9",
+          "layer": "online",
+          "latency_ms": 50,
+          "total_scanned": 1,
+          "total_available": 1
+        }
+      ],
+      "sync_logs": [
+        {
+          "timestamp": "2026-04-03T13:57:57.790Z",
+          "actor": "developer",
+          "success": false,
+          "drift_seconds": 12,
+          "retry_count": 1,
+          "pending_queue_depth": 1
+        },
+        {
+          "timestamp": "2026-04-03T13:57:58.061Z",
+          "actor": "developer",
+          "success": false,
+          "drift_seconds": 18,
+          "retry_count": 2,
+          "pending_queue_depth": 2
+        },
+        {
+          "timestamp": "2026-04-03T13:57:58.316Z",
+          "actor": "developer",
+          "success": false,
+          "drift_seconds": 19,
+          "retry_count": 3,
+          "pending_queue_depth": 3
+        },
+        {
+          "timestamp": "2026-04-03T13:57:58.574Z",
+          "actor": "developer",
+          "success": false,
+          "drift_seconds": 10,
+          "retry_count": 4,
+          "pending_queue_depth": 4
+        },
+        {
+          "timestamp": "2026-04-03T13:57:58.831Z",
+          "actor": "developer",
+          "success": false,
+          "drift_seconds": 9,
+          "retry_count": 5,
+          "pending_queue_depth": 5
+        },
+        {
+          "timestamp": "2026-04-03T13:57:59.266Z",
+          "actor": "developer",
+          "success": true,
+          "drift_seconds": 8,
+          "retry_count": 0,
+          "pending_queue_depth": 0
+        }
+      ]
+    },
+    "board_audit": [
+      {
+        "timestamp": "2026-04-03T13:57:59.520Z",
+        "trace_id": "trace_6a6ec3a3-c3ce-4873-9d65-5c3ce62a205f",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.archive",
+        "layer": "archive",
+        "total_scanned": 2
+      },
+      {
+        "timestamp": "2026-04-03T13:57:59.883Z",
+        "trace_id": "trace_ab53846e-ca50-4910-84e4-21d5e493d4a7",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 2
+      },
+      {
+        "timestamp": "2026-04-03T13:58:00.212Z",
+        "trace_id": "trace_37b11907-d8cb-4709-8a1f-228546524f4e",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:01.047Z",
+        "trace_id": "trace_6d4ca5e2-bd77-46e0-85da-9871f3935a5e",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:01.329Z",
+        "trace_id": "trace_8e00dee4-e3da-4398-beb1-416180cb881c",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:01.607Z",
+        "trace_id": "trace_0baf6fc1-1c9e-49cc-997c-7946086612bf",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:01.896Z",
+        "trace_id": "trace_09d4045f-a81f-42d4-8257-d15a559c0ac5",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:02.175Z",
+        "trace_id": "trace_1a948f22-f3de-42cd-9ab1-a91c59aa4030",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:02.472Z",
+        "trace_id": "trace_3a637372-1bb6-4b56-a6b9-a073c83c8686",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:02.746Z",
+        "trace_id": "trace_b0c49d6d-450c-47d8-984a-8d4cc739e93b",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:03.023Z",
+        "trace_id": "trace_c79b525e-3f2b-4195-8d25-441f18fea377",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:03.299Z",
+        "trace_id": "trace_f0cafe56-dc8e-402a-bf01-72c4f19f2abc",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:03.579Z",
+        "trace_id": "trace_95652dcf-155b-4c3c-8388-c22de779be2e",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:03.858Z",
+        "trace_id": "trace_4f8c62cb-1a4d-45ee-813d-9738b26a38d1",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:04.138Z",
+        "trace_id": "trace_1aca3248-c81e-43e2-9082-9909a6301b2d",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:04.423Z",
+        "trace_id": "trace_b4fcd679-90be-4f51-b65e-0d0f384573f1",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:04.720Z",
+        "trace_id": "trace_7fab0204-64a6-4129-8ad7-8343dda8f20f",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:05.031Z",
+        "trace_id": "trace_90853423-4a9f-43ba-a469-23f12bdadd30",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:05.310Z",
+        "trace_id": "trace_9262eb5d-1f42-4d2f-8deb-592137e78dca",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:05.632Z",
+        "trace_id": "trace_3c6ba610-b131-4432-b603-194371031c6e",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:05.913Z",
+        "trace_id": "trace_bb619447-de17-4a48-8324-43f78321a51f",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:06.203Z",
+        "trace_id": "trace_0bcf61db-d02c-4a1c-8c77-6223b4808d80",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:06.486Z",
+        "trace_id": "trace_a4b431db-d627-4473-8861-f20b32d11dcd",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "archive",
+        "total_scanned": 3
+      },
+      {
+        "timestamp": "2026-04-03T13:58:06.801Z",
+        "trace_id": "trace_86c7401f-b9af-4d17-8191-d805ef938322",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:07.109Z",
+        "trace_id": "trace_3b20c85e-5a0f-489c-8311-bc1b9256a972",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:07.418Z",
+        "trace_id": "trace_9c1a0399-7966-4eae-8112-52abb922bb60",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:07.730Z",
+        "trace_id": "trace_8e9f5c34-bc5c-4dff-818d-a886a04988c4",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:08.045Z",
+        "trace_id": "trace_05abe950-cbb0-4f3f-9f95-5c0c90990eec",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:08.357Z",
+        "trace_id": "trace_3af2b14a-bcff-44f4-9d7e-eda4ebe8115d",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:08.667Z",
+        "trace_id": "trace_377275fc-dc99-4840-b756-910e2cd313a4",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:08.995Z",
+        "trace_id": "trace_4fa06bbe-2829-442b-a8db-9cd362606fd9",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:09.329Z",
+        "trace_id": "trace_19118c3d-9aa8-4aa3-bb61-e1926e1650dd",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:09.643Z",
+        "trace_id": "trace_3e63d0bb-679c-4b34-93c1-5bed04b115b9",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:09.960Z",
+        "trace_id": "trace_28c0ad34-7bba-448d-962a-9a9a8238ce2f",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:10.294Z",
+        "trace_id": "trace_e1e03eda-fdd9-4f8f-bf82-4426080b11d6",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:10.606Z",
+        "trace_id": "trace_dd73637e-b38c-471a-a6e4-4b3bb19298ed",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:10.919Z",
+        "trace_id": "trace_900a0aeb-8a6f-43a6-bbcb-d5eb81f43e3b",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:11.237Z",
+        "trace_id": "trace_a0cef7ca-e9c7-44ac-995e-69ada8839add",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:11.555Z",
+        "trace_id": "trace_96408d89-8f80-497d-8ffa-0aa5ac2051a6",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:11.874Z",
+        "trace_id": "trace_649c9df1-1d5e-451e-a197-194387167a03",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:12.198Z",
+        "trace_id": "trace_6c6fbb73-bf53-4cc5-a405-cc336eb22964",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:12.510Z",
+        "trace_id": "trace_bd8b61ff-9c9f-4835-9803-8e79a6c2193b",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      },
+      {
+        "timestamp": "2026-04-03T13:58:12.839Z",
+        "trace_id": "trace_a9d9e5c8-821d-41b5-9cd0-9234f59943cd",
+        "actor": "developer",
+        "workflow_id": "537d83e9",
+        "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+        "action": "board.events",
+        "layer": "online",
+        "total_scanned": 1
+      }
+    ]
+  },
+  "board_events": [
+    {
+      "seq": 3,
+      "event_id": "be_5ec51532-6c0d-4871-87ba-eff004f6e1cd",
+      "task_id": "537d83e9",
+      "actor": "architect",
+      "action": "move",
+      "timestamp": "2026-04-03T13:57:57.358Z",
+      "metadata": {
+        "action": "move",
+        "card_id": "M21_1",
+        "to_column": "in_progress"
+      }
+    }
+  ],
+  "ucd": {
+    "ucd_required": false,
+    "ucd_reason_codes": [
+      "NON_UI_TEXT_ONLY"
+    ],
+    "ucd_override_reason": null,
+    "ucd_artifact": null,
+    "ucd_version": null,
+    "ucd_baseline_source": null
+  },
+  "artifacts": [],
+  "reviews": [],
+  "history": [
+    {
+      "from_stage": null,
+      "to_stage": 0,
+      "action": "init",
+      "actor": "architect",
+      "notes": "Workflow initialized",
+      "git_commit_hash": "a0ca54bbfd3c5ba53c667e22b47730344721ae44",
+      "timestamp": "2026-04-03T13:57:56Z",
+      "ucd": {
+        "ucd_required": false,
+        "ucd_reason_codes": [
+          "NON_UI_TEXT_ONLY"
+        ],
+        "ucd_override_reason": null,
+        "ucd_artifact": null,
+        "ucd_version": null,
+        "ucd_baseline_source": null
+      }
+    }
+  ],
+  "board_archives": [
+    {
+      "archive_id": "ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb",
+      "workflow_id": "537d83e9",
+      "archived_at": "2026-04-03T13:57:59.520Z",
+      "events": [
+        {
+          "seq": 1,
+          "event_id": "be_c8181e83-3426-49cc-a885-9876e36d8f3d",
+          "task_id": "537d83e9",
+          "actor": "architect",
+          "action": "add",
+          "timestamp": "2026-04-03T13:57:56.801Z",
+          "metadata": {
+            "action": "add",
+            "to_column": "todo",
+            "card": {
+              "id": "M21_1",
+              "title": "Card1",
+              "owner": "developer"
+            }
+          },
+          "layer": "archive"
+        },
+        {
+          "seq": 2,
+          "event_id": "be_8ec5ef30-5c12-4e54-a722-181331ceece6",
+          "task_id": "537d83e9",
+          "actor": "architect",
+          "action": "add",
+          "timestamp": "2026-04-03T13:57:57.094Z",
+          "metadata": {
+            "action": "add",
+            "to_column": "todo",
+            "card": {
+              "id": "M21_2",
+              "title": "Card2",
+              "owner": "developer"
+            }
+          },
+          "layer": "archive"
+        }
+      ],
+      "metadata": {
+        "event_count": 2,
+        "storage_path": ".data/workflows/archive/537d83e9/ba_576e37f1-340e-4813-a1f1-e8cb694bf0bb.json"
+      }
+    }
+  ]
+}

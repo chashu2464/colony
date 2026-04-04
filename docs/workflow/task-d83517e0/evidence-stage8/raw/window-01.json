@@ -1,0 +1,53 @@
+{
+  "status": "PASS",
+  "room_id": "workflow-board-m21-1775224503",
+  "workflow_file": "/Users/casu/Documents/Colony/.data/workflows/workflow-board-m21-1775224503.json",
+  "assertions": {
+    "A1": {
+      "p95": 19,
+      "p99": 19
+    },
+    "A2": {
+      "retry_backoff_and_fail_closed": true
+    },
+    "A2_details": {
+      "backoff_seconds": [
+        60,
+        120,
+        240,
+        480,
+        900
+      ]
+    },
+    "A3": {
+      "recovery_seconds": 2
+    },
+    "C1": {
+      "page1_last_event_id": "be_e90d8565-e475-4467-aa70-16d9a51e3b14",
+      "page2_first_event_id": "be_64fac4c5-0e5a-443b-8a49-20ef82ab87e7"
+    },
+    "D1": {
+      "unauthorized_archive_read_denied": true,
+      "unauthorized_existing_target_response": {
+        "error": "WF_PERMISSION_DENIED",
+        "reason": "WF_PERMISSION_DENIED",
+        "message": "actor is not assigned to this workflow"
+      },
+      "unauthorized_nonexistent_target_response": {
+        "error": "WF_PERMISSION_DENIED",
+        "reason": "WF_PERMISSION_DENIED",
+        "message": "actor is not assigned to this workflow"
+      },
+      "no_existence_leak_signature": {
+        "existing": "{\"error\":\"WF_PERMISSION_DENIED\",\"reason\":\"WF_PERMISSION_DENIED\",\"message\":\"actor is not assigned to this workflow\"}",
+        "nonexistent": "{\"error\":\"WF_PERMISSION_DENIED\",\"reason\":\"WF_PERMISSION_DENIED\",\"message\":\"actor is not assigned to this workflow\"}",
+        "equal": true
+      }
+    },
+    "E1": {
+      "baseline_p95": 50,
+      "archive_p95": 54,
+      "relative_increase_pct": 8
+    }
+  }
+}

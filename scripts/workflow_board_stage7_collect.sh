@@ -46,15 +46,6 @@ reset_outputs() {
   rm -f "$OUT_DIR/stage7_soak_trend.json" "$OUT_DIR/stage7_audit_traceability_summary.json"
 }
 
-run_handler_json() {
-  local room_id="$1"
-  local actor="$2"
-  local payload="$3"
-  local handler="$ROOT/skills/dev-workflow/scripts/handler.sh"
-  COLONY_ROOM_ID="$room_id" COLONY_AGENT_ID="$actor" \
-    bash -lc "echo '$payload' | bash '$handler'"
-}
-
 json_or_wrap() {
   local raw="$1"
   if echo "$raw" | jq -e . >/dev/null 2>&1; then
@@ -64,26 +55,45 @@ json_or_wrap() {
   fi
 }
 
+capture_handler_output() {
+  local room_id="$1"
+  local actor="$2"
+  local payload="$3"
+  local handler="$ROOT/skills/dev-workflow/scripts/handler.sh"
+  local raw rc
+  set +e
+  raw=$(COLONY_ROOM_ID="$room_id" COLONY_AGENT_ID="$actor" bash -lc "echo '$payload' | bash '$handler'" 2>&1)
+  rc=$?
+  set -e
+  jq -nc --argjson exit_code "$rc" --arg raw "$raw" '{exit_code:$exit_code,response:{raw:$raw}}'
+}
+
 append_owasp_samples() {
   local room_id="$1"
   local archive_cursor="$2"
-  local handler="$ROOT/skills/dev-workflow/scripts/handler.sh"
-  local deny_payload
+  local deny_payload invalid_payload conflict_payload
   deny_payload=$(jq -nc --argjson c "$archive_cursor" '{action:"board.events",limit:5,offset:0,cursor:$c}')
-  set +e
-  deny_body=$(COLONY_ROOM_ID="$room_id" COLONY_AGENT_ID="outsider" bash -lc "echo '$deny_payload' | bash '$handler'" 2>/dev/null)
-  deny_rc=$?
-  abuse_body=$(COLONY_ROOM_ID="$room_id" COLONY_AGENT_ID="outsider" bash -lc "echo '$deny_payload' | bash '$handler'" 2>/dev/null)
-  abuse_rc=$?
-  set -e
-  invalid_body=$(run_handler_json "$room_id" "developer" '{"action":"board.events","limit":5,"offset":0,"cursor":{"cursor_version":"bad","layer":"archive","event_id":"x","ts_ms":0}}' || true)
-  conflict_body=$(run_handler_json "$room_id" "developer" '{"action":"board.events","limit":5,"offset":0,"cursor":{"cursor_version":"v1","layer":"archive","event_id":"x","ts_ms":0},"since_event_id":"be_999"}' || true)
-  deny_json=$(json_or_wrap "$deny_body")
-  abuse_json=$(json_or_wrap "$abuse_body")
-  invalid_json=$(json_or_wrap "$invalid_body")
-  conflict_json=$(json_or_wrap "$conflict_body")
-  jq -nc --argjson d "$deny_json" --argjson drc "$deny_rc" --argjson a "$abuse_json" --argjson arc "$abuse_rc" --argjson i "$invalid_json" --argjson c "$conflict_json" \
-    '{authz_bypass:{exit_code:$drc,response:$d},resource_abuse_high_freq:{exit_code:$arc,response:$a},input_validation_invalid_cursor:$i,input_validation_cursor_since_conflict:$c}' >> "$OUT_DIR/stage7_owasp_negative_outputs.ndjson"
+  invalid_payload='{"action":"board.events","limit":5,"offset":0,"cursor":{"cursor_version":"bad","layer":"archive","event_id":"x","ts_ms":0}}'
+  conflict_payload='{"action":"board.events","limit":5,"offset":0,"cursor":{"cursor_version":"v1","layer":"archive","event_id":"x","ts_ms":0},"since_event_id":"be_999"}'
+  deny_json=$(capture_handler_output "$room_id" "outsider" "$deny_payload")
+  abuse_json=$(capture_handler_output "$room_id" "outsider" "$deny_payload")
+  invalid_json=$(capture_handler_output "$room_id" "developer" "$invalid_payload")
+  conflict_json=$(capture_handler_output "$room_id" "developer" "$conflict_payload")
+  jq -nc --argjson d "$deny_json" --argjson a "$abuse_json" --argjson i "$invalid_json" --argjson c "$conflict_json" \
+    '{authz_bypass:$d,resource_abuse_high_freq:$a,input_validation_invalid_cursor:$i,input_validation_cursor_since_conflict:$c}' >> "$OUT_DIR/stage7_owasp_negative_outputs.ndjson"
+}
+
+assert_owasp_non_empty_raw() {
+  local file="$OUT_DIR/stage7_owasp_negative_outputs.ndjson"
+  local probes probe raw
+  probes=(authz_bypass resource_abuse_high_freq input_validation_invalid_cursor input_validation_cursor_since_conflict)
+  for probe in "${probes[@]}"; do
+    raw=$(jq -r --arg p "$probe" '.[ $p ] | if type=="object" and has("response") then (.response.raw // "") else (.raw // "") end' "$file")
+    if [ -z "$raw" ]; then
+      echo "ERROR: OWASP probe '$probe' produced empty raw output in $file" >&2
+      exit 1
+    fi
+  done
 }
 
 collect_windows() {
@@ -191,6 +201,7 @@ run_concurrency_tiers() {
   done
 
   append_owasp_samples "$first_room" "$archive_cursor"
+  assert_owasp_non_empty_raw
 }
 
 build_aggregates() {

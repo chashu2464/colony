@@ -1,9 +1,9 @@
 {
   "tier_parallel": 24,
   "total": 240,
-  "ok_count": 180,
-  "error_count": 60,
-  "timeout_count": 60,
-  "error_rate_pct": 25,
-  "timeout_rate_pct": 25
+  "ok_count": 176,
+  "error_count": 64,
+  "timeout_count": 64,
+  "error_rate_pct": 26.666666666666668,
+  "timeout_rate_pct": 26.666666666666668
 }
