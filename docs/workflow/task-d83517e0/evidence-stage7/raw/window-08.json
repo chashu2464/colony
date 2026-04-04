@@ -1,7 +1,7 @@
 {
   "status": "PASS",
-  "room_id": "workflow-board-m21-1775145612",
-  "workflow_file": "/Users/casu/Documents/Colony/.data/workflows/workflow-board-m21-1775145612.json",
+  "room_id": "workflow-board-m21-1775146961",
+  "workflow_file": "/Users/casu/Documents/Colony/.data/workflows/workflow-board-m21-1775146961.json",
   "assertions": {
     "A1": {
       "p95": 19,
@@ -20,11 +20,11 @@
       ]
     },
     "A3": {
-      "recovery_seconds": 2
+      "recovery_seconds": 1
     },
     "C1": {
-      "page1_last_event_id": "be_4608401f-038a-439c-b2df-100383e153ae",
-      "page2_first_event_id": "be_32a2c285-d26f-41b2-a43b-8c73472a2388"
+      "page1_last_event_id": "be_9836be5d-ee90-4d5e-97bc-c5d75dc14150",
+      "page2_first_event_id": "be_38cf8315-c542-4f7b-a5ff-8a4d3229b8fd"
     },
     "D1": {
       "unauthorized_archive_read_denied": true,

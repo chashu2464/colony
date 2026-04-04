@@ -12,9 +12,9 @@
 
 ## Then
 
-- Tier 12 (PASS): `ok=120`, `error=0`, `timeout=0`, `error_rate=0%`, `timeout_rate=0%`, `p95/p99/max=3891/4016/4177ms`.
-- Tier 24 (CONSTRAINED): `ok=180`, `error=60`, `timeout=60`, `error_rate=25%`, `timeout_rate=25%`, `p95/p99/max=5175/5437/5549ms`.
-- Tier 48 (CONSTRAINED): `ok=108`, `error=372`, `timeout=372`, `error_rate=77.5%`, `timeout_rate=77.5%`, `p95/p99/max=5749/6177/6269ms`.
+- Tier 12 (PASS): `ok=120`, `error=0`, `timeout=0`, `error_rate=0%`, `timeout_rate=0%`, `p95/p99/max=3789/4021/4035ms`.
+- Tier 24 (CONSTRAINED): `ok=174`, `error=66`, `timeout=66`, `error_rate=27.5%`, `timeout_rate=27.5%`, `p95/p99/max=5151/5426/5586ms`.
+- Tier 48 (CONSTRAINED): `ok=210`, `error=270`, `timeout=270`, `error_rate=56.25%`, `timeout_rate=56.25%`, `p95/p99/max=6108/6349/6551ms`.
 
 ## Raw Evidence
 
@@ -32,3 +32,4 @@
 
 - Stage 7 fulfilled multi-tier observability and sample-level reproducibility requirements.
 - Residual risk remains at high parallel tiers due lock-timeout (`exit_code=3`) concentration.
+- Tier error-type split (for risk attribution): 24 parallel `exit_code {0:174,3:66}`, 48 parallel `exit_code {0:210,3:270}`.

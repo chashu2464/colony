@@ -1,8 +1,8 @@
-{"run_id":"window-01","window_start_utc":"2026-04-02T11:58:24Z","window_end_utc":"2026-04-02T12:28:24Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
-{"run_id":"window-02","window_start_utc":"2026-04-02T12:28:24Z","window_end_utc":"2026-04-02T12:58:24Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
-{"run_id":"window-03","window_start_utc":"2026-04-02T12:58:24Z","window_end_utc":"2026-04-02T13:28:24Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
-{"run_id":"window-04","window_start_utc":"2026-04-02T13:28:24Z","window_end_utc":"2026-04-02T13:58:24Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
-{"run_id":"window-05","window_start_utc":"2026-04-02T13:58:24Z","window_end_utc":"2026-04-02T14:28:24Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
-{"run_id":"window-06","window_start_utc":"2026-04-02T14:28:24Z","window_end_utc":"2026-04-02T14:58:24Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
-{"run_id":"window-07","window_start_utc":"2026-04-02T14:58:24Z","window_end_utc":"2026-04-02T15:28:24Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
-{"run_id":"window-08","window_start_utc":"2026-04-02T15:28:24Z","window_end_utc":"2026-04-02T15:58:24Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
+{"run_id":"window-01","window_start_utc":"2026-04-02T12:20:41Z","window_end_utc":"2026-04-02T12:50:41Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
+{"run_id":"window-02","window_start_utc":"2026-04-02T12:50:41Z","window_end_utc":"2026-04-02T13:20:41Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
+{"run_id":"window-03","window_start_utc":"2026-04-02T13:20:41Z","window_end_utc":"2026-04-02T13:50:41Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
+{"run_id":"window-04","window_start_utc":"2026-04-02T13:50:41Z","window_end_utc":"2026-04-02T14:20:41Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
+{"run_id":"window-05","window_start_utc":"2026-04-02T14:20:41Z","window_end_utc":"2026-04-02T14:50:41Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
+{"run_id":"window-06","window_start_utc":"2026-04-02T14:50:41Z","window_end_utc":"2026-04-02T15:20:41Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
+{"run_id":"window-07","window_start_utc":"2026-04-02T15:20:41Z","window_end_utc":"2026-04-02T15:50:41Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}
+{"run_id":"window-08","window_start_utc":"2026-04-02T15:50:41Z","window_end_utc":"2026-04-02T16:20:41Z","total":43,"actor_present":43,"workflow_id_present":43,"archive_id_present":43,"trace_id_present":43}

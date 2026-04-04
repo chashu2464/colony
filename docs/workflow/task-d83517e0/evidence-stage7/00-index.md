@@ -1,6 +1,6 @@
 # M2.1 Stage 7 Evidence Index (task: d83517e0)
 
-- Evidence window (UTC): `2026-04-02T11:58:24Z` ~ `2026-04-02T15:58:24Z`
+- Evidence window (UTC): `2026-04-02T12:11:15Z` ~ `2026-04-02T16:11:15Z`
 - Collection command: `bash scripts/workflow_board_stage7_collect.sh`
 - Raw dir: `docs/workflow/task-d83517e0/evidence-stage7/raw/`
 
@@ -23,5 +23,5 @@
 
 ## Stage 7 Status
 
-- Current decision: READY FOR QA STAGE 7 REVIEW
+- Current decision: RE-SUBMIT READY (OWASP raw evidence hardened)
 - Constraint: keep lock-timeout risk visible in gate statement; do not alter frozen protocol semantics.
