@@ -132,6 +132,32 @@ describe('workflow route contract and routing behavior', () => {
         expect(sendSystemMessage).not.toHaveBeenCalled();
     });
 
+    it('returns 404 when room does not exist', async () => {
+        roomManager.getRoom.mockReturnValueOnce(null);
+        currentServer = await startServer(roomManager);
+        const eventId = 'wf-room-missing';
+        writeWorkflowState('room-1', eventId);
+        const response = await postEvent(currentServer.port, basePayload(eventId));
+
+        expect(response.status).toBe(404);
+        expect(response.body.error).toBe('Room not found');
+        expect(sendSystemMessage).not.toHaveBeenCalled();
+    });
+
+    it('rejects non-integer stage values with deterministic invalid-transition code', async () => {
+        currentServer = await startServer(roomManager);
+        const eventId = 'wf-stage-not-int';
+        writeWorkflowState('room-1', eventId);
+        const response = await postEvent(currentServer.port, {
+            ...basePayload(eventId),
+            from_stage: 5.1,
+        });
+
+        expect(response.status).toBe(400);
+        expect(response.body.reason).toBe('WF_STAGE_TRANSITION_INVALID');
+        expect(sendSystemMessage).not.toHaveBeenCalled();
+    });
+
     it('returns WF_EVENT_DISPATCH_FAILED when route cannot dispatch message', async () => {
         sendSystemMessage.mockImplementationOnce(() => {
             throw new Error('dispatch transport unavailable');
@@ -147,7 +173,37 @@ describe('workflow route contract and routing behavior', () => {
         expect(first.body.reason).toBe('WF_EVENT_DISPATCH_FAILED');
         expect(second.status).toBe(200);
         expect(second.body.duplicate_ignored).toBe(false);
+        expect(second.body.replay).toBe(true);
+        expect(sendSystemMessage.mock.calls[1][2].workflow_replay).toBe(true);
         expect(sendSystemMessage).toHaveBeenCalledTimes(2);
+    });
+
+    it('returns WF_EVENT_DISPATCH_PAYLOAD_INVALID when dispatch throws TypeError', async () => {
+        sendSystemMessage.mockImplementationOnce(() => {
+            throw new TypeError('invalid mention payload');
+        });
+        currentServer = await startServer(roomManager);
+        const eventId = 'wf-dispatch-type-error';
+        writeWorkflowState('room-1', eventId);
+
+        const response = await postEvent(currentServer.port, basePayload(eventId));
+        expect(response.status).toBe(400);
+        expect(response.body.reason).toBe('WF_EVENT_DISPATCH_PAYLOAD_INVALID');
+        expect(response.body.details).toEqual(['invalid mention payload']);
+    });
+
+    it('returns deterministic failure details when dispatch throws non-error value', async () => {
+        sendSystemMessage.mockImplementationOnce(() => {
+            throw 'transport panic';
+        });
+        currentServer = await startServer(roomManager);
+        const eventId = 'wf-dispatch-non-error';
+        writeWorkflowState('room-1', eventId);
+
+        const response = await postEvent(currentServer.port, basePayload(eventId));
+        expect(response.status).toBe(503);
+        expect(response.body.reason).toBe('WF_EVENT_DISPATCH_FAILED');
+        expect(response.body.details).toEqual(['non-error exception thrown during dispatch']);
     });
 
     it('ignores duplicate event_id after a successful dispatch', async () => {

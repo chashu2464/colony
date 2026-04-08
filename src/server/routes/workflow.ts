@@ -16,6 +16,13 @@ type DispatchState = {
     failureReason?: string;
 };
 
+type DispatchFailure = {
+    reason: string;
+    details: string[];
+    kind: string;
+    status: number;
+};
+
 type WorkflowRoutingRecord = {
     workflow_version: string;
     from_stage: number;
@@ -70,6 +77,31 @@ function invalidTransition(res: any, details: string[]) {
         reason: 'WF_STAGE_TRANSITION_INVALID',
         details,
     });
+}
+
+function classifyDispatchFailure(error: unknown): DispatchFailure {
+    if (error instanceof TypeError) {
+        return {
+            reason: 'WF_EVENT_DISPATCH_PAYLOAD_INVALID',
+            details: [error.message || 'invalid payload while dispatching workflow event'],
+            kind: 'type_error',
+            status: 400,
+        };
+    }
+    if (error instanceof Error) {
+        return {
+            reason: 'WF_EVENT_DISPATCH_FAILED',
+            details: [error.message || 'sendSystemMessage failed'],
+            kind: 'runtime_error',
+            status: 503,
+        };
+    }
+    return {
+        reason: 'WF_EVENT_DISPATCH_FAILED',
+        details: ['non-error exception thrown during dispatch'],
+        kind: 'unknown_throwable',
+        status: 503,
+    };
 }
 
 export function createWorkflowRouter(roomManager: ChatRoomManager) {
@@ -196,21 +228,30 @@ export function createWorkflowRouter(roomManager: ChatRoomManager) {
                     workflow_replay: Boolean(existing),
                 });
             } catch (error) {
-                const failureReason = 'WF_EVENT_DISPATCH_FAILED';
+                const classified = classifyDispatchFailure(error);
                 dispatchStateByRoomEvent.set(dedupKey, {
                     status: 'failed',
                     attempts: (existing?.attempts ?? 0) + 1,
                     lastDispatchedAt: new Date().toISOString(),
-                    failureReason,
+                    failureReason: classified.reason,
                 });
-                log.error(
-                    `Workflow dispatch failed event_id=${event_id} room=${roomId} ${from_stage}->${to_stage}:`,
-                    error
-                );
-                res.status(503).json({
+                log.error('Workflow dispatch failed', {
+                    event_id,
+                    roomId,
+                    from_stage,
+                    to_stage,
+                    next_actor,
+                    next_actor_role,
+                    attempt: (existing?.attempts ?? 0) + 1,
+                    replay: Boolean(existing),
+                    failure_reason: classified.reason,
+                    failure_kind: classified.kind,
+                    failure_details: classified.details,
+                });
+                res.status(classified.status).json({
                     result: 'block',
-                    reason: failureReason,
-                    details: [(error as Error).message || 'sendSystemMessage failed'],
+                    reason: classified.reason,
+                    details: classified.details,
                     event_id,
                 });
                 return;
